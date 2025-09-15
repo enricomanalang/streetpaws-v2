@@ -1,0 +1,20 @@
+{
+  "rules": {
+    ".read": "auth != null",
+    ".write": "auth != null",
+    "users": {
+      "$userId": {
+        ".read": "$userId === auth.uid",
+        ".write": "$userId === auth.uid"
+      }
+    },
+    "reports": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "adoptions": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    }
+  }
+}

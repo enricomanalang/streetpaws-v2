@@ -1,36 +1,61 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# StreetPaws: Firebase Configuration Setup Guide
 
-## Getting Started
+This guide will help you obtain your Firebase project credentials and update your `.env.local` file correctly.
 
-First, run the development server:
+---
+
+## Step 1: Access Firebase Console
+
+1. Go to [Firebase Console](https://console.firebase.google.com/).
+2. Log in with your Google account.
+3. Select your existing project or create a new one.
+
+---
+
+## Step 2: Get Firebase Config
+
+1. In your Firebase project, click the gear icon next to "Project Overview" and select **Project settings**.
+2. Scroll down to **Your apps** section.
+3. If you haven't added a web app, click **Add app** and select **Web**.
+4. Register your app and click **Register app**.
+5. You will see your Firebase SDK config object with keys like `apiKey`, `authDomain`, etc.
+
+---
+
+## Step 3: Update `.env.local`
+
+1. Open your project root directory.
+2. Create or open `.env.local`.
+3. Replace the placeholder values with your actual Firebase config values:
+
+```
+NEXT_PUBLIC_FIREBASE_API_KEY=your_api_key_here
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project_id.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_DATABASE_URL=https://your_project_id-default-rtdb.firebaseio.com
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_project_id.appspot.com
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
+```
+
+---
+
+## Step 4: Restart Development Server
+
+After saving `.env.local`, restart your Next.js development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Additional Notes
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- Ensure no extra spaces or quotes are added around the values.
+- Keep `.env.local` private and do not commit it to version control.
+- If you encounter errors, double-check the values and restart the server.
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+If you need further assistance, feel free to ask.
