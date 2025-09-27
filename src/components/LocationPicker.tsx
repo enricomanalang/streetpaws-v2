@@ -181,6 +181,15 @@ export default function LocationPicker({
       if (!useHttps) return;
     }
 
+    // Ask user if they want to use current location
+    const useCurrentLocation = confirm(
+      'Do you want to use your current location?\n\n' +
+      'Note: This will replace any address you have entered.\n\n' +
+      'Click OK to use current location, or Cancel to keep typing manually.'
+    );
+    
+    if (!useCurrentLocation) return;
+
     // Show loading state
     setIsSearching(true);
 
@@ -343,6 +352,21 @@ export default function LocationPicker({
           )}
           {isSearching ? 'Getting Location...' : 'Use My Location'}
         </Button>
+        
+        {addressInput && (
+          <Button
+            onClick={() => {
+              setAddressInput('');
+              setCoordinates(null);
+            }}
+            variant="outline"
+            type="button"
+            className="bg-red-600 hover:bg-red-700 text-white"
+          >
+            <X className="w-4 h-4 mr-2" />
+            Clear Location
+          </Button>
+        )}
       </div>
 
       {/* Map */}
