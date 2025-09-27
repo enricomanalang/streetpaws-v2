@@ -476,6 +476,13 @@ export default function AdminDashboard() {
                           <div className="mb-4">
                             <p className="text-sm font-medium text-gray-700 mb-2">Evidence Photos:</p>
                             
+                            {/* Debug info for new reports */}
+                            <div className="mb-2 p-2 bg-green-100 rounded text-xs">
+                              <p><strong>Debug:</strong> Found {report.images.length} images</p>
+                              <p><strong>First image type:</strong> {report.images[0]?.startsWith('data:image') ? 'Base64' : 'Other'}</p>
+                              <p><strong>First image preview:</strong> {report.images[0]?.substring(0, 50)}...</p>
+                            </div>
+                            
                             {/* Check if all images are placeholders */}
                             {report.images.every(img => img.startsWith('placeholder-')) && (
                               <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">

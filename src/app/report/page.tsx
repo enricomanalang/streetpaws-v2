@@ -204,6 +204,18 @@ export default function ReportPage() {
       let uploadedImageUrls: string[] = imageUrls;
       updateProgress(`Images ready: ${uploadedImageUrls.length}`);
       
+      // Debug: Check what type of image URLs we have
+      console.log('=== IMAGE DEBUG ===');
+      console.log('Number of images:', uploadedImageUrls.length);
+      uploadedImageUrls.forEach((url, index) => {
+        console.log(`Image ${index + 1}:`, {
+          url: url.substring(0, 50) + '...',
+          isBase64: url.startsWith('data:image'),
+          isPlaceholder: url.startsWith('placeholder-'),
+          length: url.length
+        });
+      });
+      
       // Create report data
       updateProgress('Creating report data object');
       // Prepend +63 to phone number
