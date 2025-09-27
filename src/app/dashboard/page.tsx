@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 // Aggressive hydration fix for dashboard page
 if (typeof window !== 'undefined') {
@@ -52,16 +52,46 @@ import {
   Eye,
   Settings
 } from 'lucide-react';
+import { database } from '@/lib/firebase';
+import { ref, get, query, orderByChild, equalTo } from 'firebase/database';
 
 export default function DashboardPage() {
   const { user, profile, loading } = useAuth();
   const router = useRouter();
+  const [myReports, setMyReports] = useState<any[]>([]);
+  const [myLost, setMyLost] = useState<any[]>([]);
+  const [myFound, setMyFound] = useState<any[]>([]);
+  const [myAdoptions, setMyAdoptions] = useState<any[]>([]);
 
   useEffect(() => {
     if (!loading && !user) {
       router.push('/login');
     }
   }, [user, loading, router]);
+
+  useEffect(() => {
+    const loadData = async () => {
+      if (!user || !database) return;
+      try {
+        const reportsQ = query(ref(database, 'reports'), orderByChild('submittedBy/uid'), equalTo(user.uid));
+        const lostQ = query(ref(database, 'lostPets'), orderByChild('submittedBy/uid'), equalTo(user.uid));
+        const foundQ = query(ref(database, 'foundPets'), orderByChild('submittedBy/uid'), equalTo(user.uid));
+        const adoptQ = query(ref(database, 'adoptionRequests'), orderByChild('applicant/uid'), equalTo(user.uid));
+
+        const [rSnap, lSnap, fSnap, aSnap] = await Promise.all([get(reportsQ), get(lostQ), get(foundQ), get(adoptQ)]);
+
+        const toList = (snap: any) => snap.exists() ? Object.keys(snap.val()).map(k => ({ id: k, ...snap.val()[k] })) : [];
+
+        setMyReports(toList(rSnap).sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || '')));
+        setMyLost(toList(lSnap).sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || '')));
+        setMyFound(toList(fSnap).sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || '')));
+        setMyAdoptions(toList(aSnap).sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || '')));
+      } catch (e) {
+        console.error('Failed loading dashboard activity', e);
+      }
+    };
+    loadData();
+  }, [user]);
 
   if (loading) {
     return (
@@ -378,11 +408,43 @@ export default function DashboardPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-center py-8">
-                  <Activity className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">Your Activity</h3>
-                  <p className="text-gray-500">Track your submitted reports and adoption requests here.</p>
-                </div>
+                {myReports.length + myLost.length + myFound.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Activity className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">Your Activity</h3>
+                    <p className="text-gray-500">No submissions yet.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {myReports.slice(0, 5).map((r) => (
+                      <div key={r.id} className="flex items-center justify-between border rounded-md p-3">
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">Abuse report • {r.animalType || 'Animal'}</p>
+                          <p className="text-xs text-gray-500">{new Date(r.createdAt).toLocaleString()} • {r.location}</p>
+                        </div>
+                        <span className="text-xs capitalize px-2 py-1 rounded bg-gray-100 text-gray-700">{r.status}</span>
+                      </div>
+                    ))}
+                    {myLost.slice(0, 5).map((r) => (
+                      <div key={r.id} className="flex items-center justify-between border rounded-md p-3">
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">Lost pet • {r.petName || r.animalType}</p>
+                          <p className="text-xs text-gray-500">{new Date(r.createdAt).toLocaleString()} • {r.lastSeenLocation}</p>
+                        </div>
+                        <span className="text-xs capitalize px-2 py-1 rounded bg-gray-100 text-gray-700">{r.status}</span>
+                      </div>
+                    ))}
+                    {myFound.slice(0, 5).map((r) => (
+                      <div key={r.id} className="flex items-center justify-between border rounded-md p-3">
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">Found pet • {r.animalType}</p>
+                          <p className="text-xs text-gray-500">{new Date(r.createdAt).toLocaleString()} • {r.foundLocation}</p>
+                        </div>
+                        <span className="text-xs capitalize px-2 py-1 rounded bg-gray-100 text-gray-700">{r.status}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -394,11 +456,25 @@ export default function DashboardPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-center py-8">
-                  <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">Your Requests</h3>
-                  <p className="text-gray-500">View the status of your reports and adoption requests.</p>
-                </div>
+                {myAdoptions.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">Your Requests</h3>
+                    <p className="text-gray-500">No adoption requests yet.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {myAdoptions.slice(0, 5).map((r) => (
+                      <div key={r.id} className="flex items-center justify-between border rounded-md p-3">
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">Adoption request • {r.animalInfo?.breed || r.animalInfo?.animalType}</p>
+                          <p className="text-xs text-gray-500">{new Date(r.createdAt).toLocaleString()}</p>
+                        </div>
+                        <span className="text-xs capitalize px-2 py-1 rounded bg-gray-100 text-gray-700">{r.status}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>

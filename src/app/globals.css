@@ -7,6 +7,23 @@
   /* This attribute is added by browser extensions and causes hydration issues */
 }
 
+/* Ensure form elements are always clickable */
+input, select, textarea, button {
+  pointer-events: auto !important;
+  user-select: auto !important;
+}
+
+/* Fix for form containers */
+form, .form-container {
+  pointer-events: auto !important;
+}
+
+/* Ensure interactive elements work properly */
+[role="button"], [role="textbox"], [role="combobox"] {
+  pointer-events: auto !important;
+  user-select: auto !important;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {

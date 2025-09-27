@@ -25,6 +25,7 @@ import {
 import { ref, get, push, set } from 'firebase/database';
 import { database } from '@/lib/firebase';
 import ImageUploader from '@/components/ImageUploader';
+import LocationPicker from '@/components/LocationPicker';
 
 interface LostPet {
   id: string;
@@ -72,6 +73,8 @@ export default function LostPetsPage() {
     gender: '',
     description: '',
     lastSeenLocation: '',
+    latitude: '',
+    longitude: '',
     lastSeenDate: '',
     contactInfo: ''
   });
@@ -102,6 +105,19 @@ export default function LostPetsPage() {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  const handleLocationSelect = (location: {
+    address: string;
+    latitude: number;
+    longitude: number;
+  }) => {
+    setFormData(prev => ({
+      ...prev,
+      lastSeenLocation: location.address,
+      latitude: location.latitude.toString(),
+      longitude: location.longitude.toString()
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !profile) return;
@@ -119,6 +135,8 @@ export default function LostPetsPage() {
         ...formData,
         images: imageUrls,
         contactInfo,
+        latitude: formData.latitude ? parseFloat(formData.latitude) : null,
+        longitude: formData.longitude ? parseFloat(formData.longitude) : null,
         status: 'lost',
         submittedBy: {
           uid: user.uid,
@@ -353,17 +371,12 @@ export default function LostPetsPage() {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Last Seen Location *
-                  </label>
-                  <Input
-                    value={formData.lastSeenLocation}
-                    onChange={(e) => handleInputChange('lastSeenLocation', e.target.value)}
-                    placeholder="e.g., Barangay 1, Lipa City, Batangas"
-                    required
-                  />
-                </div>
+                <LocationPicker
+                  onLocationSelect={handleLocationSelect}
+                  placeholder="e.g., Barangay 1, Lipa City, Batangas"
+                  label="Last Seen Location"
+                  required={true}
+                />
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">

@@ -38,6 +38,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import HeatMap from '@/components/HeatMap';
+import { AdminDashboardCharts } from '@/components/AdminCharts';
 import { ref, onValue, off, update } from 'firebase/database';
 import { collection, onSnapshot, doc, updateDoc, serverTimestamp, query, orderBy } from 'firebase/firestore';
 import { database, firestore } from '@/lib/firebase';
@@ -240,7 +241,9 @@ export default function AdminDashboard() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-blue-600">Pending Reports</p>
-                      <p className="text-3xl font-bold text-blue-900">12</p>
+                      <p className="text-3xl font-bold text-blue-900">
+                        {reports.filter(r => r.status === 'pending').length}
+                      </p>
                     </div>
                     <FileText className="w-8 h-8 text-blue-600" />
                   </div>
@@ -251,10 +254,12 @@ export default function AdminDashboard() {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-yellow-600">Adoption Requests</p>
-                      <p className="text-3xl font-bold text-yellow-900">8</p>
+                      <p className="text-sm font-medium text-yellow-600">Lost Pets</p>
+                      <p className="text-3xl font-bold text-yellow-900">
+                        {lostPets.filter(p => p.status === 'lost').length}
+                      </p>
                     </div>
-                    <Heart className="w-8 h-8 text-yellow-600" />
+                    <AlertCircle className="w-8 h-8 text-yellow-600" />
                   </div>
                 </CardContent>
               </Card>
@@ -263,8 +268,10 @@ export default function AdminDashboard() {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-green-600">Completed Today</p>
-                      <p className="text-3xl font-bold text-green-900">15</p>
+                      <p className="text-sm font-medium text-green-600">Completed Reports</p>
+                      <p className="text-3xl font-bold text-green-900">
+                        {reports.filter(r => r.status === 'approved').length}
+                      </p>
                     </div>
                     <CheckCircle className="w-8 h-8 text-green-600" />
                   </div>
@@ -275,14 +282,19 @@ export default function AdminDashboard() {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-red-600">Urgent Cases</p>
-                      <p className="text-3xl font-bold text-red-900">3</p>
+                      <p className="text-sm font-medium text-red-600">Total Reports</p>
+                      <p className="text-3xl font-bold text-red-900">
+                        {reports.length}
+                      </p>
                     </div>
-                    <AlertCircle className="w-8 h-8 text-red-600" />
+                    <AlertTriangle className="w-8 h-8 text-red-600" />
                   </div>
                 </CardContent>
               </Card>
             </div>
+
+            {/* Charts Section */}
+            <AdminDashboardCharts />
 
             {/* Recent Activity & Upcoming Tasks */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -295,27 +307,38 @@ export default function AdminDashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    <div className="flex items-center space-x-3 p-3 bg-green-50 rounded-lg">
-                      <CheckCircle className="w-5 h-5 text-green-600" />
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">Report #1234 completed</p>
-                        <p className="text-xs text-gray-500">2 hours ago</p>
+                    {reports.length > 0 ? (
+                      reports.slice(0, 3).map((report, index) => (
+                        <div key={report.id} className={`flex items-center space-x-3 p-3 rounded-lg ${
+                          report.status === 'approved' ? 'bg-green-50' :
+                          report.status === 'pending' ? 'bg-yellow-50' :
+                          'bg-blue-50'
+                        }`}>
+                          {report.status === 'approved' ? (
+                            <CheckCircle className="w-5 h-5 text-green-600" />
+                          ) : report.status === 'pending' ? (
+                            <Clock className="w-5 h-5 text-yellow-600" />
+                          ) : (
+                            <Heart className="w-5 h-5 text-blue-600" />
+                          )}
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">
+                              {report.status === 'approved' ? 'Report completed' :
+                               report.status === 'pending' ? 'New report pending review' :
+                               'Report updated'} - {report.animalType}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {report.createdAt ? new Date(report.createdAt).toLocaleString() : 'Unknown date'}
+                            </p>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-8">
+                        <Activity className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+                        <p className="text-sm text-gray-500">No recent activity</p>
                       </div>
-                    </div>
-                    <div className="flex items-center space-x-3 p-3 bg-yellow-50 rounded-lg">
-                      <Clock className="w-5 h-5 text-yellow-600" />
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">New report #1235 pending review</p>
-                        <p className="text-xs text-gray-500">4 hours ago</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg">
-                      <Heart className="w-5 h-5 text-blue-600" />
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">Adoption request approved</p>
-                        <p className="text-xs text-gray-500">1 day ago</p>
-                      </div>
-                    </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -329,25 +352,35 @@ export default function AdminDashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    <div className="flex items-center space-x-3 p-3 bg-red-50 rounded-lg">
-                      <AlertCircle className="w-5 h-5 text-red-600" />
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">Urgent: Report #1230 needs attention</p>
-                        <p className="text-xs text-gray-500">Due in 2 hours</p>
+                    {reports.filter(r => r.status === 'pending').length > 0 && (
+                      <div className="flex items-center space-x-3 p-3 bg-red-50 rounded-lg">
+                        <AlertCircle className="w-5 h-5 text-red-600" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">
+                            {reports.filter(r => r.status === 'pending').length} pending reports need attention
+                          </p>
+                          <p className="text-xs text-gray-500">Review and process reports</p>
+                        </div>
                       </div>
-                    </div>
+                    )}
+                    
+                    {lostPets.filter(p => p.status === 'lost').length > 0 && (
+                      <div className="flex items-center space-x-3 p-3 bg-orange-50 rounded-lg">
+                        <AlertCircle className="w-5 h-5 text-orange-600" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">
+                            {lostPets.filter(p => p.status === 'lost').length} lost pets need attention
+                          </p>
+                          <p className="text-xs text-gray-500">Help reunite lost pets</p>
+                        </div>
+                      </div>
+                    )}
+
                     <div className="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg">
                       <FileText className="w-5 h-5 text-blue-600" />
                       <div>
-                        <p className="text-sm font-medium text-gray-900">Review 5 pending reports</p>
-                        <p className="text-xs text-gray-500">Due tomorrow</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-3 p-3 bg-green-50 rounded-lg">
-                      <Users className="w-5 h-5 text-green-600" />
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">Follow up on adoption requests</p>
-                        <p className="text-xs text-gray-500">Due in 3 days</p>
+                        <p className="text-sm font-medium text-gray-900">Review system reports</p>
+                        <p className="text-xs text-gray-500">Check dashboard analytics</p>
                       </div>
                     </div>
                   </div>
@@ -750,9 +783,9 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       {/* Sidebar */}
-      <div className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0`}>
+      <div className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 flex flex-col h-screen`}>
         <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
           <div className="flex items-center space-x-2">
             <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg">
@@ -768,7 +801,7 @@ export default function AdminDashboard() {
           </button>
         </div>
         
-        <nav className="mt-6 px-3">
+        <nav className="mt-6 px-3 flex-1 overflow-y-auto">
           <div className="space-y-1">
             <button 
               onClick={() => setActiveTab('dashboard')}
@@ -872,7 +905,7 @@ export default function AdminDashboard() {
           </div>
         </nav>
         
-        <div className="absolute bottom-0 left-0 right-0 p-3 border-t border-gray-200">
+        <div className="mt-auto p-3 border-t border-gray-200">
           <div className="space-y-1">
             <a href="#" className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
               <Shield className="w-5 h-5 mr-3" />
@@ -898,7 +931,7 @@ export default function AdminDashboard() {
       )}
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col lg:ml-0">
+      <div className="ml-64 min-h-screen overflow-y-auto">
         {/* Top bar */}
         <div className="bg-white shadow-sm border-b border-gray-200 lg:hidden">
           <div className="flex items-center justify-between h-16 px-4">
@@ -919,7 +952,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Main content area */}
-        <main className="flex-1 p-6">
+        <main className="p-6">
           {/* Header */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">

@@ -25,6 +25,7 @@ import {
 import { ref, get, push, set } from 'firebase/database';
 import { database } from '@/lib/firebase';
 import ImageUploader from '@/components/ImageUploader';
+import LocationPicker from '@/components/LocationPicker';
 
 interface FoundPet {
   id: string;
@@ -70,6 +71,8 @@ export default function FoundPetsPage() {
     gender: '',
     description: '',
     foundLocation: '',
+    latitude: '',
+    longitude: '',
     foundDate: '',
     contactInfo: ''
   });
@@ -100,6 +103,19 @@ export default function FoundPetsPage() {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  const handleLocationSelect = (location: {
+    address: string;
+    latitude: number;
+    longitude: number;
+  }) => {
+    setFormData(prev => ({
+      ...prev,
+      foundLocation: location.address,
+      latitude: location.latitude.toString(),
+      longitude: location.longitude.toString()
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !profile) return;
@@ -117,6 +133,8 @@ export default function FoundPetsPage() {
         ...formData,
         images: imageUrls,
         contactInfo,
+        latitude: formData.latitude ? parseFloat(formData.latitude) : null,
+        longitude: formData.longitude ? parseFloat(formData.longitude) : null,
         status: 'found',
         submittedBy: {
           uid: user.uid,
@@ -337,17 +355,12 @@ export default function FoundPetsPage() {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Found Location *
-                  </label>
-                  <Input
-                    value={formData.foundLocation}
-                    onChange={(e) => handleInputChange('foundLocation', e.target.value)}
-                    placeholder="e.g., Barangay 1, Lipa City, Batangas"
-                    required
-                  />
-                </div>
+                <LocationPicker
+                  onLocationSelect={handleLocationSelect}
+                  placeholder="e.g., Barangay 1, Lipa City, Batangas"
+                  label="Found Location"
+                  required={true}
+                />
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">

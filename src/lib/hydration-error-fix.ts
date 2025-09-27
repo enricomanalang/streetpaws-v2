@@ -28,6 +28,16 @@ export function fixHydrationErrors() {
     problematicAttributes.forEach(attr => {
       const elements = document.querySelectorAll('[' + attr + ']');
       elements.forEach((element) => {
+        // Skip form inputs and interactive elements
+        if (element.tagName === 'INPUT' || 
+            element.tagName === 'SELECT' || 
+            element.tagName === 'TEXTAREA' || 
+            element.tagName === 'BUTTON' ||
+            element.closest('form') ||
+            element.closest('[role="button"]') ||
+            element.closest('[role="textbox"]')) {
+          return;
+        }
         element.removeAttribute(attr);
       });
     });
@@ -35,6 +45,17 @@ export function fixHydrationErrors() {
     // Also remove any attributes that start with 'bis_' or contain 'bis-skin'
     const allElements = document.querySelectorAll('*');
     allElements.forEach((element) => {
+      // Skip form inputs and interactive elements
+      if (element.tagName === 'INPUT' || 
+          element.tagName === 'SELECT' || 
+          element.tagName === 'TEXTAREA' || 
+          element.tagName === 'BUTTON' ||
+          element.closest('form') ||
+          element.closest('[role="button"]') ||
+          element.closest('[role="textbox"]')) {
+        return;
+      }
+      
       const attrs = Array.from(element.attributes);
       attrs.forEach(attr => {
         if (attr.name.startsWith('bis_') || 
@@ -53,14 +74,10 @@ export function fixHydrationErrors() {
     document.addEventListener('DOMContentLoaded', removeProblematicAttributes);
   }
   
-  // Also run after short delays to catch late-added attributes
-  setTimeout(removeProblematicAttributes, 10);
-  setTimeout(removeProblematicAttributes, 50);
+  // Also run after short delays to catch late-added attributes (reduced frequency)
   setTimeout(removeProblematicAttributes, 100);
-  setTimeout(removeProblematicAttributes, 200);
   setTimeout(removeProblematicAttributes, 500);
   setTimeout(removeProblematicAttributes, 1000);
-  setTimeout(removeProblematicAttributes, 2000);
 }
 
 // Observer to catch dynamically added elements
@@ -88,6 +105,18 @@ export function observeForExtensionAttributes() {
     mutations.forEach((mutation) => {
       if (mutation.type === 'attributes') {
         const target = mutation.target as Element;
+        
+        // Skip form inputs and interactive elements
+        if (target.tagName === 'INPUT' || 
+            target.tagName === 'SELECT' || 
+            target.tagName === 'TEXTAREA' || 
+            target.tagName === 'BUTTON' ||
+            target.closest('form') ||
+            target.closest('[role="button"]') ||
+            target.closest('[role="textbox"]')) {
+          return;
+        }
+        
         problematicAttributes.forEach(attr => {
           if (target.hasAttribute(attr)) {
             target.removeAttribute(attr);

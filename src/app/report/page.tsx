@@ -25,6 +25,7 @@ import { ref, push, set } from 'firebase/database';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { database, firestore } from '@/lib/firebase';
 import ImageUploader from '@/components/ImageUploader';
+import LocationPicker from '@/components/LocationPicker';
 
 export default function ReportPage() {
   const { user, profile, loading: authLoading } = useAuth();
@@ -45,6 +46,8 @@ export default function ReportPage() {
     size: '',
     condition: '',
     location: '',
+    latitude: '',
+    longitude: '',
     description: '',
     urgency: 'medium',
     contactInfo: '',
@@ -92,6 +95,19 @@ export default function ReportPage() {
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleLocationSelect = (location: {
+    address: string;
+    latitude: number;
+    longitude: number;
+  }) => {
+    setFormData(prev => ({
+      ...prev,
+      location: location.address,
+      latitude: location.latitude.toString(),
+      longitude: location.longitude.toString()
+    }));
   };
 
   // Test Firebase connection
@@ -197,6 +213,8 @@ export default function ReportPage() {
         ...formData,
         contactInfo,
         images: uploadedImageUrls,
+        latitude: formData.latitude ? parseFloat(formData.latitude) : null,
+        longitude: formData.longitude ? parseFloat(formData.longitude) : null,
         submittedBy: {
           uid: user.uid,
           name: profile.name || profile.email,
@@ -354,7 +372,7 @@ export default function ReportPage() {
       </div>
 
       <main className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        <form onSubmit={handleSubmit} className="space-y-8 scroll-stable">
+        <form onSubmit={handleSubmit} className="space-y-8 scroll-stable" style={{ pointerEvents: 'auto' }}>
           {/* Animal Information */}
           <Card>
             <CardHeader>
@@ -374,6 +392,7 @@ export default function ReportPage() {
                     value={formData.animalType} 
                     onChange={(e) => handleInputChange('animalType', e.target.value)}
                     className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                    style={{ pointerEvents: 'auto' }}
                   >
                     <option value="">Select animal type</option>
                     <option value="dog">Dog</option>
@@ -390,6 +409,7 @@ export default function ReportPage() {
                     value={formData.breed}
                     onChange={(e) => handleInputChange('breed', e.target.value)}
                     placeholder="e.g., Aspin, Persian, Mixed"
+                    style={{ pointerEvents: 'auto' }}
                   />
                 </div>
 
@@ -401,6 +421,7 @@ export default function ReportPage() {
                     value={formData.color}
                     onChange={(e) => handleInputChange('color', e.target.value)}
                     placeholder="e.g., Brown, Black, White"
+                    style={{ pointerEvents: 'auto' }}
                   />
                 </div>
 
@@ -454,17 +475,12 @@ export default function ReportPage() {
               <CardDescription>Where did you find this animal?</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Location *
-                </label>
-                <Input
-                  value={formData.location}
-                  onChange={(e) => handleInputChange('location', e.target.value)}
-                  placeholder="e.g., Barangay 1, Lipa City, Batangas"
-                  required
-                />
-              </div>
+              <LocationPicker
+                onLocationSelect={handleLocationSelect}
+                placeholder="e.g., Barangay 1, Lipa City, Batangas"
+                label="Location"
+                required={true}
+              />
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">

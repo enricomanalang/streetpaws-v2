@@ -1,6 +1,6 @@
 'use client';
 
-import { Heart, MapPin, Users, Shield, Clock, CheckCircle, Globe } from 'lucide-react';
+import { Heart, MapPin, Users, Shield, Clock, CheckCircle, Globe, Code2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
@@ -80,53 +80,7 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* How It Works Section */}
-      <section className="py-24 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              How StreetPaws Works
-            </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Our platform connects different stakeholders to create a comprehensive animal welfare ecosystem.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <div className="text-center">
-              <div className="bg-blue-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl font-bold text-blue-600">1</span>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Report</h3>
-              <p className="text-gray-600">Citizens report stray animals with location, photos, and details</p>
-            </div>
-
-            <div className="text-center">
-              <div className="bg-green-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl font-bold text-green-600">2</span>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Review</h3>
-              <p className="text-gray-600">Volunteers and officials review and prioritize reports</p>
-            </div>
-
-            <div className="text-center">
-              <div className="bg-yellow-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl font-bold text-yellow-600">3</span>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Respond</h3>
-              <p className="text-gray-600">Appropriate action is taken based on the situation</p>
-            </div>
-
-            <div className="text-center">
-              <div className="bg-purple-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl font-bold text-purple-600">4</span>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Resolve</h3>
-              <p className="text-gray-600">Animals are cared for, adopted, or returned to safety</p>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* Removed duplicated "How It Works" to keep About focused on mission and partners */}
 
       {/* Team Section */}
       <section className="py-24 bg-white">
@@ -175,6 +129,61 @@ export default function AboutPage() {
                   Local organizations focused on animal rescue and adoption
                 </CardDescription>
               </CardHeader>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* Developers Section */}
+      <section className="py-24 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+              Developers
+            </h2>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              Built with passion by BSIT students.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <Card className="text-center hover:shadow-lg transition-shadow duration-300">
+              <CardHeader>
+                <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+                  <Code2 className="w-8 h-8 text-blue-600" />
+                </div>
+                <CardTitle className="text-xl">Enrico Manalang</CardTitle>
+                <CardDescription className="text-base">BSIT • Developer</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600 text-sm">Frontend and product experience</p>
+              </CardContent>
+            </Card>
+
+            <Card className="text-center hover:shadow-lg transition-shadow duration-300">
+              <CardHeader>
+                <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+                  <Code2 className="w-8 h-8 text-green-600" />
+                </div>
+                <CardTitle className="text-xl">Jennie Cuenca</CardTitle>
+                <CardDescription className="text-base">BSIT • Developer</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600 text-sm">UI, research, and content</p>
+              </CardContent>
+            </Card>
+
+            <Card className="text-center hover:shadow-lg transition-shadow duration-300">
+              <CardHeader>
+                <div className="mx-auto w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mb-4">
+                  <Code2 className="w-8 h-8 text-purple-600" />
+                </div>
+                <CardTitle className="text-xl">Abion Precious Grace</CardTitle>
+                <CardDescription className="text-base">BSIT • Developer</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600 text-sm">Backend and quality assurance</p>
+              </CardContent>
             </Card>
           </div>
         </div>

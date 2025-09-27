@@ -4,319 +4,346 @@ import { useState, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { MapPin, Search, Trash2 } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { MapPin, Search, Trash2, Database, RefreshCw } from 'lucide-react';
+import { ref, onValue, off } from 'firebase/database';
+import { database } from '@/lib/firebase';
 
 // Dynamically import MapContainer to avoid SSR issues
-const MapContainer = dynamic(() => import('react-leaflet').then((mod) => mod.MapContainer), { ssr: false });
+const MapContainer = dynamic(() => import('react-leaflet').then((mod) => mod.MapContainer), { 
+  ssr: false,
+  loading: () => <div className="h-96 bg-gray-100 rounded-lg flex items-center justify-center">Loading map...</div>
+});
+
 const TileLayer = dynamic(() => import('react-leaflet').then((mod) => mod.TileLayer), { ssr: false });
 const Marker = dynamic(() => import('react-leaflet').then((mod) => mod.Marker), { ssr: false });
 const Popup = dynamic(() => import('react-leaflet').then((mod) => mod.Popup), { ssr: false });
 
-interface MapMarker {
-  id: string;
-  position: [number, number];
-  address: string;
-  type: 'lost' | 'found' | 'adoption' | 'volunteer';
-  description?: string;
-  date: string;
-}
+// Simple HeatMap component without complex heatmap layer
 
 export default function HeatMap() {
-  const [markers, setMarkers] = useState<MapMarker[]>([]);
-  const [addressInput, setAddressInput] = useState('');
-  const [isSearching, setIsSearching] = useState(false);
-  const [mapCenter, setMapCenter] = useState<[number, number]>([14.5995, 120.9842]); // Manila coordinates
-  const [mapKey, setMapKey] = useState(0); // For forcing map re-render
-  const [mapStyle, setMapStyle] = useState('voyager'); // Default modern style
-  const mapRef = useRef<any>(null);
+  const [markers, setMarkers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showHeatmap, setShowHeatmap] = useState(true);
+  const [showMarkers, setShowMarkers] = useState(true);
+  const [mapCenter, setMapCenter] = useState<[number, number]>([14.0583, 121.1656]); // Lipa City coordinates
+  const [mapZoom, setMapZoom] = useState(13);
+  const [leafletLoaded, setLeafletLoaded] = useState(false);
 
-  // Map style options
-  const mapStyles = {
-    voyager: {
-      name: 'Voyager (Modern)',
-      url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-    },
-    positron: {
-      name: 'Positron (Light)',
-      url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-    },
-    dark: {
-      name: 'Dark Matter',
-      url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-    },
-    satellite: {
-      name: 'Satellite',
-      url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-      attribution: '&copy; <a href="https://www.esri.com/">Esri</a> &mdash; Source: Esri, Maxar, GeoEye, Earthstar Geographics, CNES/Airbus DS, USDA, USGS, AeroGRID, IGN, and the GIS User Community'
-    }
-  };
-
-  // Load Leaflet CSS
+  // Load Leaflet CSS and JS
   useEffect(() => {
-    const link = document.createElement('link');
-    link.rel = 'stylesheet';
-    link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-    document.head.appendChild(link);
+    const loadLeaflet = () => {
+      // Check if Leaflet is already loaded
+      if (typeof window !== 'undefined' && window.L) {
+        setLeafletLoaded(true);
+        return;
+      }
+
+      // Add timeout to prevent infinite loading
+      const timeout = setTimeout(() => {
+        console.warn('Leaflet loading timeout - map may not display properly');
+        setLeafletLoaded(false);
+      }, 10000); // 10 second timeout
+
+      // Load Leaflet CSS
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+      document.head.appendChild(link);
+
+      // Load Leaflet JS
+      const script = document.createElement('script');
+      script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+      script.onload = () => {
+        clearTimeout(timeout);
+        console.log('Leaflet loaded successfully');
+        setLeafletLoaded(true);
+      };
+      script.onerror = () => {
+        clearTimeout(timeout);
+        console.error('Failed to load Leaflet from CDN, trying fallback...');
+        // Try a different CDN as fallback
+        const fallbackScript = document.createElement('script');
+        fallbackScript.src = 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js';
+        fallbackScript.onload = () => {
+          console.log('Leaflet loaded from fallback CDN');
+          setLeafletLoaded(true);
+        };
+        fallbackScript.onerror = () => {
+          console.error('Failed to load Leaflet from all CDNs');
+          setLeafletLoaded(false);
+        };
+        document.head.appendChild(fallbackScript);
+      };
+      document.head.appendChild(script);
+
+      return () => {
+        clearTimeout(timeout);
+        if (document.head.contains(link)) {
+          document.head.removeChild(link);
+        }
+        if (document.head.contains(script)) {
+          document.head.removeChild(script);
+        }
+        // Clean up fallback script if it exists
+        const fallbackScript = document.querySelector('script[src*="cdn.jsdelivr.net/npm/leaflet"]');
+        if (fallbackScript && document.head.contains(fallbackScript)) {
+          document.head.removeChild(fallbackScript);
+        }
+      };
+    };
+
+    loadLeaflet();
+  }, []);
+
+  // Fetch markers from Firebase
+  useEffect(() => {
+    if (!database) return;
+
+    setLoading(true);
+    const markersRef = ref(database, 'reports');
+    
+    const unsubscribe = onValue(markersRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        const markersList = Object.keys(data).map(key => ({
+          id: key,
+          ...data[key],
+          position: [data[key].latitude || 14.0583, data[key].longitude || 121.1656],
+          lat: data[key].latitude || 14.0583,
+          lng: data[key].longitude || 121.1656,
+          intensity: 1
+        }));
+        setMarkers(markersList);
+      } else {
+        setMarkers([]);
+      }
+      setLoading(false);
+    }, (error) => {
+      console.error('Error fetching markers:', error);
+      setLoading(false);
+    });
 
     return () => {
-      document.head.removeChild(link);
+      off(markersRef, 'value', unsubscribe);
     };
   }, []);
 
-  // Geocode address to coordinates
-  const geocodeAddress = async (address: string): Promise<[number, number] | null> => {
-    try {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1&countrycodes=ph`
-      );
-      const data = await response.json();
-      
-      if (data && data.length > 0) {
-        return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
-      }
-      return null;
-    } catch (error) {
-      console.error('Geocoding error:', error);
-      return null;
-    }
-  };
+  const filteredMarkers = markers.filter(marker => 
+    marker.address?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    marker.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    marker.animalType?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
-  // Add marker to map
-  const addMarker = async () => {
-    if (!addressInput.trim()) return;
-
-    setIsSearching(true);
-    const coordinates = await geocodeAddress(addressInput);
-    
-    if (coordinates) {
-      const newMarker: MapMarker = {
-        id: Date.now().toString(),
-        position: coordinates,
-        address: addressInput,
-        type: 'lost', // Default type
-        description: `Report added on ${new Date().toLocaleDateString()}`,
-        date: new Date().toISOString()
-      };
-
-      setMarkers(prev => [...prev, newMarker]);
-      setMapCenter(coordinates);
-      setMapKey(prev => prev + 1); // Force map re-render
-      setAddressInput('');
-    } else {
-      alert('Address not found. Please try a different address.');
-    }
-    
-    setIsSearching(false);
-  };
-
-  // Remove marker
-  const removeMarker = (id: string) => {
-    setMarkers(prev => prev.filter(marker => marker.id !== id));
-  };
-
-  // Clear all markers
-  const clearAllMarkers = () => {
-    setMarkers([]);
-  };
-
-
-  // Get marker color based on type
-  const getMarkerColor = (type: string) => {
-    switch (type) {
-      case 'lost': return 'red';
-      case 'found': return 'green';
-      case 'adoption': return 'blue';
-      case 'volunteer': return 'purple';
-      default: return 'gray';
-    }
-  };
-
-  // Create custom marker icon
   const createCustomIcon = (color: string) => {
-    if (typeof window !== 'undefined' && window.L) {
-      return window.L.divIcon({
-        className: 'custom-marker',
-        html: `<div style="
-          background: linear-gradient(135deg, ${color}, ${color}dd);
-          width: 24px;
-          height: 24px;
-          border-radius: 50% 50% 50% 0;
-          border: 3px solid white;
-          box-shadow: 0 4px 8px rgba(0,0,0,0.3), 0 0 0 1px rgba(0,0,0,0.1);
-          transform: rotate(-45deg);
-          position: relative;
-        ">
-          <div style="
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%) rotate(45deg);
-            width: 8px;
-            height: 8px;
-            background: white;
-            border-radius: 50%;
-          "></div>
-        </div>`,
-        iconSize: [24, 24],
-        iconAnchor: [12, 24]
-      });
+    if (typeof window === 'undefined' || !window.L || !window.L.divIcon) {
+      // Return a default icon if Leaflet is not available
+      return window.L?.icon ? window.L.icon({
+        iconUrl: 'data:image/svg+xml;base64,' + btoa(`
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12">
+            <circle cx="6" cy="6" r="4" fill="${color}" stroke="white" stroke-width="2"/>
+          </svg>
+        `),
+        iconSize: [12, 12],
+        iconAnchor: [6, 6]
+      }) : null;
     }
-    return null;
+    
+    return window.L.divIcon({
+      className: 'custom-div-icon',
+      html: `<div style="background-color: ${color}; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,
+      iconSize: [12, 12],
+      iconAnchor: [6, 6]
+    });
   };
 
-  return (
-    <div className="space-y-6">
-      {/* Address Input Section */}
-      <Card>
+  const getMarkerColor = (type: string) => {
+    const colors: { [key: string]: string } = {
+      'abuse': '#ef4444',
+      'lost': '#f59e0b', 
+      'found': '#10b981',
+      'adoption': '#3b82f6',
+      'default': '#6b7280'
+    };
+    return colors[type] || colors.default;
+  };
+
+  const handleSearch = () => {
+    if (filteredMarkers.length > 0) {
+      const firstMarker = filteredMarkers[0];
+      setMapCenter([firstMarker.lat, firstMarker.lng]);
+      setMapZoom(15);
+    }
+  };
+
+  const clearSearch = () => {
+    setSearchTerm('');
+    setMapCenter([14.0583, 121.1656]);
+    setMapZoom(13);
+  };
+
+  const refreshData = () => {
+    setLoading(true);
+    // Data will be refreshed by the useEffect
+    setTimeout(() => setLoading(false), 1000);
+  };
+
+  if (typeof window === 'undefined') {
+    return (
+      <Card className="bg-white shadow-sm">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <MapPin className="w-5 h-5" />
-            Add Location to Heat Map
-          </CardTitle>
+          <CardTitle className="text-lg font-semibold text-gray-900">Heat Map</CardTitle>
+          <CardDescription>Loading map component...</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-2">
-            <Input
-              placeholder="Enter address (e.g., Quezon City, Metro Manila)"
-              value={addressInput}
-              onChange={(e) => setAddressInput(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && addMarker()}
-              className="flex-1"
-            />
-            <Button 
-              onClick={addMarker} 
-              disabled={isSearching || !addressInput.trim()}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              {isSearching ? (
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              ) : (
-                <Search className="w-4 h-4" />
-              )}
-            </Button>
+          <div className="h-96 bg-gray-100 rounded-lg flex items-center justify-center">
+            <p className="text-gray-500">Loading map...</p>
           </div>
-          <div className="flex gap-2 mt-3">
-            <Button 
-              onClick={clearAllMarkers}
-              variant="outline"
-              size="sm"
-              className="text-red-600 border-red-600 hover:bg-red-50"
-              disabled={markers.length === 0}
-            >
-              <Trash2 className="w-4 h-4 mr-1" />
-              Clear All
-            </Button>
-          </div>
-          <p className="text-sm text-gray-500 mt-2">
-            Enter a Philippine address to add a marker to the heat map
-          </p>
         </CardContent>
       </Card>
+    );
+  }
 
-      {/* Map Container */}
-      <Card>
-        <CardHeader>
-          <div className="flex justify-between items-center">
-            <div>
-              <CardTitle>Interactive Heat Map</CardTitle>
-              <p className="text-sm text-gray-600">
-                {markers.length} location{markers.length !== 1 ? 's' : ''} marked
-              </p>
+  return (
+    <Card className="bg-white shadow-sm">
+      <CardHeader>
+        <CardTitle className="text-lg font-semibold text-gray-900">Heat Map Analytics</CardTitle>
+        <CardDescription>Visualize animal welfare data across Lipa City</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {/* Controls */}
+        <div className="mb-6 space-y-4">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex-1">
+              <Input
+                placeholder="Search by location, description, or animal type..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full"
+              />
             </div>
             <div className="flex gap-2">
-              <select
-                value={mapStyle}
-                onChange={(e) => setMapStyle(e.target.value)}
-                className="px-3 py-1 text-sm border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                {Object.entries(mapStyles).map(([key, style]) => (
-                  <option key={key} value={key}>
-                    {style.name}
-                  </option>
-                ))}
-              </select>
+              <Button onClick={handleSearch} size="sm">
+                <Search className="w-4 h-4 mr-2" />
+                Search
+              </Button>
+              <Button onClick={clearSearch} variant="outline" size="sm">
+                <Trash2 className="w-4 h-4 mr-2" />
+                Clear
+              </Button>
+              <Button onClick={refreshData} variant="outline" size="sm" disabled={loading}>
+                <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
             </div>
           </div>
-        </CardHeader>
-        <CardContent>
-          <div className="h-96 w-full rounded-lg overflow-hidden border">
-            {typeof window !== 'undefined' && (
-              <MapContainer
-                key={mapKey}
-                center={mapCenter}
-                zoom={13}
-                style={{ height: '100%', width: '100%' }}
-                ref={mapRef}
-              >
-                <TileLayer
-                  url={mapStyles[mapStyle as keyof typeof mapStyles].url}
-                  attribution={mapStyles[mapStyle as keyof typeof mapStyles].attribution}
-                />
-                {markers.map((marker) => (
+          
+          <div className="flex flex-wrap gap-4">
+            <Button
+              variant={showHeatmap ? "default" : "outline"}
+              size="sm"
+              onClick={() => setShowHeatmap(!showHeatmap)}
+            >
+              <Database className="w-4 h-4 mr-2" />
+              Heatmap
+            </Button>
+            <Button
+              variant={showMarkers ? "default" : "outline"}
+              size="sm"
+              onClick={() => setShowMarkers(!showMarkers)}
+            >
+              <MapPin className="w-4 h-4 mr-2" />
+              Markers
+            </Button>
+          </div>
+        </div>
+
+        {/* Map */}
+        <div className="h-96 rounded-lg overflow-hidden border border-gray-200 relative">
+          {/* Heatmap Indicator */}
+          {showHeatmap && markers.length > 0 && (
+            <div className="absolute top-4 left-4 bg-red-500 text-white px-2 py-1 rounded text-sm z-10">
+              Heatmap: {markers.length} points
+            </div>
+          )}
+          
+          {!leafletLoaded ? (
+            <div className="h-full flex items-center justify-center bg-gray-100">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                <p className="text-gray-600">Loading map...</p>
+                <p className="text-xs text-gray-500 mt-2">If this takes too long, please refresh the page</p>
+              </div>
+            </div>
+          ) : (
+            <MapContainer
+              center={mapCenter}
+              zoom={mapZoom}
+              style={{ height: '100%', width: '100%' }}
+              key={`${mapCenter[0]}-${mapCenter[1]}-${mapZoom}`}
+            >
+              <TileLayer
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              />
+              
+              {/* Individual Markers */}
+              {showMarkers && filteredMarkers.map((marker) => {
+                const icon = createCustomIcon(getMarkerColor(marker.animalType || 'default'));
+                if (!icon) return null; // Skip rendering if icon creation failed
+                
+                return (
                   <Marker
                     key={marker.id}
                     position={marker.position}
-                    icon={createCustomIcon(getMarkerColor(marker.type))}
+                    icon={icon}
                   >
                     <Popup>
                       <div className="p-2">
-                        <h3 className="font-semibold text-sm">{marker.address}</h3>
-                        <p className="text-xs text-gray-600 mt-1">{marker.description}</p>
+                        <h3 className="font-semibold text-sm">{marker.address || 'Unknown Location'}</h3>
+                        <p className="text-xs text-gray-600 mt-1">{marker.description || 'No description'}</p>
                         <p className="text-xs text-gray-500 mt-1">
-                          Type: <span className="capitalize">{marker.type}</span>
+                          Type: <span className="capitalize">{marker.animalType || 'Unknown'}</span>
                         </p>
                         <p className="text-xs text-gray-500">
-                          Added: {new Date(marker.date).toLocaleDateString()}
+                          Date: {marker.createdAt ? new Date(marker.createdAt).toLocaleDateString() : 'Unknown date'}
                         </p>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          className="mt-2 w-full"
-                          onClick={() => removeMarker(marker.id)}
-                        >
-                          <Trash2 className="w-3 h-3 mr-1" />
-                          Remove
-                        </Button>
                       </div>
                     </Popup>
                   </Marker>
-                ))}
-              </MapContainer>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+                );
+              })}
+            </MapContainer>
+          )}
+        </div>
 
-      {/* Legend */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm">Legend</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-red-500 rounded-full"></div>
-              <span>Lost Animals</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-green-500 rounded-full"></div>
-              <span>Found Animals</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-blue-500 rounded-full"></div>
-              <span>Adoption Centers</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-purple-500 rounded-full"></div>
-              <span>Volunteer Locations</span>
-            </div>
+        {/* Stats */}
+        <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="text-center p-3 bg-blue-50 rounded-lg">
+            <p className="text-2xl font-bold text-blue-600">{markers.length}</p>
+            <p className="text-sm text-blue-800">Total Reports</p>
           </div>
-        </CardContent>
-      </Card>
-    </div>
+          <div className="text-center p-3 bg-red-50 rounded-lg">
+            <p className="text-2xl font-bold text-red-600">
+              {markers.filter(m => m.condition === 'fighting' || m.condition === 'abuse').length}
+            </p>
+            <p className="text-sm text-red-800">Abuse Cases</p>
+          </div>
+          <div className="text-center p-3 bg-yellow-50 rounded-lg">
+            <p className="text-2xl font-bold text-yellow-600">
+              {markers.filter(m => m.status === 'lost').length}
+            </p>
+            <p className="text-sm text-yellow-800">Lost Pets</p>
+          </div>
+          <div className="text-center p-3 bg-green-50 rounded-lg">
+            <p className="text-2xl font-bold text-green-600">
+              {markers.filter(m => m.status === 'found').length}
+            </p>
+            <p className="text-sm text-green-800">Found Pets</p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

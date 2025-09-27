@@ -10,7 +10,23 @@
     },
     "reports": {
       ".read": "auth != null",
-      ".write": "auth != null"
+      ".write": "auth != null",
+      ".indexOn": ["submittedBy/uid", "createdAt"]
+    },
+    "lostPets": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      ".indexOn": ["submittedBy/uid", "createdAt"]
+    },
+    "foundPets": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      ".indexOn": ["submittedBy/uid", "createdAt"]
+    },
+    "adoptionRequests": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      ".indexOn": ["applicant/uid", "createdAt"]
     },
     "adoptions": {
       ".read": "auth != null",
