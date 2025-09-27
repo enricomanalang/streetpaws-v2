@@ -1,13 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables');
-}
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Create Supabase client only if environment variables are available
+export const supabase = supabaseUrl && supabaseAnonKey 
+  ? createClient(supabaseUrl, supabaseAnonKey)
+  : null;
 
 // Storage bucket name for images
 export const STORAGE_BUCKET = 'images';
@@ -15,6 +14,12 @@ export const STORAGE_BUCKET = 'images';
 // Image upload function
 export const uploadImage = async (file: File, folder: string = 'general'): Promise<string> => {
   try {
+    // If Supabase is not available, return a placeholder URL
+    if (!supabase) {
+      console.warn('Supabase not configured, returning placeholder URL');
+      return `placeholder-${Date.now()}-${file.name}`;
+    }
+
     // Generate unique filename
     const fileExt = file.name.split('.').pop();
     const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
@@ -60,6 +65,12 @@ export const uploadImages = async (files: File[], folder: string = 'general'): P
 // Delete image
 export const deleteImage = async (imageUrl: string): Promise<void> => {
   try {
+    // If Supabase is not available, just log and return
+    if (!supabase) {
+      console.warn('Supabase not configured, skipping image deletion');
+      return;
+    }
+
     // Extract file path from URL
     const url = new URL(imageUrl);
     const pathParts = url.pathname.split('/');
@@ -81,6 +92,12 @@ export const deleteImage = async (imageUrl: string): Promise<void> => {
 
 // Get image URL (for existing images)
 export const getImageUrl = (filePath: string): string => {
+  // If Supabase is not available, return the file path as is
+  if (!supabase) {
+    console.warn('Supabase not configured, returning file path as URL');
+    return filePath;
+  }
+
   const { data: { publicUrl } } = supabase.storage
     .from(STORAGE_BUCKET)
     .getPublicUrl(filePath);
