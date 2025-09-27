@@ -475,35 +475,73 @@ export default function AdminDashboard() {
                         {report.images && report.images.length > 0 && (
                           <div className="mb-4">
                             <p className="text-sm font-medium text-gray-700 mb-2">Evidence Photos:</p>
+                            {/* Debug info */}
+                            <div className="mb-2 p-2 bg-gray-100 rounded text-xs">
+                              <p><strong>Debug:</strong> Found {report.images.length} images</p>
+                              <p><strong>Image URLs:</strong> {report.images.join(', ')}</p>
+                            </div>
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                              {report.images.map((imageUrl: string, index: number) => (
-                                <div key={index} className="relative">
-                                  <Image
-                                    src={imageUrl}
-                                    alt={`Evidence ${index + 1}`}
-                                    width={100}
-                                    height={96}
-                                    className="w-full h-24 object-cover rounded-lg border border-gray-200 cursor-pointer hover:opacity-80 transition-opacity"
-                                    onClick={() => {
-                                      // Open image in new tab for full view
-                                      const newWindow = window.open();
-                                      if (newWindow) {
-                                        newWindow.document.write(`
-                                          <html>
-                                            <head><title>Evidence Photo ${index + 1}</title></head>
-                                            <body style="margin:0; padding:20px; background:#f5f5f5; display:flex; justify-content:center; align-items:center; min-height:100vh;">
-                                              <img src="${imageUrl}" style="max-width:100%; max-height:100%; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15);" />
-                                            </body>
-                                          </html>
-                                        `);
-                                      }
-                                    }}
-                                  />
-                                  <div className="absolute top-1 right-1 bg-black bg-opacity-50 text-white text-xs px-1 py-0.5 rounded">
-                                    {index + 1}
+                              {report.images.map((imageUrl: string, index: number) => {
+                                // Check if it's a placeholder URL
+                                const isPlaceholder = imageUrl.startsWith('placeholder-');
+                                
+                                return (
+                                  <div key={index} className="relative">
+                                    {isPlaceholder ? (
+                                      <div className="w-full h-24 bg-gray-200 rounded-lg border border-gray-300 flex items-center justify-center">
+                                        <div className="text-center">
+                                          <div className="w-8 h-8 bg-gray-400 rounded-full mx-auto mb-2 flex items-center justify-center">
+                                            <span className="text-white text-xs font-bold">{index + 1}</span>
+                                          </div>
+                                          <p className="text-xs text-gray-500">No Image</p>
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <img
+                                        src={imageUrl}
+                                        alt={`Evidence ${index + 1}`}
+                                        className="w-full h-24 object-cover rounded-lg border border-gray-200 cursor-pointer hover:opacity-80 transition-opacity"
+                                        onError={(e) => {
+                                          console.error('Image failed to load:', imageUrl);
+                                          // Replace with placeholder on error
+                                          const target = e.target as HTMLImageElement;
+                                          target.style.display = 'none';
+                                          const placeholder = target.nextElementSibling as HTMLElement;
+                                          if (placeholder) {
+                                            placeholder.style.display = 'block';
+                                          }
+                                        }}
+                                        onClick={() => {
+                                          // Open image in new tab for full view
+                                          const newWindow = window.open();
+                                          if (newWindow) {
+                                            newWindow.document.write(`
+                                              <html>
+                                                <head><title>Evidence Photo ${index + 1}</title></head>
+                                                <body style="margin:0; padding:20px; background:#f5f5f5; display:flex; justify-content:center; align-items:center; min-height:100vh;">
+                                                  <img src="${imageUrl}" style="max-width:100%; max-height:100%; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15);" />
+                                                </body>
+                                              </html>
+                                            `);
+                                          }
+                                        }}
+                                      />
+                                    )}
+                                    {/* Fallback placeholder (hidden by default) */}
+                                    <div className="w-full h-24 bg-gray-200 rounded-lg border border-gray-300 flex items-center justify-center" style={{display: 'none'}}>
+                                      <div className="text-center">
+                                        <div className="w-8 h-8 bg-gray-400 rounded-full mx-auto mb-2 flex items-center justify-center">
+                                          <span className="text-white text-xs font-bold">{index + 1}</span>
+                                        </div>
+                                        <p className="text-xs text-gray-500">Failed to Load</p>
+                                      </div>
+                                    </div>
+                                    <div className="absolute top-1 right-1 bg-black bg-opacity-50 text-white text-xs px-1 py-0.5 rounded">
+                                      {index + 1}
+                                    </div>
                                   </div>
-                                </div>
-                              ))}
+                                );
+                              })}
                             </div>
                           </div>
                         )}
