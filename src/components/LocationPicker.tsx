@@ -392,7 +392,10 @@ export default function LocationPicker({
                   style={{ height: '100%', width: '100%' }}
                   ref={mapRef}
                   eventHandlers={{
-                    click: handleMapClick
+                    click: (e) => {
+                      console.log('Map clicked!', e);
+                      handleMapClick(e);
+                    }
                   }}
                 >
                   <TileLayer
