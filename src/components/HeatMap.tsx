@@ -110,15 +110,29 @@ export default function HeatMap() {
     const unsubscribe = onValue(markersRef, (snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.val();
-        const markersList = Object.keys(data).map(key => ({
-          id: key,
-          ...data[key],
-          position: [data[key].latitude || 14.0583, data[key].longitude || 121.1656],
-          lat: data[key].latitude || 14.0583,
-          lng: data[key].longitude || 121.1656,
-          intensity: 1
-        }));
+        console.log('=== HEATMAP DATA DEBUG ===');
+        console.log('Raw Firebase data:', data);
+        
+        const markersList = Object.keys(data).map(key => {
+          const marker = {
+            id: key,
+            ...data[key],
+            position: [data[key].latitude || 14.0583, data[key].longitude || 121.1656],
+            lat: data[key].latitude || 14.0583,
+            lng: data[key].longitude || 121.1656,
+            intensity: 1
+          };
+          console.log(`Marker ${key}:`, {
+            location: marker.location,
+            address: marker.address,
+            description: marker.description,
+            animalType: marker.animalType,
+            condition: marker.condition
+          });
+          return marker;
+        });
         setMarkers(markersList);
+        console.log('Processed markers:', markersList);
       } else {
         setMarkers([]);
       }
@@ -140,34 +154,31 @@ export default function HeatMap() {
   );
 
   const createCustomIcon = (color: string) => {
-    if (typeof window === 'undefined' || !window.L || !window.L.divIcon) {
-      // Return a default icon if Leaflet is not available
-      return window.L?.icon ? window.L.icon({
-        iconUrl: 'data:image/svg+xml;base64,' + btoa(`
-          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12">
-            <circle cx="6" cy="6" r="4" fill="${color}" stroke="white" stroke-width="2"/>
-          </svg>
-        `),
-        iconSize: [12, 12],
-        iconAnchor: [6, 6]
-      }) : null;
+    if (typeof window === 'undefined' || !window.L) {
+      return null;
     }
     
-    return window.L.divIcon({
-      className: 'custom-div-icon',
-      html: `<div style="background-color: ${color}; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,
-      iconSize: [12, 12],
-      iconAnchor: [6, 6]
+    // Use SVG icon for better color consistency
+    return window.L.icon({
+      iconUrl: 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(`
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+          <circle cx="8" cy="8" r="6" fill="${color}" stroke="white" stroke-width="2"/>
+          <circle cx="8" cy="8" r="3" fill="white"/>
+        </svg>
+      `),
+      iconSize: [16, 16],
+      iconAnchor: [8, 8],
+      popupAnchor: [0, -8]
     });
   };
 
   const getMarkerColor = (type: string) => {
     const colors: { [key: string]: string } = {
-      'abuse': '#ef4444',
-      'lost': '#f59e0b', 
-      'found': '#10b981',
-      'adoption': '#3b82f6',
-      'default': '#6b7280'
+      'abuse': '#ef4444',      // Red for abuse
+      'lost': '#f59e0b',       // Orange for lost
+      'found': '#10b981',      // Green for found
+      'adoption': '#3b82f6',   // Blue for adoption
+      'default': '#ef4444'     // Red as default (was gray)
     };
     return colors[type] || colors.default;
   };
@@ -304,7 +315,7 @@ export default function HeatMap() {
                   >
                     <Popup>
                       <div className="p-2">
-                        <h3 className="font-semibold text-sm">{marker.address || 'Unknown Location'}</h3>
+                        <h3 className="font-semibold text-sm">{marker.location || marker.address || 'Unknown Location'}</h3>
                         <p className="text-xs text-gray-600 mt-1">{marker.description || 'No description'}</p>
                         <p className="text-xs text-gray-500 mt-1">
                           Type: <span className="capitalize">{marker.animalType || 'Unknown'}</span>
