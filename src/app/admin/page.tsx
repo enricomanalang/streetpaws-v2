@@ -484,18 +484,27 @@ export default function AdminDashboard() {
                             </div>
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                               {report.images.map((imageUrl: string, index: number) => {
-                                // Check if it's a placeholder URL
+                                // Check if it's a placeholder URL or not a valid image URL
                                 const isPlaceholder = imageUrl.startsWith('placeholder-');
+                                const isBase64 = imageUrl.startsWith('data:image');
+                                const isValidImage = isBase64 || (!isPlaceholder && (imageUrl.startsWith('http') || imageUrl.startsWith('https')));
                                 
                                 return (
                                   <div key={index} className="relative">
-                                    {isPlaceholder ? (
+                                    {!isValidImage ? (
                                       <div className="w-full h-24 bg-gray-200 rounded-lg border border-gray-300 flex items-center justify-center">
                                         <div className="text-center">
                                           <div className="w-8 h-8 bg-gray-400 rounded-full mx-auto mb-2 flex items-center justify-center">
                                             <span className="text-white text-xs font-bold">{index + 1}</span>
                                           </div>
-                                          <p className="text-xs text-gray-500">No Image</p>
+                                          <p className="text-xs text-gray-500">
+                                            {isPlaceholder ? 'Image Not Available' : 'Invalid Image'}
+                                          </p>
+                                          {isPlaceholder && (
+                                            <p className="text-xs text-gray-400 mt-1">
+                                              (Old format - resubmit to fix)
+                                            </p>
+                                          )}
                                         </div>
                                       </div>
                                     ) : (
