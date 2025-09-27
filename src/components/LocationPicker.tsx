@@ -139,19 +139,25 @@ export default function LocationPicker({
   // Reverse geocode coordinates to address
   const reverseGeocode = async (lat: number, lng: number): Promise<string | null> => {
     try {
+      console.log('Starting reverse geocoding for:', lat, lng);
       const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1&zoom=18`
       );
       const data = await response.json();
       
+      console.log('Reverse geocoding response:', data);
+      
       if (data && data.display_name) {
+        console.log('Address found:', data.display_name);
         return data.display_name;
+      } else {
+        console.log('No address found, using coordinates');
+        return `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
       }
     } catch (error) {
       console.error('Reverse geocoding error:', error);
+      return `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
     }
-    
-    return null;
   };
 
   // Get current location
@@ -280,29 +286,14 @@ export default function LocationPicker({
     if (typeof window !== 'undefined' && window.L) {
       console.log('Creating red marker icon');
       
-      // Create a red div marker
-      const redMarker = window.L.divIcon({
-        className: 'red-marker',
-        html: `
-          <div style="
-            width: 30px; 
-            height: 30px; 
-            background-color: #ef4444; 
-            border: 3px solid #ffffff; 
-            border-radius: 50%; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-          ">
-            <div style="
-              width: 12px; 
-              height: 12px; 
-              background-color: #ffffff; 
-              border-radius: 50%;
-            "></div>
-          </div>
-        `,
+      // Use a more reliable approach - create a red circle marker
+      const redMarker = window.L.icon({
+        iconUrl: 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(`
+          <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30">
+            <circle cx="15" cy="15" r="12" fill="#ef4444" stroke="#ffffff" stroke-width="3"/>
+            <circle cx="15" cy="15" r="6" fill="#ffffff"/>
+          </svg>
+        `),
         iconSize: [30, 30],
         iconAnchor: [15, 15],
         popupAnchor: [0, -15]
@@ -445,7 +436,9 @@ export default function LocationPicker({
                       <Popup>
                         <div className="p-2">
                           <h3 className="font-semibold text-sm">Selected Location</h3>
-                          <p className="text-xs text-gray-600 mt-1">{addressInput}</p>
+                          <p className="text-xs text-gray-600 mt-1">
+                            {addressInput || 'Loading address...'}
+                          </p>
                           <p className="text-xs text-gray-500 mt-1">
                             Coordinates: {coordinates[0].toFixed(6)}, {coordinates[1].toFixed(6)}
                           </p>
