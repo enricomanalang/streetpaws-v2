@@ -61,7 +61,8 @@ import {
   Search,
   DollarSign,
   UserPlus,
-  Map
+  Map,
+  LogOut
 } from 'lucide-react';
 
 export default function AdminDashboard() {
