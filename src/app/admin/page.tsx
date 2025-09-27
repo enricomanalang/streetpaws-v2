@@ -483,22 +483,32 @@ export default function AdminDashboard() {
                               <p><strong>First image preview:</strong> {report.images[0]?.substring(0, 50)}...</p>
                             </div>
                             
-                            {/* Check if all images are placeholders */}
-                            {report.images.every(img => img.startsWith('placeholder-')) && (
-                              <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                                <p className="text-sm text-blue-800">
-                                  <strong>Note:</strong> This report was submitted before the image system was updated. 
-                                  Images are not available for display. New reports will show images properly.
-                                </p>
-                              </div>
-                            )}
+        {/* Check if all images are placeholders */}
+        {report.images.every(img => img.startsWith('placeholder-')) && (
+          <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-sm text-blue-800">
+              <strong>Note:</strong> This report was submitted before the image system was updated. 
+              Images are not available for display. New reports will show images properly.
+            </p>
+          </div>
+        )}
+        
+        {/* Check if images are Supabase URLs */}
+        {report.images.some(img => img.includes('supabase.co')) && (
+          <div className="mb-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+            <p className="text-sm text-green-800">
+              <strong>✅ Supabase Images:</strong> These images are stored in Supabase and should display properly.
+            </p>
+          </div>
+        )}
                             
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                               {report.images.map((imageUrl: string, index: number) => {
                                 // Check if it's a placeholder URL or not a valid image URL
                                 const isPlaceholder = imageUrl.startsWith('placeholder-');
                                 const isBase64 = imageUrl.startsWith('data:image');
-                                const isValidImage = isBase64 || (!isPlaceholder && (imageUrl.startsWith('http') || imageUrl.startsWith('https')));
+                                const isSupabase = imageUrl.includes('supabase.co');
+                                const isValidImage = isBase64 || isSupabase || (!isPlaceholder && (imageUrl.startsWith('http') || imageUrl.startsWith('https')));
                                 
                                 return (
                                   <div key={index} className="relative">

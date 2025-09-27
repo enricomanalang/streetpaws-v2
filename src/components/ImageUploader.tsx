@@ -4,9 +4,10 @@ import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Upload, Camera } from 'lucide-react';
+import { uploadImages } from '@/lib/supabase';
 
 // Force reload to clear any cached versions
-console.log('ImageUploader loaded - version 2.0 - base64 only');
+console.log('ImageUploader loaded - version 3.0 - Supabase enabled');
 
 interface ImageUploaderProps {
   folder: string;
@@ -58,40 +59,21 @@ export default function ImageUploader({
       handleUploading(true);
       
       console.log('=== IMAGE UPLOADER DEBUG ===');
-      console.log('Processing', files.length, 'files');
+      console.log('Processing', files.length, 'files with Supabase');
       
-      // Convert images to base64 - FORCE base64 conversion
-      const newUrls = await Promise.all(
-        files.map(async (file, index) => {
-          console.log(`Processing file ${index + 1}:`, file.name, file.type, file.size);
-          
-          return new Promise<string>((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = (event) => {
-              const result = event.target?.result as string;
-              console.log(`File ${index + 1} converted to base64:`, result.substring(0, 50) + '...');
-              console.log(`Is base64:`, result.startsWith('data:image'));
-              resolve(result);
-            };
-            reader.onerror = () => {
-              console.error(`Failed to read file ${index + 1}`);
-              reject(new Error('Failed to read file'));
-            };
-            reader.readAsDataURL(file);
-          });
-        })
-      );
+      // Upload to Supabase Storage
+      const newUrls = await uploadImages(files, folder);
       
-      console.log('All files converted. New URLs:', newUrls.map(url => url.substring(0, 50) + '...'));
+      console.log('Files uploaded to Supabase:', newUrls);
       
       const merged = [...urls, ...newUrls].slice(0, max);
       setUrls(merged);
       onChange(merged);
       
-      console.log('Final merged URLs:', merged.map(url => url.substring(0, 50) + '...'));
+      console.log('Final merged URLs:', merged);
     } catch (err: any) {
-      console.error('Image processing error:', err);
-      setError(err?.message || 'Failed to process images');
+      console.error('Image upload error:', err);
+      setError(err?.message || 'Failed to upload images');
     } finally {
       handleUploading(false);
       // reset input value to allow re-selecting same file
