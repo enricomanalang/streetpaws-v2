@@ -268,33 +268,18 @@ export default function LocationPicker({
 
   // Create custom marker icon
   const createCustomIcon = () => {
-    if (typeof window !== 'undefined' && window.L && window.L.divIcon) {
-      return window.L.divIcon({
-        className: 'custom-marker',
-        html: `<div style="
-          background: linear-gradient(135deg, #ef4444, #dc2626);
-          width: 30px;
-          height: 30px;
-          border-radius: 50% 50% 50% 0;
-          border: 3px solid white;
-          box-shadow: 0 4px 8px rgba(0,0,0,0.3), 0 0 0 1px rgba(0,0,0,0.1);
-          transform: rotate(-45deg);
-          position: relative;
-        ">
-          <div style="
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%) rotate(45deg);
-            width: 10px;
-            height: 10px;
-            background: white;
-            border-radius: 50%;
-          "></div>
-        </div>`,
+    if (typeof window !== 'undefined' && window.L) {
+      // Use a simple red circle marker
+      return window.L.icon({
+        iconUrl: 'data:image/svg+xml;base64,' + btoa(`
+          <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30">
+            <circle cx="15" cy="15" r="12" fill="#ef4444" stroke="#ffffff" stroke-width="3"/>
+            <circle cx="15" cy="15" r="6" fill="#ffffff"/>
+          </svg>
+        `),
         iconSize: [30, 30],
-        iconAnchor: [15, 30],
-        popupAnchor: [0, -30]
+        iconAnchor: [15, 15],
+        popupAnchor: [0, -15]
       });
     }
     // Return undefined if Leaflet is not available - this will use default marker
