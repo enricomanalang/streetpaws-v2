@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { uploadImages } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Upload, Camera } from 'lucide-react';
@@ -54,12 +53,28 @@ export default function ImageUploader({
 
     try {
       handleUploading(true);
-      const newUrls = await uploadImages(files, folder);
+      
+      // Convert images to base64 instead of using Supabase
+      const newUrls = await Promise.all(
+        files.map(async (file) => {
+          return new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+              resolve(reader.result as string);
+            };
+            reader.onerror = () => {
+              reject(new Error('Failed to read file'));
+            };
+            reader.readAsDataURL(file);
+          });
+        })
+      );
+      
       const merged = [...urls, ...newUrls].slice(0, max);
       setUrls(merged);
       onChange(merged);
     } catch (err: any) {
-      setError(err?.message || 'Failed to upload images');
+      setError(err?.message || 'Failed to process images');
     } finally {
       handleUploading(false);
       // reset input value to allow re-selecting same file

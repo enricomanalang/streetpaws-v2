@@ -475,11 +475,6 @@ export default function AdminDashboard() {
                         {report.images && report.images.length > 0 && (
                           <div className="mb-4">
                             <p className="text-sm font-medium text-gray-700 mb-2">Evidence Photos:</p>
-                            {/* Debug info */}
-                            <div className="mb-2 p-2 bg-gray-100 rounded text-xs">
-                              <p><strong>Debug:</strong> Found {report.images.length} images</p>
-                              <p><strong>Image URLs:</strong> {report.images.join(', ')}</p>
-                            </div>
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                               {report.images.map((imageUrl: string, index: number) => {
                                 // Check if it's a placeholder URL
