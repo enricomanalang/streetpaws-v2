@@ -60,11 +60,18 @@ export default function ImageUploader({
       
       console.log('=== IMAGE UPLOADER DEBUG ===');
       console.log('Processing', files.length, 'files with Supabase');
+      console.log('Current URLs before upload:', urls);
       
       // Upload to Supabase Storage
       const newUrls = await uploadImages(files, folder);
       
       console.log('Files uploaded to Supabase:', newUrls);
+      console.log('URL types:', newUrls.map(url => ({
+        url: url.substring(0, 50) + '...',
+        isPlaceholder: url.startsWith('placeholder-'),
+        isSupabase: url.includes('supabase.co'),
+        isBase64: url.startsWith('data:image')
+      })));
       
       const merged = [...urls, ...newUrls].slice(0, max);
       setUrls(merged);
