@@ -5,6 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Upload, Camera } from 'lucide-react';
 
+// Force reload to clear any cached versions
+console.log('ImageUploader loaded - version 2.0 - base64 only');
+
 interface ImageUploaderProps {
   folder: string;
   max?: number;
@@ -54,15 +57,24 @@ export default function ImageUploader({
     try {
       handleUploading(true);
       
-      // Convert images to base64 instead of using Supabase
+      console.log('=== IMAGE UPLOADER DEBUG ===');
+      console.log('Processing', files.length, 'files');
+      
+      // Convert images to base64 - FORCE base64 conversion
       const newUrls = await Promise.all(
-        files.map(async (file) => {
+        files.map(async (file, index) => {
+          console.log(`Processing file ${index + 1}:`, file.name, file.type, file.size);
+          
           return new Promise<string>((resolve, reject) => {
             const reader = new FileReader();
-            reader.onload = () => {
-              resolve(reader.result as string);
+            reader.onload = (event) => {
+              const result = event.target?.result as string;
+              console.log(`File ${index + 1} converted to base64:`, result.substring(0, 50) + '...');
+              console.log(`Is base64:`, result.startsWith('data:image'));
+              resolve(result);
             };
             reader.onerror = () => {
+              console.error(`Failed to read file ${index + 1}`);
               reject(new Error('Failed to read file'));
             };
             reader.readAsDataURL(file);
@@ -70,10 +82,15 @@ export default function ImageUploader({
         })
       );
       
+      console.log('All files converted. New URLs:', newUrls.map(url => url.substring(0, 50) + '...'));
+      
       const merged = [...urls, ...newUrls].slice(0, max);
       setUrls(merged);
       onChange(merged);
+      
+      console.log('Final merged URLs:', merged.map(url => url.substring(0, 50) + '...'));
     } catch (err: any) {
+      console.error('Image processing error:', err);
       setError(err?.message || 'Failed to process images');
     } finally {
       handleUploading(false);
