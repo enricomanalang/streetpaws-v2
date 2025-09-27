@@ -272,7 +272,7 @@ export default function LocationPicker({
       return window.L.divIcon({
         className: 'custom-marker',
         html: `<div style="
-          background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+          background: linear-gradient(135deg, #ef4444, #dc2626);
           width: 30px;
           height: 30px;
           border-radius: 50% 50% 50% 0;
