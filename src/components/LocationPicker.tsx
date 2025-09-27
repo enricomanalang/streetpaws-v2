@@ -278,19 +278,40 @@ export default function LocationPicker({
   // Create custom marker icon
   const createCustomIcon = () => {
     if (typeof window !== 'undefined' && window.L) {
-      // Use a simple red circle marker
-      return window.L.icon({
-        iconUrl: 'data:image/svg+xml;base64,' + btoa(`
-          <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30">
-            <circle cx="15" cy="15" r="12" fill="#ef4444" stroke="#ffffff" stroke-width="3"/>
-            <circle cx="15" cy="15" r="6" fill="#ffffff"/>
-          </svg>
-        `),
+      console.log('Creating red marker icon');
+      
+      // Create a red div marker
+      const redMarker = window.L.divIcon({
+        className: 'red-marker',
+        html: `
+          <div style="
+            width: 30px; 
+            height: 30px; 
+            background-color: #ef4444; 
+            border: 3px solid #ffffff; 
+            border-radius: 50%; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+          ">
+            <div style="
+              width: 12px; 
+              height: 12px; 
+              background-color: #ffffff; 
+              border-radius: 50%;
+            "></div>
+          </div>
+        `,
         iconSize: [30, 30],
         iconAnchor: [15, 15],
         popupAnchor: [0, -15]
       });
+      
+      console.log('Red marker icon created:', redMarker);
+      return redMarker;
     }
+    console.log('Leaflet not available, using default marker');
     // Return undefined if Leaflet is not available - this will use default marker
     return undefined;
   };
@@ -415,6 +436,11 @@ export default function LocationPicker({
                     <Marker
                       position={coordinates}
                       icon={createCustomIcon() || undefined}
+                      eventHandlers={{
+                        add: () => {
+                          console.log('Red marker added to map at:', coordinates);
+                        }
+                      }}
                     >
                       <Popup>
                         <div className="p-2">
