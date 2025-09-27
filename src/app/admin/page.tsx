@@ -475,13 +475,17 @@ export default function AdminDashboard() {
                         {report.images && report.images.length > 0 && (
                           <div className="mb-4">
                             <p className="text-sm font-medium text-gray-700 mb-2">Evidence Photos:</p>
-                            {/* Debug info to see what's actually stored */}
-                            <div className="mb-2 p-2 bg-yellow-100 rounded text-xs">
-                              <p><strong>Debug:</strong> Found {report.images.length} images</p>
-                              <p><strong>First image preview:</strong> {report.images[0]?.substring(0, 50)}...</p>
-                              <p><strong>Is base64:</strong> {report.images[0]?.startsWith('data:image') ? 'Yes' : 'No'}</p>
-                              <p><strong>Is placeholder:</strong> {report.images[0]?.startsWith('placeholder-') ? 'Yes' : 'No'}</p>
-                            </div>
+                            
+                            {/* Check if all images are placeholders */}
+                            {report.images.every(img => img.startsWith('placeholder-')) && (
+                              <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                <p className="text-sm text-blue-800">
+                                  <strong>Note:</strong> This report was submitted before the image system was updated. 
+                                  Images are not available for display. New reports will show images properly.
+                                </p>
+                              </div>
+                            )}
+                            
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                               {report.images.map((imageUrl: string, index: number) => {
                                 // Check if it's a placeholder URL or not a valid image URL
@@ -500,11 +504,6 @@ export default function AdminDashboard() {
                                           <p className="text-xs text-gray-500">
                                             {isPlaceholder ? 'Image Not Available' : 'Invalid Image'}
                                           </p>
-                                          {isPlaceholder && (
-                                            <p className="text-xs text-gray-400 mt-1">
-                                              (Old format - resubmit to fix)
-                                            </p>
-                                          )}
                                         </div>
                                       </div>
                                     ) : (
