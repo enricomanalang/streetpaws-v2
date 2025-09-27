@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -22,7 +22,10 @@ const Popup = dynamic(() => import('react-leaflet').then((mod) => mod.Popup), { 
 // Simple HeatMap component without complex heatmap layer
 
 export default function HeatMap() {
-  const [markers, setMarkers] = useState<any[]>([]);
+  const [markers, setMarkers] = useState<Array<{
+    id: string;
+    [key: string]: any;
+  }>>([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [showHeatmap, setShowHeatmap] = useState(true);

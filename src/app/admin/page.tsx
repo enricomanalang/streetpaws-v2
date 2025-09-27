@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 
 // Aggressive hydration fix for admin page
 if (typeof window !== 'undefined') {
@@ -40,35 +41,26 @@ import { Badge } from '@/components/ui/badge';
 import HeatMap from '@/components/HeatMap';
 import { AdminDashboardCharts } from '@/components/AdminCharts';
 import { ref, onValue, off, update } from 'firebase/database';
-import { collection, onSnapshot, doc, updateDoc, serverTimestamp, query, orderBy } from 'firebase/firestore';
-import { database, firestore } from '@/lib/firebase';
+// import { collection, onSnapshot, doc, updateDoc, serverTimestamp, query, orderBy } from 'firebase/firestore';
+import { database } from '@/lib/firebase';
 import { 
   Shield, 
-  Users, 
   FileText, 
   Heart, 
   BarChart3, 
-  TrendingUp,
   Calendar,
   Activity,
   Eye,
-  Settings,
-  UserCheck,
   AlertTriangle,
   AlertCircle,
   CheckCircle,
   Clock,
   MapPin,
-  Database,
-  Bell,
   Menu,
   X,
-  Home,
   Search,
-  Plus,
   DollarSign,
   UserPlus,
-  LogOut,
   Map
 } from 'lucide-react';
 
@@ -77,9 +69,15 @@ export default function AdminDashboard() {
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [reports, setReports] = useState<any[]>([]);
+  const [reports, setReports] = useState<Array<{
+    id: string;
+    [key: string]: any;
+  }>>([]);
   const [loadingReports, setLoadingReports] = useState(false);
-  const [lostPets, setLostPets] = useState<any[]>([]);
+  const [lostPets, setLostPets] = useState<Array<{
+    id: string;
+    [key: string]: any;
+  }>>([]);
   const [loadingLostPets, setLoadingLostPets] = useState(false);
 
   useEffect(() => {
@@ -136,7 +134,7 @@ export default function AdminDashboard() {
       setReports([]);
       setLoadingReports(false);
     }
-  }, [activeTab, database]);
+  }, [activeTab]);
 
   // Fetch lost pets when lost-reports tab is active
   useEffect(() => {
@@ -165,7 +163,7 @@ export default function AdminDashboard() {
         off(lostPetsRef, 'value', unsubscribe);
       };
     }
-  }, [activeTab, database]);
+  }, [activeTab]);
 
   const handleLogout = async () => {
     await logout();
@@ -479,9 +477,11 @@ export default function AdminDashboard() {
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                               {report.images.map((imageUrl: string, index: number) => (
                                 <div key={index} className="relative">
-                                  <img
+                                  <Image
                                     src={imageUrl}
                                     alt={`Evidence ${index + 1}`}
+                                    width={100}
+                                    height={96}
                                     className="w-full h-24 object-cover rounded-lg border border-gray-200 cursor-pointer hover:opacity-80 transition-opacity"
                                     onClick={() => {
                                       // Open image in new tab for full view

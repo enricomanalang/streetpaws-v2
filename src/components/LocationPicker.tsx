@@ -44,7 +44,7 @@ export default function LocationPicker({
   const [showMap, setShowMap] = useState(false);
   const [mapCenter, setMapCenter] = useState<[number, number]>([14.5995, 120.9842]); // Manila coordinates
   const [isLeafletLoaded, setIsLeafletLoaded] = useState(false);
-  const mapRef = useRef<any>(null);
+  const mapRef = useRef<L.Map | null>(null);
 
   // Load Leaflet CSS and JS
   useEffect(() => {
@@ -112,7 +112,7 @@ export default function LocationPicker({
   };
 
   // Handle map click
-  const handleMapClick = (e: any) => {
+  const handleMapClick = (e: L.LeafletMouseEvent) => {
     console.log('Map clicked:', e);
     const { lat, lng } = e.latlng;
     const newCoords: [number, number] = [lat, lng];
