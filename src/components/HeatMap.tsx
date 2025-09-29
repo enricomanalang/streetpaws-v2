@@ -113,24 +113,30 @@ export default function HeatMap() {
         console.log('=== HEATMAP DATA DEBUG ===');
         console.log('Raw Firebase data:', data);
         
-        const markersList = Object.keys(data).map(key => {
-          const marker = {
-            id: key,
-            ...data[key],
-            position: [data[key].latitude || 14.0583, data[key].longitude || 121.1656],
-            lat: data[key].latitude || 14.0583,
-            lng: data[key].longitude || 121.1656,
-            intensity: 1
-          };
-          console.log(`Marker ${key}:`, {
-            location: marker.location,
-            address: marker.address,
-            description: marker.description,
-            animalType: marker.animalType,
-            condition: marker.condition
+        const allReports = Object.keys(data);
+        const approvedReports = allReports.filter(key => data[key].status === 'approved');
+        console.log(`Total reports: ${allReports.length}, Approved reports: ${approvedReports.length}`);
+        
+        const markersList = approvedReports
+          .map(key => {
+            const marker = {
+              id: key,
+              ...data[key],
+              position: [data[key].latitude || 14.0583, data[key].longitude || 121.1656],
+              lat: data[key].latitude || 14.0583,
+              lng: data[key].longitude || 121.1656,
+              intensity: 1
+            };
+            console.log(`Marker ${key}:`, {
+              location: marker.location,
+              address: marker.address,
+              description: marker.description,
+              animalType: marker.animalType,
+              condition: marker.condition,
+              status: marker.status
+            });
+            return marker;
           });
-          return marker;
-        });
         setMarkers(markersList);
         console.log('Processed markers:', markersList);
       } else {
