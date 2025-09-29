@@ -219,6 +219,21 @@ export default function LostPetsPage() {
           email: null
         }
       });
+
+      // Also create an owner notification entry
+      if (selectedPet.submittedBy?.uid) {
+        const ownerUid = selectedPet.submittedBy.uid;
+        const notificationsRef = ref(database, `notifications/${ownerUid}`);
+        const notifRef = push(notificationsRef);
+        await set(notifRef, {
+          type: 'sighting',
+          petId: selectedPet.id,
+          petName: selectedPet.petName,
+          message: sightingMessage.trim(),
+          createdAt: new Date().toISOString(),
+          read: false
+        });
+      }
       setSightingMessage('');
       alert('Thanks! Your sighting was sent to the owner.');
     } catch (e) {
