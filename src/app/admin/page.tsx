@@ -254,7 +254,8 @@ export default function AdminDashboard() {
             id: key,
             ...pets[key]
           }));
-          setLostPets(petsList.filter(pet => pet.status === 'lost'));
+          // Show all for moderation; filtering handled in UI controls
+          setLostPets(petsList);
         } else {
           setLostPets([]);
         }
@@ -437,9 +438,9 @@ export default function AdminDashboard() {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-yellow-600">Lost Pets</p>
+                      <p className="text-sm font-medium text-yellow-600">Lost Pets (pending)</p>
                       <p className="text-3xl font-bold text-yellow-900">
-                        {lostPets.filter(p => p.status === 'lost').length}
+                        {lostPets.filter(p => p.status === 'pending').length}
                       </p>
                     </div>
                     <AlertCircle className="w-8 h-8 text-yellow-600" />
@@ -547,12 +548,12 @@ export default function AdminDashboard() {
                       </div>
                     )}
                     
-                    {lostPets.filter(p => p.status === 'lost').length > 0 && (
+                    {lostPets.filter(p => p.status === 'pending').length > 0 && (
                       <div className="flex items-center space-x-3 p-3 bg-orange-50 rounded-lg">
                         <AlertCircle className="w-5 h-5 text-orange-600" />
                         <div>
                           <p className="text-sm font-medium text-gray-900">
-                            {lostPets.filter(p => p.status === 'lost').length} lost pets need attention
+                            {lostPets.filter(p => p.status === 'pending').length} lost pet reports need approval
                           </p>
                           <p className="text-xs text-gray-500">Help reunite lost pets</p>
                         </div>
@@ -1049,8 +1050,9 @@ export default function AdminDashboard() {
                             </p>
                           </div>
                           <Badge 
-                            variant={pet.status === 'lost' ? 'destructive' : 
-                                   pet.status === 'found' ? 'default' : 'secondary'}
+                            variant={pet.status === 'pending' ? 'destructive' :
+                                   pet.status === 'approved' ? 'default' :
+                                   pet.status === 'rejected' ? 'secondary' : 'secondary'}
                           >
                             {pet.status}
                           </Badge>
@@ -1087,7 +1089,27 @@ export default function AdminDashboard() {
                         )}
                         
                         <div className="flex flex-wrap gap-2">
-                          {pet.status === 'lost' && (
+                          {pet.status === 'pending' && (
+                            <>
+                              <Button
+                                size="sm"
+                                onClick={() => updateLostPetStatus(pet.id, 'approved')}
+                                className="bg-green-600 hover:bg-green-700"
+                              >
+                                <CheckCircle className="w-4 h-4 mr-1" />
+                                Approve
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => updateLostPetStatus(pet.id, 'rejected')}
+                              >
+                                <X className="w-4 h-4 mr-1" />
+                                Reject
+                              </Button>
+                            </>
+                          )}
+                          {pet.status === 'approved' && (
                             <>
                               <Button
                                 size="sm"
@@ -1111,7 +1133,7 @@ export default function AdminDashboard() {
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => updateLostPetStatus(pet.id, 'lost')}
+                              onClick={() => updateLostPetStatus(pet.id, 'approved')}
                             >
                               <AlertCircle className="w-4 h-4 mr-1" />
                               Reopen Report
