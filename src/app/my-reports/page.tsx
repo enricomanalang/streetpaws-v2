@@ -17,10 +17,11 @@ import {
   AlertCircle,
   MapPin,
   Calendar,
-  Camera
+  Camera,
+  Plus
 } from 'lucide-react';
 import { database } from '@/lib/firebase';
-import { ref, get, query, orderByChild, equalTo } from 'firebase/database';
+import { ref, get, query, orderByChild, equalTo, set } from 'firebase/database';
 
 export default function MyReportsPage() {
   const { user, profile, loading } = useAuth();
@@ -162,25 +163,112 @@ export default function MyReportsPage() {
                 variant="outline"
                 size="sm"
                 onClick={async () => {
-                  console.log('=== DEBUG INFO ===');
+                  console.log('=== COMPREHENSIVE DEBUG INFO ===');
                   console.log('User:', user);
                   console.log('Profile:', profile);
                   console.log('Database:', database);
+                  console.log('User UID:', user?.uid);
                   
                   if (database) {
                     try {
-                      const allReportsRef = ref(database, 'reports');
-                      const allReportsSnap = await get(allReportsRef);
-                      console.log('All reports in database:', allReportsSnap.exists() ? allReportsSnap.val() : 'No reports found');
+                      // Check all possible database paths
+                      const paths = ['reports', 'approvedReports', 'rejectedReports', 'lostPets', 'foundPets', 'adoptionRequests'];
+                      
+                      for (const path of paths) {
+                        try {
+                          const refPath = ref(database, path);
+                          const snap = await get(refPath);
+                          console.log(`\n=== ${path.toUpperCase()} ===`);
+                          if (snap.exists()) {
+                            const data = snap.val();
+                            console.log('Data exists:', Object.keys(data).length, 'items');
+                            console.log('Sample data:', Object.keys(data).slice(0, 2).map(k => ({ id: k, ...data[k] })));
+                            
+                            // Check if any reports belong to current user
+                            const userReports = Object.keys(data)
+                              .map(k => ({ id: k, ...data[k] }))
+                              .filter(item => {
+                                if (item.submittedBy && item.submittedBy.uid === user?.uid) return true;
+                                if (item.applicant && item.applicant.uid === user?.uid) return true;
+                                return false;
+                              });
+                            console.log(`User reports in ${path}:`, userReports.length);
+                            if (userReports.length > 0) {
+                              console.log('User reports found:', userReports);
+                            }
+                          } else {
+                            console.log('No data found');
+                          }
+                        } catch (pathError) {
+                          console.error(`Error checking ${path}:`, pathError);
+                        }
+                      }
+                      
+                      // Also check root level
+                      console.log('\n=== ROOT LEVEL CHECK ===');
+                      const rootRef = ref(database, '/');
+                      const rootSnap = await get(rootRef);
+                      if (rootSnap.exists()) {
+                        const rootData = rootSnap.val();
+                        console.log('Root level keys:', Object.keys(rootData));
+                      }
+                      
                     } catch (e) {
-                      console.error('Error fetching all reports:', e);
+                      console.error('Error in comprehensive debug:', e);
                     }
+                  } else {
+                    console.error('Database not initialized');
                   }
                 }}
                 className="flex items-center"
               >
                 <AlertCircle className="w-4 h-4 mr-2" />
                 Debug Info
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={async () => {
+                  if (!user || !database) return;
+                  
+                  try {
+                    console.log('Creating test report...');
+                    const testReport = {
+                      animalType: 'dog',
+                      breed: 'Aspin',
+                      color: 'Brown',
+                      size: 'medium',
+                      condition: 'neglect',
+                      location: 'Test Location',
+                      description: 'Test report for debugging',
+                      urgency: 'medium',
+                      contactInfo: '+63 912 345 6789',
+                      images: [],
+                      submittedBy: {
+                        uid: user.uid,
+                        name: profile?.name || profile?.email,
+                        email: profile?.email,
+                        role: profile?.role
+                      },
+                      status: 'pending',
+                      createdAt: new Date().toISOString(),
+                      updatedAt: new Date().toISOString(),
+                      reportId: `TEST-${Date.now()}`
+                    };
+                    
+                    const testRef = ref(database, `reports/TEST-${Date.now()}`);
+                    await set(testRef, testReport);
+                    console.log('Test report created successfully!');
+                    alert('Test report created! Check the debug info to see if it appears.');
+                  } catch (e) {
+                    console.error('Error creating test report:', e);
+                    alert('Error creating test report: ' + e.message);
+                  }
+                }}
+                className="flex items-center"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Create Test Report
               </Button>
             </div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">My Reports</h1>
