@@ -325,10 +325,10 @@ export default function DashboardPage() {
                         <Button 
                           className="w-full" 
                           variant="outline"
-                          onClick={() => router.push('/report')}
+                          disabled
                         >
-                          <Plus className="w-4 h-4 mr-2" />
-                          Submit First Report
+                          <Eye className="w-4 h-4 mr-2" />
+                          View My Reports
                         </Button>
                       </div>
                     ) : (
@@ -361,7 +361,7 @@ export default function DashboardPage() {
                           }}
                         >
                           <Eye className="w-4 h-4 mr-2" />
-                          View Report Status
+                          View My Reports
                         </Button>
                       </div>
                     )}
