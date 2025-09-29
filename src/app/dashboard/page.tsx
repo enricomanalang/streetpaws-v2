@@ -50,7 +50,8 @@ import {
   Calendar,
   Activity,
   Eye,
-  Settings
+  Settings,
+  Plus
 } from 'lucide-react';
 import { database } from '@/lib/firebase';
 import { ref, get, query, orderByChild, equalTo } from 'firebase/database';
@@ -73,19 +74,35 @@ export default function DashboardPage() {
     const loadData = async () => {
       if (!user || !database) return;
       try {
-        const reportsQ = query(ref(database, 'reports'), orderByChild('submittedBy/uid'), equalTo(user.uid));
+        // Query all report collections (pending, approved, rejected)
+        const pendingQ = query(ref(database, 'reports'), orderByChild('submittedBy/uid'), equalTo(user.uid));
+        const approvedQ = query(ref(database, 'approvedReports'), orderByChild('submittedBy/uid'), equalTo(user.uid));
+        const rejectedQ = query(ref(database, 'rejectedReports'), orderByChild('submittedBy/uid'), equalTo(user.uid));
+        
+        // Other collections
         const lostQ = query(ref(database, 'lostPets'), orderByChild('submittedBy/uid'), equalTo(user.uid));
         const foundQ = query(ref(database, 'foundPets'), orderByChild('submittedBy/uid'), equalTo(user.uid));
         const adoptQ = query(ref(database, 'adoptionRequests'), orderByChild('applicant/uid'), equalTo(user.uid));
 
-        const [rSnap, lSnap, fSnap, aSnap] = await Promise.all([get(reportsQ), get(lostQ), get(foundQ), get(adoptQ)]);
+        const [pendingSnap, approvedSnap, rejectedSnap, lSnap, fSnap, aSnap] = await Promise.all([
+          get(pendingQ), get(approvedQ), get(rejectedQ), get(lostQ), get(foundQ), get(adoptQ)
+        ]);
 
         const toList = (snap: any) => snap.exists() ? Object.keys(snap.val()).map(k => ({ id: k, ...snap.val()[k] })) : [];
 
-        setMyReports(toList(rSnap).sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || '')));
+        // Combine all reports from different collections
+        const allReports = [
+          ...toList(pendingSnap),
+          ...toList(approvedSnap),
+          ...toList(rejectedSnap)
+        ].sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+
+        setMyReports(allReports);
         setMyLost(toList(lSnap).sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || '')));
         setMyFound(toList(fSnap).sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || '')));
         setMyAdoptions(toList(aSnap).sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || '')));
+        
+        console.log('User reports loaded:', allReports);
       } catch (e) {
         console.error('Failed loading dashboard activity', e);
       }
@@ -288,15 +305,59 @@ export default function DashboardPage() {
                       </div>
                       <div>
                         <CardTitle className="text-lg">My Reports</CardTitle>
-                        <CardDescription>View status of your submitted reports</CardDescription>
+                        <CardDescription>
+                          {myReports.length === 0 
+                            ? "No reports submitted yet" 
+                            : `${myReports.length} report${myReports.length > 1 ? 's' : ''} submitted`
+                          }
+                        </CardDescription>
                       </div>
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <Button className="w-full" variant="outline">
-                      <Eye className="w-4 h-4 mr-2" />
-                      View Reports
-                    </Button>
+                    {myReports.length === 0 ? (
+                      <Button 
+                        className="w-full" 
+                        variant="outline"
+                        onClick={() => router.push('/report')}
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Submit First Report
+                      </Button>
+                    ) : (
+                      <div className="space-y-3">
+                        <div className="text-sm text-gray-600">
+                          <div className="flex justify-between items-center mb-2">
+                            <span>Pending: {myReports.filter(r => r.status === 'pending' || r.status === 'investigating').length}</span>
+                            <span className="text-yellow-600">⏳</span>
+                          </div>
+                          <div className="flex justify-between items-center mb-2">
+                            <span>Approved: {myReports.filter(r => r.status === 'approved').length}</span>
+                            <span className="text-green-600">✅</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span>Rejected: {myReports.filter(r => r.status === 'rejected').length}</span>
+                            <span className="text-red-600">❌</span>
+                          </div>
+                        </div>
+                        <Button 
+                          className="w-full" 
+                          variant="outline"
+                          onClick={() => {
+                            // Show a simple modal or navigate to a reports page
+                            alert(`You have ${myReports.length} reports:\n\n` +
+                              `• ${myReports.filter(r => r.status === 'pending' || r.status === 'investigating').length} Pending/Investigating\n` +
+                              `• ${myReports.filter(r => r.status === 'approved').length} Approved (visible on map)\n` +
+                              `• ${myReports.filter(r => r.status === 'rejected').length} Rejected\n\n` +
+                              `Your latest report: ${myReports[0]?.animalType || 'N/A'} - ${myReports[0]?.condition || 'N/A'}`
+                            );
+                          }}
+                        >
+                          <Eye className="w-4 h-4 mr-2" />
+                          View Report Status
+                        </Button>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
 

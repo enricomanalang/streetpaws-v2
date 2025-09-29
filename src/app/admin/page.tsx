@@ -86,6 +86,7 @@ export default function AdminDashboard() {
   const [loadingReports, setLoadingReports] = useState(false);
   const [loadingApprovedReports, setLoadingApprovedReports] = useState(false);
   const [loadingRejectedReports, setLoadingRejectedReports] = useState(false);
+  const [processingReports, setProcessingReports] = useState<Set<string>>(new Set());
   const [lostPets, setLostPets] = useState<Array<{
     id: string;
     [key: string]: any;
@@ -275,7 +276,19 @@ export default function AdminDashboard() {
   };
 
   const updateReportStatus = async (reportId: string, status: string) => {
-    if (!database) return;
+    if (!database) {
+      console.error('Database not initialized');
+      alert('Database connection error. Please refresh the page.');
+      return;
+    }
+    
+    if (!user || !profile) {
+      console.error('User not authenticated');
+      alert('Authentication error. Please log in again.');
+      return;
+    }
+    
+    console.log(`Attempting to update report ${reportId} to status: ${status}`);
     
     try {
       // Get the current report data
@@ -283,11 +296,13 @@ export default function AdminDashboard() {
       const snapshot = await get(reportRef);
       
       if (!snapshot.exists()) {
-        console.error('Report not found');
+        console.error('Report not found:', reportId);
+        alert('Report not found. It may have been already processed.');
         return;
       }
       
       const reportData = snapshot.val();
+      console.log('Current report data:', reportData);
       
       // Add review information
       const updatedReportData = {
@@ -295,47 +310,68 @@ export default function AdminDashboard() {
         status,
         updatedAt: new Date().toISOString(),
         reviewedBy: {
-          uid: user?.uid,
-          name: profile?.name || profile?.email,
-          email: profile?.email
+          uid: user.uid,
+          name: profile.name || profile.email,
+          email: profile.email
         }
       };
       
+      console.log('Updated report data:', updatedReportData);
+      
       // Move to appropriate collection based on status
       if (status === 'approved') {
+        console.log('Moving report to approved collection...');
+        
         // Move to approved reports
         const approvedRef = ref(database, `approvedReports/${reportId}`);
         await set(approvedRef, updatedReportData);
+        console.log('Report added to approved collection');
         
         // Remove from pending reports
         await remove(reportRef);
+        console.log('Report removed from pending collection');
         
+        alert(`Report ${reportId} has been approved and is now visible on the heatmap!`);
         console.log(`Report ${reportId} moved to approved reports`);
+        
       } else if (status === 'rejected') {
+        console.log('Moving report to rejected collection...');
+        
         // Move to rejected reports
         const rejectedRef = ref(database, `rejectedReports/${reportId}`);
         await set(rejectedRef, updatedReportData);
+        console.log('Report added to rejected collection');
         
         // Remove from pending reports
         await remove(reportRef);
+        console.log('Report removed from pending collection');
         
+        alert(`Report ${reportId} has been rejected.`);
         console.log(`Report ${reportId} moved to rejected reports`);
+        
       } else {
+        console.log('Updating report status in place...');
+        
         // For investigating status, just update in place
         await update(reportRef, {
           status,
           updatedAt: new Date().toISOString(),
           reviewedBy: {
-            uid: user?.uid,
-            name: profile?.name || profile?.email,
-            email: profile?.email
+            uid: user.uid,
+            name: profile.name || profile.email,
+            email: profile.email
           }
         });
         
+        alert(`Report ${reportId} status updated to ${status}`);
         console.log(`Report ${reportId} status updated to ${status}`);
       }
+      
+      console.log('Report status update completed successfully');
+      
     } catch (error) {
       console.error('Error updating report status:', error);
+      alert(`Error updating report: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
