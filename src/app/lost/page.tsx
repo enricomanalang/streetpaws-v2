@@ -42,7 +42,7 @@ interface LostPet {
   lastSeenDate: string;
   contactInfo: string;
   images: string[];
-  status: 'lost' | 'found';
+  status: 'pending' | 'approved' | 'rejected' | 'found';
   submittedBy: {
     uid: string;
     name: string;
@@ -99,7 +99,7 @@ export default function LostPetsPage() {
           id: key,
           ...pets[key]
         }));
-        setLostPets(petsList.filter(pet => pet.status === 'lost'));
+        setLostPets(petsList.filter(pet => pet.status === 'approved'));
       }
     } catch (err) {
       console.error('Error loading lost pets:', err);
@@ -142,7 +142,7 @@ export default function LostPetsPage() {
         contactInfo,
         latitude: formData.latitude ? parseFloat(formData.latitude) : null,
         longitude: formData.longitude ? parseFloat(formData.longitude) : null,
-        status: 'lost',
+        status: 'pending',
         submittedBy: {
           uid: user.uid,
           name: profile.name || profile.email,

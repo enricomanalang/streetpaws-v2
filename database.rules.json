@@ -26,7 +26,7 @@
     "lostPets": {
       ".read": "auth != null",
       ".write": "auth != null",
-      ".indexOn": ["submittedBy/uid", "createdAt"]
+      ".indexOn": ["submittedBy/uid", "createdAt", "status"]
     },
     "foundPets": {
       ".read": "auth != null",
