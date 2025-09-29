@@ -321,7 +321,15 @@ export default function DashboardPage() {
                           <FileText className="w-12 h-12 mx-auto" />
                         </div>
                         <p className="text-sm text-gray-500 mb-3">No reports submitted yet</p>
-                        <p className="text-xs text-gray-400">Submit your first report using the "Report Animal Abuse" card</p>
+                        <p className="text-xs text-gray-400 mb-4">Submit your first report using the "Report Animal Abuse" card</p>
+                        <Button 
+                          className="w-full" 
+                          variant="outline"
+                          onClick={() => router.push('/report')}
+                        >
+                          <Plus className="w-4 h-4 mr-2" />
+                          Submit First Report
+                        </Button>
                       </div>
                     ) : (
                       <div className="space-y-3">
