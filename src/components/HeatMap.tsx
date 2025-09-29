@@ -105,17 +105,16 @@ export default function HeatMap() {
     if (!database) return;
 
     setLoading(true);
-    const markersRef = ref(database, 'reports');
+    const markersRef = ref(database, 'approvedReports');
     
     const unsubscribe = onValue(markersRef, (snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.val();
         console.log('=== HEATMAP DATA DEBUG ===');
-        console.log('Raw Firebase data:', data);
+        console.log('Raw Firebase data (approved reports):', data);
         
-        const allReports = Object.keys(data);
-        const approvedReports = allReports.filter(key => data[key].status === 'approved');
-        console.log(`Total reports: ${allReports.length}, Approved reports: ${approvedReports.length}`);
+        const approvedReports = Object.keys(data);
+        console.log(`Approved reports: ${approvedReports.length}`);
         
         const markersList = approvedReports
           .map(key => {

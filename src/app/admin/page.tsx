@@ -40,7 +40,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import HeatMap from '@/components/HeatMap';
 import { AdminDashboardCharts } from '@/components/AdminCharts';
-import { ref, onValue, off, update } from 'firebase/database';
+import { ref, onValue, off, update, get, set, remove } from 'firebase/database';
 // import { collection, onSnapshot, doc, updateDoc, serverTimestamp, query, orderBy } from 'firebase/firestore';
 import { database } from '@/lib/firebase';
 import { 
@@ -62,7 +62,8 @@ import {
   DollarSign,
   UserPlus,
   Map,
-  LogOut
+  LogOut,
+  Camera
 } from 'lucide-react';
 
 export default function AdminDashboard() {
@@ -74,7 +75,17 @@ export default function AdminDashboard() {
     id: string;
     [key: string]: any;
   }>>([]);
+  const [approvedReports, setApprovedReports] = useState<Array<{
+    id: string;
+    [key: string]: any;
+  }>>([]);
+  const [rejectedReports, setRejectedReports] = useState<Array<{
+    id: string;
+    [key: string]: any;
+  }>>([]);
   const [loadingReports, setLoadingReports] = useState(false);
+  const [loadingApprovedReports, setLoadingApprovedReports] = useState(false);
+  const [loadingRejectedReports, setLoadingRejectedReports] = useState(false);
   const [lostPets, setLostPets] = useState<Array<{
     id: string;
     [key: string]: any;
@@ -137,6 +148,98 @@ export default function AdminDashboard() {
     }
   }, [activeTab]);
 
+  // Fetch approved reports when approved-reports tab is active
+  useEffect(() => {
+    if (activeTab === 'approved-reports' && database) {
+      setLoadingApprovedReports(true);
+      console.log('Fetching approved reports from Realtime Database...');
+      
+      const timeout = setTimeout(() => {
+        console.log('Timeout reached, stopping loading...');
+        setLoadingApprovedReports(false);
+      }, 10000);
+      
+      const approvedReportsRef = ref(database, 'approvedReports');
+      
+      const unsubscribe = onValue(approvedReportsRef, (snapshot) => {
+        clearTimeout(timeout);
+        console.log('Approved reports snapshot received');
+        
+        if (snapshot.exists()) {
+          const reportsData = snapshot.val();
+          const reportsList = Object.keys(reportsData).map(key => ({
+            id: key,
+            ...reportsData[key]
+          }));
+          console.log('Approved reports list:', reportsList);
+          setApprovedReports(reportsList);
+        } else {
+          console.log('No approved reports found');
+          setApprovedReports([]);
+        }
+        setLoadingApprovedReports(false);
+      }, (error) => {
+        clearTimeout(timeout);
+        console.error('Error fetching approved reports:', error);
+        setLoadingApprovedReports(false);
+      });
+
+      return () => {
+        clearTimeout(timeout);
+        off(approvedReportsRef, 'value', unsubscribe);
+      };
+    } else if (activeTab !== 'approved-reports') {
+      setApprovedReports([]);
+      setLoadingApprovedReports(false);
+    }
+  }, [activeTab]);
+
+  // Fetch rejected reports when rejected-reports tab is active
+  useEffect(() => {
+    if (activeTab === 'rejected-reports' && database) {
+      setLoadingRejectedReports(true);
+      console.log('Fetching rejected reports from Realtime Database...');
+      
+      const timeout = setTimeout(() => {
+        console.log('Timeout reached, stopping loading...');
+        setLoadingRejectedReports(false);
+      }, 10000);
+      
+      const rejectedReportsRef = ref(database, 'rejectedReports');
+      
+      const unsubscribe = onValue(rejectedReportsRef, (snapshot) => {
+        clearTimeout(timeout);
+        console.log('Rejected reports snapshot received');
+        
+        if (snapshot.exists()) {
+          const reportsData = snapshot.val();
+          const reportsList = Object.keys(reportsData).map(key => ({
+            id: key,
+            ...reportsData[key]
+          }));
+          console.log('Rejected reports list:', reportsList);
+          setRejectedReports(reportsList);
+        } else {
+          console.log('No rejected reports found');
+          setRejectedReports([]);
+        }
+        setLoadingRejectedReports(false);
+      }, (error) => {
+        clearTimeout(timeout);
+        console.error('Error fetching rejected reports:', error);
+        setLoadingRejectedReports(false);
+      });
+
+      return () => {
+        clearTimeout(timeout);
+        off(rejectedReportsRef, 'value', unsubscribe);
+      };
+    } else if (activeTab !== 'rejected-reports') {
+      setRejectedReports([]);
+      setLoadingRejectedReports(false);
+    }
+  }, [activeTab]);
+
   // Fetch lost pets when lost-reports tab is active
   useEffect(() => {
     if (activeTab === 'lost-reports' && database) {
@@ -175,8 +278,20 @@ export default function AdminDashboard() {
     if (!database) return;
     
     try {
+      // Get the current report data
       const reportRef = ref(database, `reports/${reportId}`);
-      await update(reportRef, {
+      const snapshot = await get(reportRef);
+      
+      if (!snapshot.exists()) {
+        console.error('Report not found');
+        return;
+      }
+      
+      const reportData = snapshot.val();
+      
+      // Add review information
+      const updatedReportData = {
+        ...reportData,
         status,
         updatedAt: new Date().toISOString(),
         reviewedBy: {
@@ -184,8 +299,41 @@ export default function AdminDashboard() {
           name: profile?.name || profile?.email,
           email: profile?.email
         }
-      });
-      console.log(`Report ${reportId} status updated to ${status}`);
+      };
+      
+      // Move to appropriate collection based on status
+      if (status === 'approved') {
+        // Move to approved reports
+        const approvedRef = ref(database, `approvedReports/${reportId}`);
+        await set(approvedRef, updatedReportData);
+        
+        // Remove from pending reports
+        await remove(reportRef);
+        
+        console.log(`Report ${reportId} moved to approved reports`);
+      } else if (status === 'rejected') {
+        // Move to rejected reports
+        const rejectedRef = ref(database, `rejectedReports/${reportId}`);
+        await set(rejectedRef, updatedReportData);
+        
+        // Remove from pending reports
+        await remove(reportRef);
+        
+        console.log(`Report ${reportId} moved to rejected reports`);
+      } else {
+        // For investigating status, just update in place
+        await update(reportRef, {
+          status,
+          updatedAt: new Date().toISOString(),
+          reviewedBy: {
+            uid: user?.uid,
+            name: profile?.name || profile?.email,
+            email: profile?.email
+          }
+        });
+        
+        console.log(`Report ${reportId} status updated to ${status}`);
+      }
     } catch (error) {
       console.error('Error updating report status:', error);
     }
@@ -478,7 +626,7 @@ export default function AdminDashboard() {
                             
                             
         {/* Check if all images are placeholders */}
-        {report.images.every(img => img.startsWith('placeholder-')) && (
+        {report.images.every((img: string) => img.startsWith('placeholder-')) && (
           <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
             <p className="text-sm text-blue-800">
               <strong>Note:</strong> This report was submitted before the image system was updated. 
@@ -608,6 +756,216 @@ export default function AdminDashboard() {
                               Rejected
                             </div>
                           )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        );
+      
+      case 'approved-reports':
+        return (
+          <Card className="bg-white shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-lg font-semibold text-gray-900">Approved Reports</CardTitle>
+              <CardDescription>View approved animal abuse reports that are now visible on the heatmap</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {loadingApprovedReports ? (
+                <div className="text-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto mb-4"></div>
+                  <p className="text-gray-600">Loading approved reports...</p>
+                </div>
+              ) : approvedReports.length === 0 ? (
+                <div className="text-center py-12">
+                  <CheckCircle className="w-16 h-16 text-green-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Approved Reports</h3>
+                  <p className="text-gray-600">No reports have been approved yet.</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {approvedReports.map((report) => (
+                    <Card key={report.id} className="border-l-4 border-l-green-500">
+                      <CardContent className="p-6">
+                        <div className="flex justify-between items-start mb-4">
+                          <div>
+                            <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                              {report.animalType} - {report.condition}
+                            </h3>
+                            <p className="text-sm text-gray-600">Report ID: {report.reportId}</p>
+                            <p className="text-sm text-gray-600">
+                              Submitted by: {report.submittedBy?.email} on {new Date(report.createdAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <Badge className="bg-green-100 text-green-800 border-green-200">
+                            Approved
+                          </Badge>
+                        </div>
+                        
+                        <div className="mb-4">
+                          <p className="text-sm font-medium text-gray-700">Location:</p>
+                          <p className="text-sm text-gray-600">{report.location}</p>
+                        </div>
+                        
+                        <div className="mb-4">
+                          <p className="text-sm font-medium text-gray-700">Description:</p>
+                          <p className="text-sm text-gray-600">{report.description}</p>
+                        </div>
+                        
+                        {report.images && report.images.length > 0 && (
+                          <div className="mb-4">
+                            <p className="text-sm font-medium text-gray-700 mb-2">Evidence Photos:</p>
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                              {report.images.map((imageUrl: string, index: number) => {
+                                const isPlaceholder = imageUrl.startsWith('placeholder-');
+                                const isBase64 = imageUrl.startsWith('data:image');
+                                
+                                return (
+                                  <div key={index} className="relative group">
+                                    <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
+                                      {isPlaceholder ? (
+                                        <div className="w-full h-full flex items-center justify-center text-gray-400">
+                                          <Camera className="w-8 h-8" />
+                                        </div>
+                                      ) : (
+                                        <img
+                                          src={isBase64 ? imageUrl : imageUrl}
+                                          alt={`Evidence ${index + 1}`}
+                                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                                          onError={(e) => {
+                                            const target = e.target as HTMLImageElement;
+                                            target.style.display = 'none';
+                                            target.nextElementSibling?.classList.remove('hidden');
+                                          }}
+                                        />
+                                      )}
+                                      <div className="hidden w-full h-full flex items-center justify-center text-gray-400">
+                                        <Camera className="w-8 h-8" />
+                                      </div>
+                                    </div>
+                                    <div className="absolute top-1 right-1 bg-black bg-opacity-50 text-white text-xs px-1 py-0.5 rounded">
+                                      {index + 1}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                        
+                        <div className="flex justify-end space-x-2">
+                          <div className="flex items-center text-green-600 text-sm">
+                            <CheckCircle className="w-4 h-4 mr-1" />
+                            Approved by {report.reviewedBy?.name} on {new Date(report.updatedAt).toLocaleDateString()}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        );
+      
+      case 'rejected-reports':
+        return (
+          <Card className="bg-white shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-lg font-semibold text-gray-900">Rejected Reports</CardTitle>
+              <CardDescription>View rejected animal abuse reports that were not approved</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {loadingRejectedReports ? (
+                <div className="text-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-600 mx-auto mb-4"></div>
+                  <p className="text-gray-600">Loading rejected reports...</p>
+                </div>
+              ) : rejectedReports.length === 0 ? (
+                <div className="text-center py-12">
+                  <X className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Rejected Reports</h3>
+                  <p className="text-gray-600">No reports have been rejected yet.</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {rejectedReports.map((report) => (
+                    <Card key={report.id} className="border-l-4 border-l-gray-500">
+                      <CardContent className="p-6">
+                        <div className="flex justify-between items-start mb-4">
+                          <div>
+                            <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                              {report.animalType} - {report.condition}
+                            </h3>
+                            <p className="text-sm text-gray-600">Report ID: {report.reportId}</p>
+                            <p className="text-sm text-gray-600">
+                              Submitted by: {report.submittedBy?.email} on {new Date(report.createdAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <Badge className="bg-gray-100 text-gray-800 border-gray-200">
+                            Rejected
+                          </Badge>
+                        </div>
+                        
+                        <div className="mb-4">
+                          <p className="text-sm font-medium text-gray-700">Location:</p>
+                          <p className="text-sm text-gray-600">{report.location}</p>
+                        </div>
+                        
+                        <div className="mb-4">
+                          <p className="text-sm font-medium text-gray-700">Description:</p>
+                          <p className="text-sm text-gray-600">{report.description}</p>
+                        </div>
+                        
+                        {report.images && report.images.length > 0 && (
+                          <div className="mb-4">
+                            <p className="text-sm font-medium text-gray-700 mb-2">Evidence Photos:</p>
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                              {report.images.map((imageUrl: string, index: number) => {
+                                const isPlaceholder = imageUrl.startsWith('placeholder-');
+                                const isBase64 = imageUrl.startsWith('data:image');
+                                
+                                return (
+                                  <div key={index} className="relative group">
+                                    <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
+                                      {isPlaceholder ? (
+                                        <div className="w-full h-full flex items-center justify-center text-gray-400">
+                                          <Camera className="w-8 h-8" />
+                                        </div>
+                                      ) : (
+                                        <img
+                                          src={isBase64 ? imageUrl : imageUrl}
+                                          alt={`Evidence ${index + 1}`}
+                                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                                          onError={(e) => {
+                                            const target = e.target as HTMLImageElement;
+                                            target.style.display = 'none';
+                                            target.nextElementSibling?.classList.remove('hidden');
+                                          }}
+                                        />
+                                      )}
+                                      <div className="hidden w-full h-full flex items-center justify-center text-gray-400">
+                                        <Camera className="w-8 h-8" />
+                                      </div>
+                                    </div>
+                                    <div className="absolute top-1 right-1 bg-black bg-opacity-50 text-white text-xs px-1 py-0.5 rounded">
+                                      {index + 1}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                        
+                        <div className="flex justify-end space-x-2">
+                          <div className="flex items-center text-gray-600 text-sm">
+                            <X className="w-4 h-4 mr-1" />
+                            Rejected by {report.reviewedBy?.name} on {new Date(report.updatedAt).toLocaleDateString()}
+                          </div>
                         </div>
                       </CardContent>
                     </Card>
@@ -895,7 +1253,29 @@ export default function AdminDashboard() {
               }`}
             >
               <AlertCircle className="w-5 h-5 mr-3" />
-              Abuse Reports
+              Pending Reports
+            </button>
+            <button 
+              onClick={() => setActiveTab('approved-reports')}
+              className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                activeTab === 'approved-reports' 
+                  ? 'text-white bg-gradient-to-r from-green-600 to-emerald-600' 
+                  : 'text-gray-700 hover:text-green-600 hover:bg-green-50'
+              }`}
+            >
+              <CheckCircle className="w-5 h-5 mr-3" />
+              Approved Reports
+            </button>
+            <button 
+              onClick={() => setActiveTab('rejected-reports')}
+              className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                activeTab === 'rejected-reports' 
+                  ? 'text-white bg-gradient-to-r from-gray-600 to-slate-600' 
+                  : 'text-gray-700 hover:text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              <X className="w-5 h-5 mr-3" />
+              Rejected Reports
             </button>
             <button 
               onClick={() => setActiveTab('lost-reports')}

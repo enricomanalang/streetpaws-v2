@@ -197,17 +197,15 @@ export const AbuseReportsChart = () => {
       return;
     }
 
-    // Fetch abuse reports data
-    const reportsRef = ref(database, 'reports');
+    // Fetch approved reports data
+    const reportsRef = ref(database, 'approvedReports');
     const unsubscribe = onValue(reportsRef, (snapshot) => {
       if (snapshot.exists()) {
         const reportsData = snapshot.val();
-        const reportsList = Object.keys(reportsData)
-          .filter(key => reportsData[key].status === 'approved') // Only count approved reports
-          .map(key => ({
-            id: key,
-            ...reportsData[key]
-          }));
+        const reportsList = Object.keys(reportsData).map(key => ({
+          id: key,
+          ...reportsData[key]
+        }));
         const processedData = processDataByMonth(reportsList).map(item => ({
           month: item.month,
           reports: item.value
