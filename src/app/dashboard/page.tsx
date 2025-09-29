@@ -464,45 +464,98 @@ export default function DashboardPage() {
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <Activity className="w-5 h-5 mr-2" />
-                  My Activity
+                  Recent Activity
                 </CardTitle>
+                <CardDescription>Your latest submissions and updates</CardDescription>
               </CardHeader>
               <CardContent>
                 {myReports.length + myLost.length + myFound.length === 0 ? (
                   <div className="text-center py-8">
                     <Activity className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">Your Activity</h3>
-                    <p className="text-gray-500">No submissions yet.</p>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No Activity Yet</h3>
+                    <p className="text-gray-500 mb-4">Start by submitting a report or posting about lost/found pets</p>
+                    <div className="flex flex-col sm:flex-row gap-2 justify-center">
+                      <Button size="sm" variant="outline" onClick={() => router.push('/report')}>
+                        <AlertCircle className="w-4 h-4 mr-1" />
+                        Report Abuse
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => router.push('/lost')}>
+                        <AlertCircle className="w-4 h-4 mr-1" />
+                        Lost Pet
+                      </Button>
+                    </div>
                   </div>
                 ) : (
-                  <div className="space-y-4">
-                    {myReports.slice(0, 5).map((r) => (
-                      <div key={r.id} className="flex items-center justify-between border rounded-md p-3">
-                        <div>
-                          <p className="text-sm font-medium text-gray-900">Abuse report • {r.animalType || 'Animal'}</p>
-                          <p className="text-xs text-gray-500">{new Date(r.createdAt).toLocaleString()} • {r.location}</p>
-                        </div>
-                        <span className="text-xs capitalize px-2 py-1 rounded bg-gray-100 text-gray-700">{r.status}</span>
+                  <div className="space-y-3">
+                    {/* Show total counts */}
+                    <div className="grid grid-cols-3 gap-2 mb-4">
+                      <div className="text-center p-2 bg-red-50 rounded-lg">
+                        <div className="text-lg font-semibold text-red-600">{myReports.length}</div>
+                        <div className="text-xs text-red-500">Reports</div>
                       </div>
-                    ))}
-                    {myLost.slice(0, 5).map((r) => (
-                      <div key={r.id} className="flex items-center justify-between border rounded-md p-3">
-                        <div>
-                          <p className="text-sm font-medium text-gray-900">Lost pet • {r.petName || r.animalType}</p>
-                          <p className="text-xs text-gray-500">{new Date(r.createdAt).toLocaleString()} • {r.lastSeenLocation}</p>
-                        </div>
-                        <span className="text-xs capitalize px-2 py-1 rounded bg-gray-100 text-gray-700">{r.status}</span>
+                      <div className="text-center p-2 bg-orange-50 rounded-lg">
+                        <div className="text-lg font-semibold text-orange-600">{myLost.length}</div>
+                        <div className="text-xs text-orange-500">Lost</div>
                       </div>
-                    ))}
-                    {myFound.slice(0, 5).map((r) => (
-                      <div key={r.id} className="flex items-center justify-between border rounded-md p-3">
-                        <div>
-                          <p className="text-sm font-medium text-gray-900">Found pet • {r.animalType}</p>
-                          <p className="text-xs text-gray-500">{new Date(r.createdAt).toLocaleString()} • {r.foundLocation}</p>
-                        </div>
-                        <span className="text-xs capitalize px-2 py-1 rounded bg-gray-100 text-gray-700">{r.status}</span>
+                      <div className="text-center p-2 bg-green-50 rounded-lg">
+                        <div className="text-lg font-semibold text-green-600">{myFound.length}</div>
+                        <div className="text-xs text-green-500">Found</div>
                       </div>
-                    ))}
+                    </div>
+                    
+                    {/* Recent submissions */}
+                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                      {myReports.slice(0, 3).map((r) => (
+                        <div key={r.id} className="flex items-center justify-between border rounded-md p-3 hover:bg-gray-50">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                            <div>
+                              <p className="text-sm font-medium text-gray-900">Abuse Report • {r.animalType || 'Animal'}</p>
+                              <p className="text-xs text-gray-500">{new Date(r.createdAt).toLocaleString()}</p>
+                            </div>
+                          </div>
+                          <span className={`text-xs px-2 py-1 rounded ${
+                            r.status === 'approved' ? 'bg-green-100 text-green-700' :
+                            r.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                            'bg-yellow-100 text-yellow-700'
+                          }`}>
+                            {r.status}
+                          </span>
+                        </div>
+                      ))}
+                      {myLost.slice(0, 2).map((r) => (
+                        <div key={r.id} className="flex items-center justify-between border rounded-md p-3 hover:bg-gray-50">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                            <div>
+                              <p className="text-sm font-medium text-gray-900">Lost Pet • {r.petName || r.animalType}</p>
+                              <p className="text-xs text-gray-500">{new Date(r.createdAt).toLocaleString()}</p>
+                            </div>
+                          </div>
+                          <span className="text-xs capitalize px-2 py-1 rounded bg-gray-100 text-gray-700">{r.status}</span>
+                        </div>
+                      ))}
+                      {myFound.slice(0, 2).map((r) => (
+                        <div key={r.id} className="flex items-center justify-between border rounded-md p-3 hover:bg-gray-50">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                            <div>
+                              <p className="text-sm font-medium text-gray-900">Found Pet • {r.animalType}</p>
+                              <p className="text-xs text-gray-500">{new Date(r.createdAt).toLocaleString()}</p>
+                            </div>
+                          </div>
+                          <span className="text-xs capitalize px-2 py-1 rounded bg-gray-100 text-gray-700">{r.status}</span>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    {/* View all button */}
+                    {(myReports.length + myLost.length + myFound.length) > 5 && (
+                      <Button variant="outline" size="sm" className="w-full mt-3">
+                        <Eye className="w-4 h-4 mr-2" />
+                        View All Activity
+                      </Button>
+                    )}
                   </div>
                 )}
               </CardContent>
