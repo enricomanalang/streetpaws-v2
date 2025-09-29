@@ -26,6 +26,7 @@ import { ref, get, push, set } from 'firebase/database';
 import { database } from '@/lib/firebase';
 import ImageUploader from '@/components/ImageUploader';
 import LocationPicker from '@/components/LocationPicker';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface LostPet {
   id: string;
@@ -62,6 +63,10 @@ export default function LostPetsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [uploadingImages, setUploadingImages] = useState(false);
+  const [selectedPet, setSelectedPet] = useState<LostPet | null>(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [sightingMessage, setSightingMessage] = useState('');
+  const [sightingSubmitting, setSightingSubmitting] = useState(false);
 
   const [formData, setFormData] = useState({
     petName: '',
@@ -187,6 +192,42 @@ export default function LostPetsPage() {
     pet.color.toLowerCase().includes(searchTerm.toLowerCase()) ||
     pet.lastSeenLocation.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const openDetails = (pet: LostPet) => {
+    setSelectedPet(pet);
+    setDetailsOpen(true);
+  };
+
+  const submitSighting = async () => {
+    if (!selectedPet) return;
+    if (!sightingMessage.trim()) return;
+    try {
+      setSightingSubmitting(true);
+      const sightingsRef = ref(database, `lostPetSightings/${selectedPet.id}`);
+      const newRef = push(sightingsRef);
+      await set(newRef, {
+        petId: selectedPet.id,
+        message: sightingMessage.trim(),
+        reportedAt: new Date().toISOString(),
+        reporter: user ? {
+          uid: user.uid,
+          name: profile?.name || profile?.email || 'User',
+          email: profile?.email || null
+        } : {
+          uid: 'anonymous',
+          name: 'Anonymous',
+          email: null
+        }
+      });
+      setSightingMessage('');
+      alert('Thanks! Your sighting was sent to the owner.');
+    } catch (e) {
+      console.error('Error submitting sighting:', e);
+      alert('Failed to submit sighting. Please try again.');
+    } finally {
+      setSightingSubmitting(false);
+    }
+  };
 
   if (success) {
     return (
@@ -541,7 +582,7 @@ export default function LostPetsPage() {
                             {pet.description}
                           </p>
                         )}
-                        <Button className="w-full mt-3" variant="outline">
+                        <Button className="w-full mt-3" variant="outline" onClick={() => openDetails(pet)}>
                           <Eye className="w-4 h-4 mr-2" />
                           View Details
                         </Button>
@@ -555,6 +596,47 @@ export default function LostPetsPage() {
         )}
       </main>
       </div>
+      <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{selectedPet?.petName}</DialogTitle>
+            <DialogDescription>
+              Lost • {selectedPet?.animalType} {selectedPet?.breed ? `• ${selectedPet?.breed}` : ''}
+            </DialogDescription>
+          </DialogHeader>
+          {selectedPet && (
+            <div className="space-y-3">
+              {selectedPet.images && selectedPet.images.length > 0 && (
+                <img src={selectedPet.images[0]} alt={selectedPet.petName} className="w-full h-56 object-cover rounded" />
+              )}
+              <div className="text-sm text-gray-700">
+                <div className="flex items-center mb-1"><MapPin className="w-4 h-4 mr-1" />{selectedPet.lastSeenLocation}</div>
+                <div className="flex items-center mb-2"><Calendar className="w-4 h-4 mr-1" />Last seen: {new Date(selectedPet.lastSeenDate).toLocaleString()}</div>
+                {selectedPet.description && <p className="whitespace-pre-wrap">{selectedPet.description}</p>}
+                <div className="mt-3 p-3 rounded border">
+                  <p className="text-xs text-gray-500 mb-1">Owner contact</p>
+                  <p className="font-medium">{selectedPet.submittedBy?.name || 'Owner'}</p>
+                  <p className="text-sm">{selectedPet.contactInfo}</p>
+                </div>
+              </div>
+              <div className="pt-3 border-t">
+                <p className="text-sm font-medium mb-2">Report a sighting</p>
+                <Textarea
+                  value={sightingMessage}
+                  onChange={(e) => setSightingMessage(e.target.value)}
+                  placeholder="Describe where and when you saw this pet..."
+                  rows={3}
+                />
+                <div className="flex justify-end mt-2">
+                  <Button onClick={submitSighting} disabled={sightingSubmitting || !sightingMessage.trim()}>
+                    {sightingSubmitting ? 'Sending...' : 'Send to Owner'}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </HydrationBoundary>
   );
 }
