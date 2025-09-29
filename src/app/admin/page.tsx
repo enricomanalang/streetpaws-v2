@@ -476,12 +476,6 @@ export default function AdminDashboard() {
                           <div className="mb-4">
                             <p className="text-sm font-medium text-gray-700 mb-2">Evidence Photos:</p>
                             
-                            {/* Debug info for new reports */}
-                            <div className="mb-2 p-2 bg-green-100 rounded text-xs">
-                              <p><strong>Debug:</strong> Found {report.images.length} images</p>
-                              <p><strong>First image type:</strong> {report.images[0]?.startsWith('data:image') ? 'Base64' : 'Other'}</p>
-                              <p><strong>First image preview:</strong> {report.images[0]?.substring(0, 50)}...</p>
-                            </div>
                             
         {/* Check if all images are placeholders */}
         {report.images.every(img => img.startsWith('placeholder-')) && (
@@ -493,14 +487,6 @@ export default function AdminDashboard() {
           </div>
         )}
         
-        {/* Check if images are Supabase URLs */}
-        {report.images.some(img => img.includes('supabase.co')) && (
-          <div className="mb-3 p-3 bg-green-50 border border-green-200 rounded-lg">
-            <p className="text-sm text-green-800">
-              <strong>✅ Supabase Images:</strong> These images are stored in Supabase and should display properly.
-            </p>
-          </div>
-        )}
                             
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                               {report.images.map((imageUrl: string, index: number) => {
