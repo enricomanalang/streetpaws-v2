@@ -13,6 +13,16 @@
       ".write": "auth != null",
       ".indexOn": ["submittedBy/uid", "createdAt"]
     },
+    "approvedReports": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      ".indexOn": ["submittedBy/uid", "createdAt"]
+    },
+    "rejectedReports": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      ".indexOn": ["submittedBy/uid", "createdAt"]
+    },
     "lostPets": {
       ".read": "auth != null",
       ".write": "auth != null",
