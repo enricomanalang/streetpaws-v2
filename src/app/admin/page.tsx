@@ -560,7 +560,8 @@ export default function AdminDashboard() {
                         )}
                         
                         <div className="flex justify-end space-x-2">
-                          {report.status === 'pending' && (
+                          {/* Show approve/reject buttons for pending and investigating reports */}
+                          {(report.status === 'pending' || report.status === 'investigating') && (
                             <>
                               <Button
                                 size="sm"
@@ -580,14 +581,33 @@ export default function AdminDashboard() {
                               </Button>
                             </>
                           )}
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => updateReportStatus(report.id, 'investigating')}
-                          >
-                            <Eye className="w-4 h-4 mr-1" />
-                            Investigate
-                          </Button>
+                          
+                          {/* Show investigate button only for pending reports */}
+                          {report.status === 'pending' && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => updateReportStatus(report.id, 'investigating')}
+                            >
+                              <Eye className="w-4 h-4 mr-1" />
+                              Investigate
+                            </Button>
+                          )}
+                          
+                          {/* Show status for completed reports */}
+                          {report.status === 'approved' && (
+                            <div className="flex items-center text-green-600 text-sm">
+                              <CheckCircle className="w-4 h-4 mr-1" />
+                              Approved
+                            </div>
+                          )}
+                          
+                          {report.status === 'rejected' && (
+                            <div className="flex items-center text-red-600 text-sm">
+                              <X className="w-4 h-4 mr-1" />
+                              Rejected
+                            </div>
+                          )}
                         </div>
                       </CardContent>
                     </Card>
