@@ -92,6 +92,8 @@ export default function AdminDashboard() {
     [key: string]: any;
   }>>([]);
   const [loadingLostPets, setLoadingLostPets] = useState(false);
+  const [lostFilter, setLostFilter] = useState<'all'|'pending'|'approved'|'rejected'|'found'|'closed'>('pending');
+  const [selectedLostIds, setSelectedLostIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!loading && !user) {
@@ -1021,6 +1023,59 @@ export default function AdminDashboard() {
               <CardDescription>Review and manage lost pet reports submitted by users</CardDescription>
             </CardHeader>
             <CardContent>
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-600">Filter:</span>
+                  <select
+                    value={lostFilter}
+                    onChange={(e) => setLostFilter(e.target.value as any)}
+                    className="flex h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs"
+                  >
+                    <option value="all">All</option>
+                    <option value="pending">Pending</option>
+                    <option value="approved">Approved</option>
+                    <option value="rejected">Rejected</option>
+                    <option value="found">Found</option>
+                    <option value="closed">Closed</option>
+                  </select>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setSelectedLostIds(new Set(lostPets.filter(p => lostFilter==='all' ? true : p.status===lostFilter).map(p => p.id)))}
+                  >
+                    Select All
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => setSelectedLostIds(new Set())}>Clear</Button>
+                  <Button
+                    size="sm"
+                    className="bg-green-600 hover:bg-green-700"
+                    disabled={selectedLostIds.size === 0}
+                    onClick={async () => {
+                      for (const id of Array.from(selectedLostIds)) {
+                        await updateLostPetStatus(id, 'approved');
+                      }
+                      setSelectedLostIds(new Set());
+                    }}
+                  >
+                    Approve Selected
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    disabled={selectedLostIds.size === 0}
+                    onClick={async () => {
+                      for (const id of Array.from(selectedLostIds)) {
+                        await updateLostPetStatus(id, 'rejected');
+                      }
+                      setSelectedLostIds(new Set());
+                    }}
+                  >
+                    Reject Selected
+                  </Button>
+                </div>
+              </div>
               {loadingLostPets ? (
                 <div className="text-center py-12">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
