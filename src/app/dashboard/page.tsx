@@ -54,7 +54,7 @@ import {
   Plus
 } from 'lucide-react';
 import { database } from '@/lib/firebase';
-import { ref, get, query, orderByChild, equalTo } from 'firebase/database';
+import { ref, get, query, orderByChild, equalTo, onValue, off } from 'firebase/database';
 
 export default function DashboardPage() {
   const { user, profile, loading } = useAuth();
@@ -64,12 +64,31 @@ export default function DashboardPage() {
   const [myFound, setMyFound] = useState<any[]>([]);
   const [myAdoptions, setMyAdoptions] = useState<any[]>([]);
   const [loadingReports, setLoadingReports] = useState(true);
+  const [unreadNotifs, setUnreadNotifs] = useState<any[]>([]);
 
   useEffect(() => {
     if (!loading && !user) {
       router.push('/login');
     }
   }, [user, loading, router]);
+
+  // Live notifications listener for sightings
+  useEffect(() => {
+    if (!user || !database) return;
+    const notifsRef = ref(database, `notifications/${user.uid}`);
+    const unsubscribe = onValue(notifsRef, (snap) => {
+      if (snap.exists()) {
+        const data = snap.val();
+        const list = Object.keys(data).map(k => ({ id: k, ...data[k] }));
+        setUnreadNotifs(list.filter(n => n.read === false));
+      } else {
+        setUnreadNotifs([]);
+      }
+    });
+    return () => {
+      off(notifsRef, 'value', unsubscribe as any);
+    };
+  }, [user]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -161,6 +180,12 @@ export default function DashboardPage() {
       </div>
 
       <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+        {unreadNotifs.length > 0 && (
+          <div className="mb-6 p-4 border rounded-lg bg-yellow-50 text-yellow-800">
+            <p className="font-medium">You have {unreadNotifs.length} new sighting{unreadNotifs.length > 1 ? 's' : ''} on your lost pet{unreadNotifs.length > 1 ? 's' : ''}.</p>
+            <p className="text-sm mt-1">Open your Lost Pets entries to review details.</p>
+          </div>
+        )}
         {/* Statistics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
