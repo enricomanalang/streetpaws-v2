@@ -40,28 +40,72 @@ export default function MyReportsPage() {
       setLoadingReports(true);
       
       try {
+        console.log('Loading reports for user:', user.uid);
+        
         // Query all report collections (pending, approved, rejected)
         const pendingQ = query(ref(database, 'reports'), orderByChild('submittedBy/uid'), equalTo(user.uid));
         const approvedQ = query(ref(database, 'approvedReports'), orderByChild('submittedBy/uid'), equalTo(user.uid));
         const rejectedQ = query(ref(database, 'rejectedReports'), orderByChild('submittedBy/uid'), equalTo(user.uid));
 
+        console.log('Querying reports from all collections...');
         const [pendingSnap, approvedSnap, rejectedSnap] = await Promise.all([
           get(pendingQ), get(approvedQ), get(rejectedQ)
         ]);
 
-        const toList = (snap: any) => snap.exists() ? Object.keys(snap.val()).map(k => ({ id: k, ...snap.val()[k] })) : [];
+        console.log('Query results:', {
+          pending: pendingSnap.exists() ? pendingSnap.val() : null,
+          approved: approvedSnap.exists() ? approvedSnap.val() : null,
+          rejected: rejectedSnap.exists() ? rejectedSnap.val() : null
+        });
+
+        const toList = (snap: any) => {
+          if (!snap.exists()) {
+            console.log('No data in snapshot');
+            return [];
+          }
+          const data = snap.val();
+          const reports = Object.keys(data).map(k => ({ id: k, ...data[k] }));
+          console.log('Converted to list:', reports);
+          return reports;
+        };
 
         // Combine all reports from different collections
+        const pendingReports = toList(pendingSnap);
+        const approvedReports = toList(approvedSnap);
+        const rejectedReports = toList(rejectedSnap);
+        
         const allReports = [
-          ...toList(pendingSnap),
-          ...toList(approvedSnap),
-          ...toList(rejectedSnap)
+          ...pendingReports,
+          ...approvedReports,
+          ...rejectedReports
         ].sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
 
+        console.log('All user reports:', allReports);
         setReports(allReports);
-        console.log('User reports loaded:', allReports);
+        
+        // If no reports found with query, try fetching all reports and filtering client-side
+        if (allReports.length === 0) {
+          console.log('No reports found with query, trying fallback method...');
+          try {
+            const allReportsRef = ref(database, 'reports');
+            const allReportsSnap = await get(allReportsRef);
+            
+            if (allReportsSnap.exists()) {
+              const allReportsData = allReportsSnap.val();
+              const userReports = Object.keys(allReportsData)
+                .map(k => ({ id: k, ...allReportsData[k] }))
+                .filter(report => report.submittedBy && report.submittedBy.uid === user.uid);
+              
+              console.log('Fallback method found reports:', userReports);
+              setReports(userReports);
+            }
+          } catch (fallbackError) {
+            console.error('Fallback method also failed:', fallbackError);
+          }
+        }
       } catch (e) {
         console.error('Failed loading user reports', e);
+        console.error('Error details:', e);
       } finally {
         setLoadingReports(false);
       }
@@ -113,6 +157,30 @@ export default function MyReportsPage() {
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back to Dashboard
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={async () => {
+                  console.log('=== DEBUG INFO ===');
+                  console.log('User:', user);
+                  console.log('Profile:', profile);
+                  console.log('Database:', database);
+                  
+                  if (database) {
+                    try {
+                      const allReportsRef = ref(database, 'reports');
+                      const allReportsSnap = await get(allReportsRef);
+                      console.log('All reports in database:', allReportsSnap.exists() ? allReportsSnap.val() : 'No reports found');
+                    } catch (e) {
+                      console.error('Error fetching all reports:', e);
+                    }
+                  }
+                }}
+                className="flex items-center"
+              >
+                <AlertCircle className="w-4 h-4 mr-2" />
+                Debug Info
               </Button>
             </div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">My Reports</h1>
@@ -197,11 +265,20 @@ export default function MyReportsPage() {
                 <div className="text-center">
                   <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                   <h3 className="text-lg font-medium text-gray-900 mb-2">No Reports Yet</h3>
-                  <p className="text-gray-500 mb-6">You haven't submitted any animal abuse reports yet.</p>
-                  <Button onClick={() => router.push('/report')}>
-                    <AlertCircle className="w-4 h-4 mr-2" />
-                    Submit Your First Report
-                  </Button>
+                  <p className="text-gray-500 mb-4">You haven't submitted any animal abuse reports yet.</p>
+                  <p className="text-sm text-gray-400 mb-6">
+                    Submit your first report using the 'Report Animal Abuse' card on the dashboard.
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                    <Button onClick={() => router.push('/report')}>
+                      <AlertCircle className="w-4 h-4 mr-2" />
+                      Submit Your First Report
+                    </Button>
+                    <Button variant="outline" onClick={() => window.location.reload()}>
+                      <Eye className="w-4 h-4 mr-2" />
+                      Refresh Page
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -302,3 +379,4 @@ export default function MyReportsPage() {
     </HydrationBoundary>
   );
 }
+
