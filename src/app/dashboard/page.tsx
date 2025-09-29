@@ -63,6 +63,7 @@ export default function DashboardPage() {
   const [myLost, setMyLost] = useState<any[]>([]);
   const [myFound, setMyFound] = useState<any[]>([]);
   const [myAdoptions, setMyAdoptions] = useState<any[]>([]);
+  const [loadingReports, setLoadingReports] = useState(true);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -73,6 +74,7 @@ export default function DashboardPage() {
   useEffect(() => {
     const loadData = async () => {
       if (!user || !database) return;
+      setLoadingReports(true);
       try {
         // Query all report collections (pending, approved, rejected)
         const pendingQ = query(ref(database, 'reports'), orderByChild('submittedBy/uid'), equalTo(user.uid));
@@ -103,8 +105,14 @@ export default function DashboardPage() {
         setMyAdoptions(toList(aSnap).sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || '')));
         
         console.log('User reports loaded:', allReports);
+        console.log('Reports count:', allReports.length);
+        console.log('Pending reports:', toList(pendingSnap).length);
+        console.log('Approved reports:', toList(approvedSnap).length);
+        console.log('Rejected reports:', toList(rejectedSnap).length);
       } catch (e) {
         console.error('Failed loading dashboard activity', e);
+      } finally {
+        setLoadingReports(false);
       }
     };
     loadData();
@@ -315,7 +323,12 @@ export default function DashboardPage() {
                     </div>
                   </CardHeader>
                   <CardContent>
-                    {myReports.length === 0 ? (
+                    {loadingReports ? (
+                      <div className="text-center py-4">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto mb-4"></div>
+                        <p className="text-sm text-gray-500">Loading your reports...</p>
+                      </div>
+                    ) : myReports.length === 0 ? (
                       <div className="text-center py-4">
                         <div className="text-gray-400 mb-2">
                           <FileText className="w-12 h-12 mx-auto" />
