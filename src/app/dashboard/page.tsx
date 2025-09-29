@@ -363,15 +363,7 @@ export default function DashboardPage() {
                         <Button 
                           className="w-full" 
                           variant="outline"
-                          onClick={() => {
-                            // Show a simple modal or navigate to a reports page
-                            alert(`You have ${myReports.length} reports:\n\n` +
-                              `• ${myReports.filter(r => r.status === 'pending' || r.status === 'investigating').length} Pending/Investigating\n` +
-                              `• ${myReports.filter(r => r.status === 'approved').length} Approved (visible on map)\n` +
-                              `• ${myReports.filter(r => r.status === 'rejected').length} Rejected\n\n` +
-                              `Your latest report: ${myReports[0]?.animalType || 'N/A'} - ${myReports[0]?.condition || 'N/A'}`
-                            );
-                          }}
+                          onClick={() => router.push('/my-reports')}
                         >
                           <Eye className="w-4 h-4 mr-2" />
                           View My Reports
