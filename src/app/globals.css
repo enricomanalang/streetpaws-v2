@@ -215,9 +215,10 @@ form, .form-container {
     pointer-events: auto !important;
   }
   .leaflet-container {
-    z-index: 1;
+    z-index: 50 !important;
     touch-action: manipulation;
   }
+  .leaflet-pane { z-index: 50 !important; }
 }
 
 @keyframes fadeIn {
