@@ -398,7 +398,7 @@ export default function LocationPicker({
             </div>
           </CardHeader>
           <CardContent>
-            <div className="h-64 w-full rounded-lg overflow-hidden border">
+            <div className="h-64 w-full rounded-lg overflow-hidden border relative z-0">
               {!isLeafletLoaded ? (
                 <div className="flex items-center justify-center h-full">
                   <div className="text-center">

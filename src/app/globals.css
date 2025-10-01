@@ -205,6 +205,19 @@ form, .form-container {
   .glass {
     @apply bg-white/80 backdrop-blur-sm border border-white/20;
   }
+
+  /* Ensure Leaflet maps remain fully clickable (guard against overlays) */
+  .leaflet-container,
+  .leaflet-container *,
+  .leaflet-pane,
+  .leaflet-top,
+  .leaflet-bottom {
+    pointer-events: auto !important;
+  }
+  .leaflet-container {
+    z-index: 1;
+    touch-action: manipulation;
+  }
 }
 
 @keyframes fadeIn {
