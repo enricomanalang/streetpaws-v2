@@ -45,6 +45,7 @@ export default function LocationPicker({
   const [mapCenter, setMapCenter] = useState<[number, number]>([14.5995, 120.9842]); // Manila coordinates
   const [isLeafletLoaded, setIsLeafletLoaded] = useState(false);
   const mapRef = useRef<L.Map | null>(null);
+  const [isMarkerDraggable, setIsMarkerDraggable] = useState(false);
 
   // Load Leaflet CSS and JS
   useEffect(() => {
@@ -412,6 +413,7 @@ export default function LocationPicker({
                   zoom={13}
                   style={{ height: '100%', width: '100%', pointerEvents: 'auto' }}
                   ref={mapRef}
+                  doubleClickZoom={false}
                   whenCreated={(map) => {
                     // Store map ref and bind click handler reliably
                     mapRef.current = map as unknown as L.Map;
@@ -429,9 +431,28 @@ export default function LocationPicker({
                     <Marker
                       position={coordinates}
                       icon={createCustomIcon() || undefined}
+                      draggable={isMarkerDraggable}
                       eventHandlers={{
                         add: () => {
                           console.log('Red marker added to map at:', coordinates);
+                        },
+                        dragend: (e: any) => {
+                          const latLng = e.target.getLatLng();
+                          const newCoords: [number, number] = [latLng.lat, latLng.lng];
+                          setCoordinates(newCoords);
+                          setMapCenter(newCoords);
+                          reverseGeocode(newCoords[0], newCoords[1]).then((address) => {
+                            if (address) {
+                              setAddressInput(address);
+                              onLocationSelect({ address, latitude: newCoords[0], longitude: newCoords[1] });
+                            }
+                          });
+                          // Turn off dragging after move
+                          setIsMarkerDraggable(false);
+                        },
+                        dblclick: () => {
+                          // Enable dragging on double click
+                          setIsMarkerDraggable(true);
                         }
                       }}
                     >
@@ -443,6 +464,9 @@ export default function LocationPicker({
                           </p>
                           <p className="text-xs text-gray-500 mt-1">
                             Coordinates: {coordinates[0].toFixed(6)}, {coordinates[1].toFixed(6)}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            Tip: Double click the red dot to enable drag, then move it.
                           </p>
                         </div>
                       </Popup>
