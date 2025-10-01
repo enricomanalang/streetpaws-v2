@@ -410,13 +410,15 @@ export default function LocationPicker({
                 <MapContainer
                   center={mapCenter}
                   zoom={13}
-                  style={{ height: '100%', width: '100%' }}
+                  style={{ height: '100%', width: '100%', pointerEvents: 'auto' }}
                   ref={mapRef}
-                  eventHandlers={{
-                    click: (e) => {
+                  whenCreated={(map) => {
+                    // Store map ref and bind click handler reliably
+                    mapRef.current = map as unknown as L.Map;
+                    map.on('click', (e: any) => {
                       console.log('Map clicked!', e);
                       handleMapClick(e);
-                    }
+                    });
                   }}
                 >
                   <TileLayer
