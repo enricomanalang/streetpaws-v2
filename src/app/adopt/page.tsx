@@ -105,6 +105,20 @@ export default function AdoptPage() {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  const testDatabaseConnection = async () => {
+    try {
+      console.log('Testing database connection...');
+      const testRef = ref(database, 'test');
+      await set(testRef, { test: 'connection', timestamp: new Date().toISOString() });
+      console.log('Database connection test successful');
+      await set(testRef, null); // Clean up test data
+      return true;
+    } catch (error) {
+      console.error('Database connection test failed:', error);
+      return false;
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !profile || !selectedAnimal) return;
@@ -123,6 +137,20 @@ export default function AdoptPage() {
       // Check if database is initialized
       if (!database) {
         throw new Error('Database not initialized. Please refresh the page.');
+      }
+
+      // Test database connection first
+      const connectionTest = await testDatabaseConnection();
+      if (!connectionTest) {
+        throw new Error('Database connection failed. Please check your internet connection.');
+      }
+
+      // Validate required fields
+      const requiredFields = ['fullName', 'email', 'phone', 'age', 'address', 'experience', 'livingSituation', 'reasonForAdoption'];
+      const missingFields = requiredFields.filter(field => !formData[field as keyof typeof formData]);
+      
+      if (missingFields.length > 0) {
+        throw new Error(`Please fill in all required fields: ${missingFields.join(', ')}`);
       }
 
       // Prepend +63 to phone number
@@ -189,6 +217,10 @@ export default function AdoptPage() {
           setError('Network error. Please check your internet connection and try again.');
         } else if (err.message.includes('Database not initialized')) {
           setError('Database connection error. Please refresh the page and try again.');
+        } else if (err.message.includes('Database connection failed')) {
+          setError('Database connection failed. Please check your internet connection and try again.');
+        } else if (err.message.includes('Please fill in all required fields')) {
+          setError(err.message);
         } else {
           setError(`Failed to submit adoption request: ${err.message}`);
         }
@@ -590,6 +622,34 @@ export default function AdoptPage() {
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
+            )}
+
+            {/* Debug Section - Only show in development */}
+            {process.env.NODE_ENV === 'development' && (
+              <Card className="bg-yellow-50 border-yellow-200">
+                <CardHeader>
+                  <CardTitle className="text-yellow-800">Debug Information</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="text-sm">
+                    <p><strong>User:</strong> {user?.uid || 'Not logged in'}</p>
+                    <p><strong>Profile:</strong> {profile?.email || 'No profile'}</p>
+                    <p><strong>Database:</strong> {database ? 'Connected' : 'Not connected'}</p>
+                    <p><strong>Selected Animal:</strong> {selectedAnimal?.id || 'None selected'}</p>
+                  </div>
+                  <Button 
+                    onClick={async () => {
+                      console.log('=== MANUAL DEBUG TEST ===');
+                      const testResult = await testDatabaseConnection();
+                      alert(testResult ? 'Database connection successful!' : 'Database connection failed!');
+                    }}
+                    variant="outline"
+                    size="sm"
+                  >
+                    Test Database Connection
+                  </Button>
+                </CardContent>
+              </Card>
             )}
 
             {/* Submit Button */}

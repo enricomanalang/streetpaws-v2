@@ -29,26 +29,9 @@ try {
   storage = getStorage(app);
   firestore = getFirestore(app);
 
-  // Connect to emulators in development
-  if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined') {
-    try {
-      // Only connect if not already connected
-      if (!auth._delegate._config?.emulator) {
-        connectAuthEmulator(auth, 'http://localhost:9099');
-      }
-      if (!database._delegate._repoInternal?.repoInfo_?.host.includes('localhost')) {
-        connectDatabaseEmulator(database, 'localhost', 9199);
-      }
-      if (!storage._delegate._host.includes('localhost')) {
-        connectStorageEmulator(storage, 'localhost', 9000);
-      }
-      if (!firestore._delegate._settings?.host?.includes('localhost')) {
-        connectFirestoreEmulator(firestore, 'localhost', 8080);
-      }
-    } catch (emulatorError) {
-      console.log('Emulators already connected or not available:', emulatorError);
-    }
-  }
+  // Skip emulator connection - use production Firebase directly
+  // This prevents connection issues when emulators are not running
+  console.log('Firebase initialized successfully with production config');
 } catch (error) {
   console.error('Firebase initialization failed:', error);
 }
