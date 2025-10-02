@@ -76,6 +76,7 @@ export default function AdoptPage() {
 
   const loadAvailableAnimals = async () => {
     try {
+      console.log('Loading available animals...');
       // Load from approvedReports collection where animals are marked for adoption
       const approvedReportsRef = ref(database, 'approvedReports');
       const snapshot = await get(approvedReportsRef);
@@ -86,18 +87,45 @@ export default function AdoptPage() {
         
         Object.keys(reports).forEach(key => {
           const report = reports[key];
+          console.log(`Checking report ${key}:`, {
+            availableForAdoption: report.availableForAdoption,
+            status: report.status,
+            animalType: report.animalType,
+            age: report.age
+          });
+          
           if (report.availableForAdoption && report.status === 'completed') {
-            animals.push({
+            // Ensure all required fields have default values
+            const animalData = {
               id: key,
-              ...report
-            });
+              animalType: report.animalType || 'Unknown',
+              breed: report.breed || 'Mixed Breed',
+              color: report.color || 'Unknown',
+              size: report.size || 'Unknown',
+              age: report.age || 'Unknown',
+              gender: report.gender || 'Unknown',
+              description: report.description || 'No description available',
+              images: report.images || [],
+              location: report.location || 'Unknown location',
+              condition: report.condition || 'Unknown',
+              availableForAdoption: report.availableForAdoption,
+              reportId: report.reportId || key
+            };
+            
+            animals.push(animalData);
+            console.log('Added animal:', animalData);
           }
         });
         
+        console.log(`Found ${animals.length} available animals:`, animals);
         setAvailableAnimals(animals);
+      } else {
+        console.log('No approved reports found');
+        setAvailableAnimals([]);
       }
     } catch (err) {
       console.error('Error loading animals:', err);
+      setAvailableAnimals([]);
     }
   };
 
@@ -117,6 +145,28 @@ export default function AdoptPage() {
       console.error('Database connection test failed:', error);
       return false;
     }
+  };
+
+  const cleanUndefinedValues = (obj: any): any => {
+    if (obj === null || obj === undefined) {
+      return null;
+    }
+    
+    if (Array.isArray(obj)) {
+      return obj.map(item => cleanUndefinedValues(item));
+    }
+    
+    if (typeof obj === 'object') {
+      const cleaned: any = {};
+      for (const [key, value] of Object.entries(obj)) {
+        if (value !== undefined) {
+          cleaned[key] = cleanUndefinedValues(value);
+        }
+      }
+      return cleaned;
+    }
+    
+    return obj;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -156,21 +206,21 @@ export default function AdoptPage() {
       // Prepend +63 to phone number
       const phone = `+63 ${formData.phone}`;
 
-      // Create adoption request data
+      // Create adoption request data with null safety
       const adoptionData = {
         ...formData,
         phone,
         animalId: selectedAnimal.id,
         animalInfo: {
-          animalType: selectedAnimal.animalType,
-          breed: selectedAnimal.breed,
-          color: selectedAnimal.color,
-          size: selectedAnimal.size,
-          age: selectedAnimal.age,
-          gender: selectedAnimal.gender,
-          description: selectedAnimal.description,
-          images: selectedAnimal.images,
-          location: selectedAnimal.location
+          animalType: selectedAnimal.animalType || 'Unknown',
+          breed: selectedAnimal.breed || 'Mixed Breed',
+          color: selectedAnimal.color || 'Unknown',
+          size: selectedAnimal.size || 'Unknown',
+          age: selectedAnimal.age || 'Unknown',
+          gender: selectedAnimal.gender || 'Unknown',
+          description: selectedAnimal.description || 'No description available',
+          images: selectedAnimal.images || [],
+          location: selectedAnimal.location || 'Unknown location'
         },
         applicant: {
           uid: user.uid,
@@ -186,6 +236,10 @@ export default function AdoptPage() {
 
       console.log('Adoption data prepared:', adoptionData);
 
+      // Clean undefined values before saving to Firebase
+      const cleanedData = cleanUndefinedValues(adoptionData);
+      console.log('Cleaned adoption data:', cleanedData);
+
       // Save to Firebase
       const adoptionsRef = ref(database, 'adoptionRequests');
       console.log('Adoption ref created:', adoptionsRef);
@@ -193,7 +247,7 @@ export default function AdoptPage() {
       const newAdoptionRef = push(adoptionsRef);
       console.log('New adoption ref:', newAdoptionRef);
       
-      await set(newAdoptionRef, adoptionData);
+      await set(newAdoptionRef, cleanedData);
       console.log('Adoption request saved successfully');
 
       setSuccess(true);
