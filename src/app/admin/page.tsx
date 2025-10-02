@@ -378,6 +378,62 @@ export default function AdminDashboard() {
     }
   };
 
+  const markForAdoption = async (reportId: string) => {
+    if (!database) {
+      console.error('Database not initialized');
+      alert('Database connection error. Please refresh the page.');
+      return;
+    }
+    
+    if (!user || !profile) {
+      console.error('User not authenticated');
+      alert('Authentication error. Please log in again.');
+      return;
+    }
+    
+    console.log(`Attempting to mark report ${reportId} for adoption`);
+    
+    try {
+      // Get the current report data from approved reports
+      const reportRef = ref(database, `approvedReports/${reportId}`);
+      const snapshot = await get(reportRef);
+      
+      if (!snapshot.exists()) {
+        console.error('Report not found:', reportId);
+        alert('Report not found. It may have been already processed.');
+        return;
+      }
+      
+      const reportData = snapshot.val();
+      console.log('Current report data:', reportData);
+      
+      // Update the report to mark it for adoption
+      const updatedReportData = {
+        ...reportData,
+        availableForAdoption: true,
+        status: 'completed',
+        updatedAt: new Date().toISOString(),
+        markedForAdoptionBy: {
+          uid: user.uid,
+          name: profile.name || profile.email,
+          email: profile.email
+        }
+      };
+      
+      console.log('Updated report data for adoption:', updatedReportData);
+      
+      // Update the report in place
+      await update(reportRef, updatedReportData);
+      
+      alert(`Report ${reportId} has been marked for adoption! The animal is now available on the adopt page.`);
+      console.log(`Report ${reportId} marked for adoption`);
+      
+    } catch (error) {
+      console.error('Error marking report for adoption:', error);
+      alert(`Error marking report for adoption: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
+
   const updateLostPetStatus = async (petId: string, status: string) => {
     if (!database) return;
     
@@ -895,10 +951,28 @@ export default function AdminDashboard() {
                           </div>
                         )}
                         
-                        <div className="flex justify-end space-x-2">
+                        <div className="flex justify-between items-center">
                           <div className="flex items-center text-green-600 text-sm">
                             <CheckCircle className="w-4 h-4 mr-1" />
                             Approved by {report.reviewedBy?.name} on {new Date(report.updatedAt).toLocaleDateString()}
+                          </div>
+                          
+                          <div className="flex space-x-2">
+                            {!report.availableForAdoption ? (
+                              <Button
+                                size="sm"
+                                onClick={() => markForAdoption(report.id)}
+                                className="bg-purple-600 hover:bg-purple-700"
+                              >
+                                <Heart className="w-4 h-4 mr-1" />
+                                Mark for Adoption
+                              </Button>
+                            ) : (
+                              <div className="flex items-center text-purple-600 text-sm">
+                                <Heart className="w-4 h-4 mr-1" />
+                                Available for Adoption
+                              </div>
+                            )}
                           </div>
                         </div>
                       </CardContent>

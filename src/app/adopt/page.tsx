@@ -76,8 +76,9 @@ export default function AdoptPage() {
 
   const loadAvailableAnimals = async () => {
     try {
-      const reportsRef = ref(database, 'reports');
-      const snapshot = await get(reportsRef);
+      // Load from approvedReports collection where animals are marked for adoption
+      const approvedReportsRef = ref(database, 'approvedReports');
+      const snapshot = await get(approvedReportsRef);
       
       if (snapshot.exists()) {
         const reports = snapshot.val();
