@@ -94,6 +94,11 @@ export default function AdminDashboard() {
   const [loadingLostPets, setLoadingLostPets] = useState(false);
   const [lostFilter, setLostFilter] = useState<'all'|'pending'|'approved'|'rejected'|'found'|'closed'>('pending');
   const [selectedLostIds, setSelectedLostIds] = useState<Set<string>>(new Set());
+  const [adoptionRequests, setAdoptionRequests] = useState<Array<{
+    id: string;
+    [key: string]: any;
+  }>>([]);
+  const [loadingAdoptionRequests, setLoadingAdoptionRequests] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -148,6 +153,52 @@ export default function AdminDashboard() {
       // Reset reports when switching away from abuse-reports
       setReports([]);
       setLoadingReports(false);
+    }
+  }, [activeTab]);
+
+  // Fetch adoption requests when adopt tab is active
+  useEffect(() => {
+    if (activeTab === 'adopt' && database) {
+      setLoadingAdoptionRequests(true);
+      console.log('Fetching adoption requests from Realtime Database...');
+      
+      const timeout = setTimeout(() => {
+        console.log('Timeout reached, stopping loading...');
+        setLoadingAdoptionRequests(false);
+      }, 10000);
+      
+      const adoptionRequestsRef = ref(database, 'adoptionRequests');
+      
+      const unsubscribe = onValue(adoptionRequestsRef, (snapshot) => {
+        clearTimeout(timeout);
+        console.log('Adoption requests snapshot received');
+        
+        if (snapshot.exists()) {
+          const requests = snapshot.val();
+          const requestsList: Array<{ id: string; [key: string]: any }> = Object.keys(requests).map(key => ({
+            id: key,
+            ...requests[key]
+          }));
+          console.log('Adoption requests list:', requestsList);
+          setAdoptionRequests(requestsList);
+        } else {
+          console.log('No adoption requests found');
+          setAdoptionRequests([]);
+        }
+        setLoadingAdoptionRequests(false);
+      }, (error) => {
+        clearTimeout(timeout);
+        console.error('Error fetching adoption requests:', error);
+        setLoadingAdoptionRequests(false);
+      });
+
+      return () => {
+        clearTimeout(timeout);
+        off(adoptionRequestsRef, 'value', unsubscribe);
+      };
+    } else if (activeTab !== 'adopt') {
+      setAdoptionRequests([]);
+      setLoadingAdoptionRequests(false);
     }
   }, [activeTab]);
 
@@ -451,6 +502,42 @@ export default function AdminDashboard() {
       console.log(`Lost pet ${petId} status updated to ${status}`);
     } catch (error) {
       console.error('Error updating lost pet status:', error);
+    }
+  };
+
+  const updateAdoptionRequestStatus = async (requestId: string, status: string) => {
+    if (!database) {
+      console.error('Database not initialized');
+      alert('Database connection error. Please refresh the page.');
+      return;
+    }
+    
+    if (!user || !profile) {
+      console.error('User not authenticated');
+      alert('Authentication error. Please log in again.');
+      return;
+    }
+    
+    console.log(`Attempting to update adoption request ${requestId} to status: ${status}`);
+    
+    try {
+      const requestRef = ref(database, `adoptionRequests/${requestId}`);
+      await update(requestRef, {
+        status,
+        updatedAt: new Date().toISOString(),
+        reviewedBy: {
+          uid: user.uid,
+          name: profile.name || profile.email,
+          email: profile.email
+        }
+      });
+      
+      alert(`Adoption request ${requestId} status updated to ${status}`);
+      console.log(`Adoption request ${requestId} status updated to ${status}`);
+      
+    } catch (error) {
+      console.error('Error updating adoption request status:', error);
+      alert(`Error updating adoption request: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
@@ -1321,21 +1408,132 @@ export default function AdminDashboard() {
               <CardDescription>Review and approve adoption requests from users</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-12">
-                <Heart className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Adoption Requests</h3>
-                <p className="text-gray-500">Review and approve adoption requests submitted by users.</p>
-                <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-                  <p className="text-sm text-gray-600 mb-2">Admin Features:</p>
-                  <ul className="text-sm text-gray-500 space-y-1">
-                    <li>• View all adoption requests</li>
-                    <li>• Review applicant information</li>
-                    <li>• Approve or reject applications</li>
-                    <li>• Schedule adoption meetings</li>
-                    <li>• Track adoption status</li>
-                  </ul>
+              {loadingAdoptionRequests ? (
+                <div className="text-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
+                  <p className="text-gray-600">Loading adoption requests...</p>
                 </div>
-              </div>
+              ) : adoptionRequests.length === 0 ? (
+                <div className="text-center py-12">
+                  <Heart className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Adoption Requests</h3>
+                  <p className="text-gray-500">No adoption requests have been submitted yet.</p>
+                  <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                    <p className="text-sm text-gray-600 mb-2">Admin Features:</p>
+                    <ul className="text-sm text-gray-500 space-y-1">
+                      <li>• View all adoption requests</li>
+                      <li>• Review applicant information</li>
+                      <li>• Approve or reject applications</li>
+                      <li>• Schedule adoption meetings</li>
+                      <li>• Track adoption status</li>
+                    </ul>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {adoptionRequests.map((request) => (
+                    <Card key={request.id} className="border-l-4 border-l-purple-500">
+                      <CardContent className="p-6">
+                        <div className="flex justify-between items-start mb-4">
+                          <div>
+                            <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                              Adoption Request - {request.animalInfo?.animalType || 'Unknown Animal'}
+                            </h3>
+                            <p className="text-sm text-gray-600">Request ID: {request.requestId}</p>
+                            <p className="text-sm text-gray-600">
+                              Submitted by: {request.applicant?.name || request.applicant?.email} on {new Date(request.createdAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <Badge 
+                            variant={request.status === 'pending' ? 'destructive' : 
+                                   request.status === 'approved' ? 'default' : 'secondary'}
+                          >
+                            {request.status}
+                          </Badge>
+                        </div>
+                        
+                        {/* Animal Information */}
+                        <div className="mb-4">
+                          <h4 className="text-sm font-medium text-gray-700 mb-2">Animal Information:</h4>
+                          <div className="grid grid-cols-2 gap-2 text-sm">
+                            <p><span className="font-medium">Type:</span> {request.animalInfo?.animalType || 'Unknown'}</p>
+                            <p><span className="font-medium">Breed:</span> {request.animalInfo?.breed || 'Unknown'}</p>
+                            <p><span className="font-medium">Color:</span> {request.animalInfo?.color || 'Unknown'}</p>
+                            <p><span className="font-medium">Size:</span> {request.animalInfo?.size || 'Unknown'}</p>
+                            <p><span className="font-medium">Age:</span> {request.animalInfo?.age || 'Unknown'}</p>
+                            <p><span className="font-medium">Gender:</span> {request.animalInfo?.gender || 'Unknown'}</p>
+                          </div>
+                        </div>
+
+                        {/* Applicant Information */}
+                        <div className="mb-4">
+                          <h4 className="text-sm font-medium text-gray-700 mb-2">Applicant Information:</h4>
+                          <div className="grid grid-cols-2 gap-2 text-sm">
+                            <p><span className="font-medium">Name:</span> {request.fullName}</p>
+                            <p><span className="font-medium">Email:</span> {request.email}</p>
+                            <p><span className="font-medium">Phone:</span> {request.phone}</p>
+                            <p><span className="font-medium">Age:</span> {request.age}</p>
+                            <p><span className="font-medium">Occupation:</span> {request.occupation || 'Not specified'}</p>
+                            <p><span className="font-medium">Experience:</span> {request.experience}</p>
+                          </div>
+                          <p className="text-sm mt-2"><span className="font-medium">Address:</span> {request.address}</p>
+                        </div>
+
+                        {/* Adoption Details */}
+                        <div className="mb-4">
+                          <h4 className="text-sm font-medium text-gray-700 mb-2">Adoption Details:</h4>
+                          <p className="text-sm"><span className="font-medium">Reason:</span> {request.reasonForAdoption}</p>
+                          <p className="text-sm"><span className="font-medium">Living Situation:</span> {request.livingSituation}</p>
+                          {request.otherPets && (
+                            <p className="text-sm"><span className="font-medium">Other Pets:</span> {request.otherPets}</p>
+                          )}
+                          {request.additionalInfo && (
+                            <p className="text-sm"><span className="font-medium">Additional Info:</span> {request.additionalInfo}</p>
+                          )}
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex justify-end space-x-2">
+                          {request.status === 'pending' && (
+                            <>
+                              <Button
+                                size="sm"
+                                onClick={() => updateAdoptionRequestStatus(request.id, 'approved')}
+                                className="bg-green-600 hover:bg-green-700"
+                              >
+                                <CheckCircle className="w-4 h-4 mr-1" />
+                                Approve
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => updateAdoptionRequestStatus(request.id, 'rejected')}
+                              >
+                                <X className="w-4 h-4 mr-1" />
+                                Reject
+                              </Button>
+                            </>
+                          )}
+                          
+                          {request.status === 'approved' && (
+                            <div className="flex items-center text-green-600 text-sm">
+                              <CheckCircle className="w-4 h-4 mr-1" />
+                              Approved by {request.reviewedBy?.name} on {new Date(request.updatedAt).toLocaleDateString()}
+                            </div>
+                          )}
+                          
+                          {request.status === 'rejected' && (
+                            <div className="flex items-center text-red-600 text-sm">
+                              <X className="w-4 h-4 mr-1" />
+                              Rejected by {request.reviewedBy?.name} on {new Date(request.updatedAt).toLocaleDateString()}
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         );
