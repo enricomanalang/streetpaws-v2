@@ -113,6 +113,18 @@ export default function AdoptPage() {
     setError('');
 
     try {
+      console.log('=== ADOPTION REQUEST DEBUG ===');
+      console.log('User:', user?.uid);
+      console.log('Profile:', profile);
+      console.log('Selected Animal:', selectedAnimal);
+      console.log('Form Data:', formData);
+      console.log('Database object:', database);
+
+      // Check if database is initialized
+      if (!database) {
+        throw new Error('Database not initialized. Please refresh the page.');
+      }
+
       // Prepend +63 to phone number
       const phone = `+63 ${formData.phone}`;
 
@@ -144,10 +156,17 @@ export default function AdoptPage() {
         requestId: `ADOPT-${Date.now()}`
       };
 
+      console.log('Adoption data prepared:', adoptionData);
+
       // Save to Firebase
       const adoptionsRef = ref(database, 'adoptionRequests');
+      console.log('Adoption ref created:', adoptionsRef);
+      
       const newAdoptionRef = push(adoptionsRef);
+      console.log('New adoption ref:', newAdoptionRef);
+      
       await set(newAdoptionRef, adoptionData);
+      console.log('Adoption request saved successfully');
 
       setSuccess(true);
       setTimeout(() => {
@@ -156,7 +175,26 @@ export default function AdoptPage() {
 
     } catch (err) {
       console.error('Error submitting adoption request:', err);
-      setError('Failed to submit adoption request. Please try again.');
+      console.error('Error details:', {
+        message: err instanceof Error ? err.message : 'Unknown error',
+        stack: err instanceof Error ? err.stack : undefined,
+        name: err instanceof Error ? err.name : undefined
+      });
+      
+      // More specific error messages
+      if (err instanceof Error) {
+        if (err.message.includes('permission')) {
+          setError('Permission denied. Please make sure you are logged in and try again.');
+        } else if (err.message.includes('network')) {
+          setError('Network error. Please check your internet connection and try again.');
+        } else if (err.message.includes('Database not initialized')) {
+          setError('Database connection error. Please refresh the page and try again.');
+        } else {
+          setError(`Failed to submit adoption request: ${err.message}`);
+        }
+      } else {
+        setError('Failed to submit adoption request. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
