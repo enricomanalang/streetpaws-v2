@@ -58,32 +58,63 @@ export const MonthlyTrendChart = () => {
       return;
     }
 
-    // Fetch all reports data for trend analysis
-    const reportsRef = ref(database, 'reports');
-    const unsubscribe = onValue(reportsRef, (snapshot) => {
-      if (snapshot.exists()) {
-        const reportsData = snapshot.val();
-        const reportsList = Object.keys(reportsData).map(key => ({
-          id: key,
-          ...reportsData[key]
-        }));
-        const processedData = processDataByMonth(reportsList);
+    // Fetch data from all collections for comprehensive trend analysis
+    const fetchAllData = async () => {
+      try {
+        console.log('Fetching dashboard trend data...');
+        
+        // Get data from all collections
+        const [reportsSnap, approvedSnap, rejectedSnap, lostSnap, foundSnap, adoptSnap] = await Promise.all([
+          get(ref(database, 'reports')),
+          get(ref(database, 'approvedReports')),
+          get(ref(database, 'rejectedReports')),
+          get(ref(database, 'lostPets')),
+          get(ref(database, 'foundPets')),
+          get(ref(database, 'adoptionRequests'))
+        ]);
+
+        // Combine all data
+        const allData: any[] = [];
+        
+        // Process each collection
+        const collections = [
+          { snap: reportsSnap, name: 'reports' },
+          { snap: approvedSnap, name: 'approvedReports' },
+          { snap: rejectedSnap, name: 'rejectedReports' },
+          { snap: lostSnap, name: 'lostPets' },
+          { snap: foundSnap, name: 'foundPets' },
+          { snap: adoptSnap, name: 'adoptionRequests' }
+        ];
+
+        collections.forEach(({ snap, name }) => {
+          if (snap.exists()) {
+            const data = snap.val();
+            const items = Object.keys(data).map(key => ({
+              id: key,
+              ...data[key],
+              collection: name
+            }));
+            allData.push(...items);
+            console.log(`Found ${items.length} items in ${name}`);
+          }
+        });
+
+        console.log(`Total items for trend analysis: ${allData.length}`);
+        const processedData = processDataByMonth(allData);
         setData(processedData);
-      } else {
+        
+      } catch (error) {
+        console.error('Error fetching trend data:', error);
         setData(Array.from({ length: 12 }, (_, i) => ({
           month: getMonthAbbr(i),
           value: 0
         })));
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
-    }, (error) => {
-      console.error('Error fetching trend data:', error);
-      setLoading(false);
-    });
-
-    return () => {
-      off(reportsRef, 'value', unsubscribe);
     };
+
+    fetchAllData();
   }, []);
 
   if (loading) {
@@ -129,21 +160,24 @@ export const AdoptionChart = () => {
       return;
     }
 
-    // Fetch adoption data - you may need to adjust this path based on your database structure
-    const adoptionsRef = ref(database, 'adoptions');
-    const unsubscribe = onValue(adoptionsRef, (snapshot) => {
+    // Fetch adoption requests data
+    const adoptionRequestsRef = ref(database, 'adoptionRequests');
+    const unsubscribe = onValue(adoptionRequestsRef, (snapshot) => {
+      console.log('Fetching adoption requests for chart...');
       if (snapshot.exists()) {
-        const adoptionsData = snapshot.val();
-        const adoptionsList = Object.keys(adoptionsData).map(key => ({
+        const adoptionRequestsData = snapshot.val();
+        const adoptionRequestsList = Object.keys(adoptionRequestsData).map(key => ({
           id: key,
-          ...adoptionsData[key]
+          ...adoptionRequestsData[key]
         }));
-        const processedData = processDataByMonth(adoptionsList).map(item => ({
+        console.log(`Found ${adoptionRequestsList.length} adoption requests`);
+        const processedData = processDataByMonth(adoptionRequestsList).map(item => ({
           month: item.month,
           adoptions: item.value
         }));
         setData(processedData);
       } else {
+        console.log('No adoption requests found');
         setData(Array.from({ length: 12 }, (_, i) => ({
           month: getMonthAbbr(i),
           adoptions: 0
@@ -156,7 +190,7 @@ export const AdoptionChart = () => {
     });
 
     return () => {
-      off(adoptionsRef, 'value', unsubscribe);
+      off(adoptionRequestsRef, 'value', unsubscribe);
     };
   }, []);
 
@@ -268,18 +302,21 @@ export const LostChart = () => {
     // Fetch lost pets data
     const lostPetsRef = ref(database, 'lostPets');
     const unsubscribe = onValue(lostPetsRef, (snapshot) => {
+      console.log('Fetching lost pets for chart...');
       if (snapshot.exists()) {
         const lostPetsData = snapshot.val();
         const lostPetsList = Object.keys(lostPetsData).map(key => ({
           id: key,
           ...lostPetsData[key]
         }));
+        console.log(`Found ${lostPetsList.length} lost pets`);
         const processedData = processDataByMonth(lostPetsList).map(item => ({
           month: item.month,
           lost: item.value
         }));
         setData(processedData);
       } else {
+        console.log('No lost pets found');
         setData(Array.from({ length: 12 }, (_, i) => ({
           month: getMonthAbbr(i),
           lost: 0
@@ -336,18 +373,21 @@ export const FoundChart = () => {
     // Fetch found pets data
     const foundPetsRef = ref(database, 'foundPets');
     const unsubscribe = onValue(foundPetsRef, (snapshot) => {
+      console.log('Fetching found pets for chart...');
       if (snapshot.exists()) {
         const foundPetsData = snapshot.val();
         const foundPetsList = Object.keys(foundPetsData).map(key => ({
           id: key,
           ...foundPetsData[key]
         }));
+        console.log(`Found ${foundPetsList.length} found pets`);
         const processedData = processDataByMonth(foundPetsList).map(item => ({
           month: item.month,
           found: item.value
         }));
         setData(processedData);
       } else {
+        console.log('No found pets found');
         setData(Array.from({ length: 12 }, (_, i) => ({
           month: getMonthAbbr(i),
           found: 0
