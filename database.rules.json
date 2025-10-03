@@ -41,6 +41,11 @@
     "adoptions": {
       ".read": "auth != null",
       ".write": "auth != null"
+    },
+    "donations": {
+      ".read": "auth != null && auth.token.role === 'admin'",
+      ".write": "true",
+      ".indexOn": ["createdAt", "status", "method"]
     }
   }
 }
