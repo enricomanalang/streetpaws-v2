@@ -206,8 +206,8 @@ export default function PayPalDonationForm({ onSuccess }: PayPalDonationFormProp
                   onClick={() => handleAmountSelect(option.amount)}
                   className={`p-4 rounded-lg border-2 text-center transition-all ${
                     formData.amount === option.amount && !formData.customAmount
-                      ? 'border-orange-500 bg-orange-50 text-orange-700'
-                      : 'border-gray-200 hover:border-orange-300'
+                      ? 'border-blue-600 bg-blue-50 text-blue-700'
+                      : 'border-gray-200 hover:border-blue-300'
                   }`}
                 >
                   <div className="font-bold text-lg">{option.label}</div>
@@ -327,7 +327,7 @@ export default function PayPalDonationForm({ onSuccess }: PayPalDonationFormProp
 
           <Button
             onClick={handleProceedToPayment}
-            className="w-full bg-orange-500 hover:bg-orange-600 text-white py-3 text-lg font-semibold"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 text-lg font-semibold"
           >
             <CreditCard className="w-5 h-5 mr-2" />
             Proceed to Payment - ₱{getFinalAmount().toLocaleString()}

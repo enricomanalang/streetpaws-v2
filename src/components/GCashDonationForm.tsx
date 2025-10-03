@@ -122,9 +122,9 @@ export default function GCashDonationForm({ gcashName, gcashNumber, gcashQrUrl, 
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <Card className="p-4 bg-orange-50 border-orange-200">
+      <Card className="p-4 bg-blue-50 border-blue-200">
         <div className="flex items-center gap-3">
-          <Smartphone className="w-5 h-5 text-orange-600" />
+          <Smartphone className="w-5 h-5 text-blue-600" />
           <div>
             <div className="text-sm text-gray-700">Send via GCash to</div>
             <div className="font-semibold text-gray-900">{gcashName} • {gcashNumber}</div>
@@ -147,7 +147,7 @@ export default function GCashDonationForm({ gcashName, gcashNumber, gcashQrUrl, 
               type="button"
               onClick={() => handleAmountSelect(amt)}
               className={`px-3 py-2 rounded-md border text-sm ${
-                formData.amount === amt && !formData.customAmount ? 'border-orange-500 bg-orange-50 text-orange-700' : 'border-gray-200 hover:border-orange-300'
+                formData.amount === amt && !formData.customAmount ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-gray-200 hover:border-blue-300'
               }`}
             >
               ₱{amt.toLocaleString()}
@@ -216,7 +216,7 @@ export default function GCashDonationForm({ gcashName, gcashNumber, gcashQrUrl, 
 
       {error && <div className="p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">{error}</div>}
 
-      <Button type="submit" disabled={uploading} className="w-full bg-orange-500 hover:bg-orange-600 text-white py-3 text-lg font-semibold">
+      <Button type="submit" disabled={uploading} className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 text-lg font-semibold">
         Submit GCash Donation
       </Button>
 

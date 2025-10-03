@@ -19,7 +19,7 @@ export default function DonatePage() {
 
   if (donationSuccess) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <Card className="p-8 text-center">
             <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -29,15 +29,15 @@ export default function DonatePage() {
             <p className="text-lg text-gray-600 mb-6">
               Your donation of ₱{donationSuccess.amount?.toLocaleString()} will help us make a real difference in the lives of stray animals.
             </p>
-            <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6">
-              <p className="text-orange-800 font-medium">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+              <p className="text-blue-800 font-medium">
                 A receipt has been sent to your email address.
               </p>
             </div>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button 
                 onClick={() => window.location.href = '/'}
-                className="bg-orange-500 hover:bg-orange-600 text-white"
+                className="bg-blue-600 hover:bg-blue-700 text-white"
               >
                 Return Home
               </Button>
@@ -55,26 +55,26 @@ export default function DonatePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
       {!showForm ? (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           {/* Hero Section */}
           <div className="text-center mb-12">
-            <h1 className="text-4xl md:text-5xl font-extrabold text-orange-600 tracking-wide mb-6">
+            <h1 className="text-4xl md:text-5xl font-extrabold text-blue-600 tracking-wide mb-6">
               DONATE ONLINE
             </h1>
             <div className="max-w-3xl mx-auto">
-              <div className="bg-orange-100 border border-orange-300 rounded-xl p-6 mb-8">
-                <p className="text-xl font-bold text-orange-700 mb-2">
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-8">
+                <p className="text-xl font-bold text-blue-700 mb-2">
                   "HELP US MAKE STREETS SAFER FOR ANIMALS"
                 </p>
-                <p className="text-orange-600">
+                <p className="text-blue-600">
                   Your donation supports rescue operations, medical care, and community education for stray animals across the Philippines.
                 </p>
               </div>
               <Button 
                 onClick={() => setShowForm(true)}
-                className="bg-orange-500 hover:bg-orange-600 text-white rounded-full px-8 py-6 text-lg font-extrabold"
+                className="bg-blue-600 hover:bg-blue-700 text-white rounded-full px-8 py-6 text-lg font-extrabold"
               >
                 <Heart className="w-5 h-5 mr-2" />
                 DONATE NOW
@@ -99,8 +99,8 @@ export default function DonatePage() {
               <p className="text-gray-600">Veterinary treatments, vaccinations, and rehabilitation</p>
             </Card>
             <Card className="p-6 text-center">
-              <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Users className="w-8 h-8 text-purple-600" />
+              <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Users className="w-8 h-8 text-indigo-600" />
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-2">Education</h3>
               <p className="text-gray-600">Community awareness and responsible pet ownership programs</p>
@@ -112,19 +112,19 @@ export default function DonatePage() {
             <h2 className="text-2xl font-bold text-center text-gray-900 mb-8">Your Impact</h2>
             <div className="grid md:grid-cols-4 gap-6">
               <div className="text-center">
-                <div className="text-3xl font-bold text-orange-600 mb-2">₱100</div>
+                <div className="text-3xl font-bold text-blue-600 mb-2">₱100</div>
                 <div className="text-sm text-gray-600">Feeds 2 animals for a day</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-orange-600 mb-2">₱500</div>
+                <div className="text-3xl font-bold text-blue-600 mb-2">₱500</div>
                 <div className="text-sm text-gray-600">Covers basic medical care</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-orange-600 mb-2">₱1,000</div>
+                <div className="text-3xl font-bold text-blue-600 mb-2">₱1,000</div>
                 <div className="text-sm text-gray-600">Funds a rescue operation</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-orange-600 mb-2">₱5,000</div>
+                <div className="text-3xl font-bold text-blue-600 mb-2">₱5,000</div>
                 <div className="text-sm text-gray-600">Supports major campaign</div>
               </div>
             </div>
@@ -151,13 +151,13 @@ export default function DonatePage() {
 
             <div className="flex items-center justify-center gap-2 mb-6">
               <button
-                className={`px-4 py-2 rounded-full text-sm font-medium border ${method === 'gcash' ? 'bg-orange-500 text-white border-orange-500' : 'bg-white text-gray-700 border-gray-200'}`}
+                className={`px-4 py-2 rounded-full text-sm font-medium border ${method === 'gcash' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-200'}`}
                 onClick={() => setMethod('gcash')}
               >
                 GCash
               </button>
               <button
-                className={`px-4 py-2 rounded-full text-sm font-medium border ${method === 'paypal' ? 'bg-orange-500 text-white border-orange-500' : 'bg-white text-gray-700 border-gray-200'}`}
+                className={`px-4 py-2 rounded-full text-sm font-medium border ${method === 'paypal' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-200'}`}
                 onClick={() => setMethod('paypal')}
               >
                 PayPal / Card
