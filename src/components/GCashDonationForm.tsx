@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { database } from '@/lib/firebase';
-import { ref, push, update } from 'firebase/database';
+import { ref, push, set } from 'firebase/database';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -109,7 +109,13 @@ export default function GCashDonationForm({ gcashName, gcashNumber, gcashQrUrl, 
 
       const donationsRef = ref(database, 'donations');
       const newRef = push(donationsRef);
-      await update(newRef, donationData);
+
+      try {
+        await set(newRef, donationData);
+      } catch (writeErr: any) {
+        console.error('Firebase write error:', writeErr);
+        throw writeErr;
+      }
 
       setSuccess(true);
       onSuccess?.(donationData);
