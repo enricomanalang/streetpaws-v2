@@ -37,6 +37,9 @@ export default function GCashDonationForm({ gcashName, gcashNumber, gcashQrUrl, 
   });
   const [emailTouched, setEmailTouched] = useState(false);
 
+  // Define before use to avoid temporal dead zone errors
+  const getFinalAmount = () => (formData.customAmount ? parseFloat(formData.customAmount) : formData.amount);
+
   const isValidEmail = (value: string) => /.+@.+\..+/.test(value);
 
   const isReferenceValid = formData.referenceNumber.length === 13;
@@ -68,8 +71,6 @@ export default function GCashDonationForm({ gcashName, gcashNumber, gcashQrUrl, 
     setFormData(prev => ({ ...prev, referenceNumber: digitsOnly }));
     setError('');
   };
-
-  const getFinalAmount = () => (formData.customAmount ? parseFloat(formData.customAmount) : formData.amount);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
