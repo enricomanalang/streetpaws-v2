@@ -6,6 +6,8 @@ import {
   Line,
   BarChart,
   Bar,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -120,7 +122,7 @@ export const MonthlyTrendChart = () => {
   if (loading) {
     return (
       <div className="bg-white p-6 rounded-lg shadow-sm border">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Monthly Activity Trend (2024)</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Monthly Activity Trend (2025)</h3>
         <div className="flex items-center justify-center h-[300px]">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
         </div>
@@ -130,7 +132,7 @@ export const MonthlyTrendChart = () => {
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm border">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">Monthly Activity Trend (2024)</h3>
+      <h3 className="text-lg font-semibold text-gray-900 mb-4">Monthly Activity Trend (2025)</h3>
       <ResponsiveContainer width="100%" height={300}>
         <LineChart data={data}>
           <CartesianGrid strokeDasharray="3 3" />
@@ -197,7 +199,7 @@ export const AdoptionChart = () => {
   if (loading) {
     return (
       <div className="bg-white p-6 rounded-lg shadow-sm border">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">ADOPTIONS (2024)</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">ADOPTIONS (2025)</h3>
         <div className="flex items-center justify-center h-[300px]">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
         </div>
@@ -207,15 +209,22 @@ export const AdoptionChart = () => {
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm border">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">ADOPTIONS (2024)</h3>
+      <h3 className="text-lg font-semibold text-gray-900 mb-4">ADOPTIONS (2025)</h3>
       <ResponsiveContainer width="100%" height={300}>
-        <BarChart data={data} layout="horizontal">
+        <LineChart data={data}>
           <CartesianGrid strokeDasharray="3 3" />
-          <XAxis type="number" />
-          <YAxis dataKey="month" type="category" width={60} />
+          <XAxis dataKey="month" />
+          <YAxis />
           <Tooltip />
-          <Bar dataKey="adoptions" fill="#60A5FA" radius={[0, 4, 4, 0]} />
-        </BarChart>
+          <Line 
+            type="monotone" 
+            dataKey="adoptions" 
+            stroke="#8B5CF6" 
+            strokeWidth={3}
+            dot={{ fill: '#8B5CF6', strokeWidth: 2, r: 6 }}
+            activeDot={{ r: 8, stroke: '#8B5CF6', strokeWidth: 2 }}
+          />
+        </LineChart>
       </ResponsiveContainer>
     </div>
   );
@@ -231,41 +240,69 @@ export const AbuseReportsChart = () => {
       return;
     }
 
-    // Fetch approved reports data
-    const reportsRef = ref(database, 'approvedReports');
-    const unsubscribe = onValue(reportsRef, (snapshot) => {
-      if (snapshot.exists()) {
-        const reportsData = snapshot.val();
-        const reportsList = Object.keys(reportsData).map(key => ({
-          id: key,
-          ...reportsData[key]
+    // Fetch all reports data for stacked chart
+    const fetchAllReports = async () => {
+      try {
+        console.log('Fetching reports data for stacked chart...');
+        
+        const [pendingSnap, approvedSnap, rejectedSnap] = await Promise.all([
+          get(ref(database, 'reports')),
+          get(ref(database, 'approvedReports')),
+          get(ref(database, 'rejectedReports'))
+        ]);
+
+        // Process each status
+        const processReports = (snap: any, status: string) => {
+          if (snap.exists()) {
+            const reportsData = snap.val();
+            const reportsList = Object.keys(reportsData).map(key => ({
+              id: key,
+              ...reportsData[key],
+              status
+            }));
+            return processDataByMonth(reportsList);
+          }
+          return Array.from({ length: 12 }, (_, i) => ({
+            month: getMonthAbbr(i),
+            value: 0
+          }));
+        };
+
+        const pendingData = processReports(pendingSnap, 'pending');
+        const approvedData = processReports(approvedSnap, 'approved');
+        const rejectedData = processReports(rejectedSnap, 'rejected');
+
+        // Combine data for stacked chart
+        const combinedData = Array.from({ length: 12 }, (_, i) => ({
+          month: getMonthAbbr(i),
+          pending: pendingData[i]?.value || 0,
+          approved: approvedData[i]?.value || 0,
+          rejected: rejectedData[i]?.value || 0
         }));
-        const processedData = processDataByMonth(reportsList).map(item => ({
-          month: item.month,
-          reports: item.value
-        }));
-        setData(processedData);
-      } else {
+
+        console.log('Reports data processed:', combinedData);
+        setData(combinedData);
+        
+      } catch (error) {
+        console.error('Error fetching reports data:', error);
         setData(Array.from({ length: 12 }, (_, i) => ({
           month: getMonthAbbr(i),
-          reports: 0
+          pending: 0,
+          approved: 0,
+          rejected: 0
         })));
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
-    }, (error) => {
-      console.error('Error fetching abuse reports data:', error);
-      setLoading(false);
-    });
-
-    return () => {
-      off(reportsRef, 'value', unsubscribe);
     };
+
+    fetchAllReports();
   }, []);
 
   if (loading) {
     return (
       <div className="bg-white p-6 rounded-lg shadow-sm border">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">ABUSE REPORTS (2024)</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">REPORTS STATUS (2025)</h3>
         <div className="flex items-center justify-center h-[300px]">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
         </div>
@@ -275,14 +312,17 @@ export const AbuseReportsChart = () => {
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm border">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">ABUSE REPORTS (2024)</h3>
+      <h3 className="text-lg font-semibold text-gray-900 mb-4">REPORTS STATUS (2025)</h3>
       <ResponsiveContainer width="100%" height={300}>
-        <BarChart data={data} layout="horizontal">
+        <BarChart data={data}>
           <CartesianGrid strokeDasharray="3 3" />
-          <XAxis type="number" />
-          <YAxis dataKey="month" type="category" width={60} />
+          <XAxis dataKey="month" />
+          <YAxis />
           <Tooltip />
-          <Bar dataKey="reports" fill="#EF4444" radius={[0, 4, 4, 0]} />
+          <Legend />
+          <Bar dataKey="pending" stackId="a" fill="#F59E0B" name="Pending" />
+          <Bar dataKey="approved" stackId="a" fill="#10B981" name="Approved" />
+          <Bar dataKey="rejected" stackId="a" fill="#EF4444" name="Rejected" />
         </BarChart>
       </ResponsiveContainer>
     </div>
@@ -336,7 +376,7 @@ export const LostChart = () => {
   if (loading) {
     return (
       <div className="bg-white p-6 rounded-lg shadow-sm border">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">LOST PETS (2024)</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">LOST PETS (2025)</h3>
         <div className="flex items-center justify-center h-[300px]">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
         </div>
@@ -346,15 +386,22 @@ export const LostChart = () => {
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm border">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">LOST PETS (2024)</h3>
+      <h3 className="text-lg font-semibold text-gray-900 mb-4">LOST PETS (2025)</h3>
       <ResponsiveContainer width="100%" height={300}>
-        <BarChart data={data} layout="horizontal">
+        <AreaChart data={data}>
           <CartesianGrid strokeDasharray="3 3" />
-          <XAxis type="number" />
-          <YAxis dataKey="month" type="category" width={60} />
+          <XAxis dataKey="month" />
+          <YAxis />
           <Tooltip />
-          <Bar dataKey="lost" fill="#F59E0B" radius={[0, 4, 4, 0]} />
-        </BarChart>
+          <Area 
+            type="monotone" 
+            dataKey="lost" 
+            stroke="#F59E0B" 
+            fill="#F59E0B" 
+            fillOpacity={0.6}
+            strokeWidth={2}
+          />
+        </AreaChart>
       </ResponsiveContainer>
     </div>
   );
@@ -407,7 +454,7 @@ export const FoundChart = () => {
   if (loading) {
     return (
       <div className="bg-white p-6 rounded-lg shadow-sm border">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">FOUND PETS (2024)</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">FOUND PETS (2025)</h3>
         <div className="flex items-center justify-center h-[300px]">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
         </div>
@@ -417,15 +464,22 @@ export const FoundChart = () => {
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm border">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">FOUND PETS (2024)</h3>
+      <h3 className="text-lg font-semibold text-gray-900 mb-4">FOUND PETS (2025)</h3>
       <ResponsiveContainer width="100%" height={300}>
-        <BarChart data={data} layout="horizontal">
+        <AreaChart data={data}>
           <CartesianGrid strokeDasharray="3 3" />
-          <XAxis type="number" />
-          <YAxis dataKey="month" type="category" width={60} />
+          <XAxis dataKey="month" />
+          <YAxis />
           <Tooltip />
-          <Bar dataKey="found" fill="#10B981" radius={[0, 4, 4, 0]} />
-        </BarChart>
+          <Area 
+            type="monotone" 
+            dataKey="found" 
+            stroke="#10B981" 
+            fill="#10B981" 
+            fillOpacity={0.6}
+            strokeWidth={2}
+          />
+        </AreaChart>
       </ResponsiveContainer>
     </div>
   );
@@ -497,7 +551,7 @@ export const AnimalTypeChart = () => {
   if (loading) {
     return (
       <div className="bg-white p-6 rounded-lg shadow-sm border">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">ANIMAL TYPES (2024)</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">ANIMAL TYPES (2025)</h3>
         <div className="flex items-center justify-center h-[300px]">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
         </div>
@@ -507,7 +561,7 @@ export const AnimalTypeChart = () => {
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm border">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">ANIMAL TYPES (2024)</h3>
+      <h3 className="text-lg font-semibold text-gray-900 mb-4">ANIMAL TYPES (2025)</h3>
       <div className="flex items-center justify-center mb-4">
         <div className="flex space-x-4">
           <div className="flex items-center">
