@@ -40,7 +40,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import HeatMap from '@/components/HeatMap';
 import { AdminDashboardCharts } from '@/components/AdminCharts';
-import { ref, onValue, off, update, get, set } from 'firebase/database';
+import { ref, onValue, off, update, get, set, remove } from 'firebase/database';
 // import { collection, onSnapshot, doc, updateDoc, serverTimestamp, query, orderBy } from 'firebase/firestore';
 import { database } from '@/lib/firebase';
 import { 
@@ -99,6 +99,11 @@ export default function AdminDashboard() {
     [key: string]: any;
   }>>([]);
   const [loadingAdoptionRequests, setLoadingAdoptionRequests] = useState(false);
+  const [contactMessages, setContactMessages] = useState<Array<{
+    id: string;
+    [key: string]: any;
+  }>>([]);
+  const [loadingContactMessages, setLoadingContactMessages] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -199,6 +204,52 @@ export default function AdminDashboard() {
     } else if (activeTab !== 'adopt') {
       setAdoptionRequests([]);
       setLoadingAdoptionRequests(false);
+    }
+  }, [activeTab]);
+
+  // Fetch contact messages when contact tab is active
+  useEffect(() => {
+    if (activeTab === 'contact' && database) {
+      setLoadingContactMessages(true);
+      console.log('Fetching contact messages from Realtime Database...');
+      
+      const timeout = setTimeout(() => {
+        console.log('Timeout reached, stopping loading...');
+        setLoadingContactMessages(false);
+      }, 10000);
+      
+      const contactMessagesRef = ref(database, 'contactMessages');
+      
+      const unsubscribe = onValue(contactMessagesRef, (snapshot) => {
+        clearTimeout(timeout);
+        setLoadingContactMessages(false);
+        
+        if (snapshot.exists()) {
+          const data = snapshot.val();
+          const messagesArray = Object.keys(data).map(key => ({
+            id: key,
+            ...data[key]
+          })).sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+          
+          setContactMessages(messagesArray);
+          console.log('Contact messages loaded:', messagesArray.length);
+        } else {
+          setContactMessages([]);
+          console.log('No contact messages found');
+        }
+      }, (error) => {
+        clearTimeout(timeout);
+        setLoadingContactMessages(false);
+        console.error('Error fetching contact messages:', error);
+      });
+
+      return () => {
+        clearTimeout(timeout);
+        off(contactMessagesRef, 'value', unsubscribe);
+      };
+    } else if (activeTab !== 'contact') {
+      setContactMessages([]);
+      setLoadingContactMessages(false);
     }
   }, [activeTab]);
 
@@ -584,6 +635,69 @@ export default function AdminDashboard() {
     } catch (error) {
       console.error('Error updating adoption request status:', error);
       alert(`Error updating adoption request: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
+
+  const updateContactMessageStatus = async (messageId: string, status: string) => {
+    if (!database) {
+      console.error('Database not initialized');
+      alert('Database connection error. Please refresh the page.');
+      return;
+    }
+    
+    if (!user || !profile) {
+      console.error('User not authenticated');
+      alert('Authentication error. Please log in again.');
+      return;
+    }
+    
+    console.log(`Attempting to update contact message ${messageId} to status: ${status}`);
+    
+    try {
+      const messageRef = ref(database, `contactMessages/${messageId}`);
+      await update(messageRef, {
+        status,
+        updatedAt: new Date().toISOString(),
+        reviewedBy: {
+          uid: user.uid,
+          name: profile.name || profile.email,
+          email: profile.email
+        }
+      });
+      
+      console.log(`Contact message ${messageId} status updated to ${status}`);
+      alert(`Contact message status updated to ${status}`);
+      
+    } catch (error) {
+      console.error('Error updating contact message status:', error);
+      alert(`Error updating contact message: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
+
+  const deleteContactMessage = async (messageId: string) => {
+    if (!database) {
+      alert('Database not initialized');
+      return;
+    }
+
+    if (!user || !profile) {
+      alert('Authentication error. Please log in again.');
+      return;
+    }
+
+    const confirmDelete = confirm('Are you sure you want to delete this contact message? This action cannot be undone.');
+    if (!confirmDelete) return;
+
+    try {
+      const messageRef = ref(database, `contactMessages/${messageId}`);
+      await remove(messageRef);
+      
+      console.log(`Contact message ${messageId} deleted successfully`);
+      alert('Contact message deleted successfully');
+      
+    } catch (error) {
+      console.error('Error deleting contact message:', error);
+      alert(`Error deleting contact message: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
@@ -1584,6 +1698,116 @@ export default function AdminDashboard() {
           </Card>
         );
       
+      case 'contact':
+        return (
+          <Card className="bg-white shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-lg font-semibold text-gray-900">Contact Messages</CardTitle>
+              <CardDescription>Manage and respond to contact messages from users</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {loadingContactMessages ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                  <span className="ml-2 text-gray-600">Loading contact messages...</span>
+                </div>
+              ) : contactMessages.length === 0 ? (
+                <div className="text-center py-8">
+                  <Mail className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Contact Messages</h3>
+                  <p className="text-gray-500">No contact messages have been received yet.</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {contactMessages.map((message) => (
+                    <Card key={message.id} className={`border-l-4 ${
+                      message.status === 'new' ? 'border-l-green-500' : 
+                      message.status === 'read' ? 'border-l-blue-500' : 
+                      message.status === 'replied' ? 'border-l-purple-500' : 
+                      'border-l-gray-500'
+                    }`}>
+                      <CardContent className="p-6">
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-3 mb-2">
+                              <h3 className="text-lg font-semibold text-gray-900">{message.name}</h3>
+                              <Badge variant={
+                                message.status === 'new' ? 'default' : 
+                                message.status === 'read' ? 'secondary' : 
+                                message.status === 'replied' ? 'outline' : 
+                                'destructive'
+                              }>
+                                {message.status}
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-gray-600 mb-1">
+                              <strong>Email:</strong> {message.email}
+                            </p>
+                            <p className="text-sm text-gray-600 mb-1">
+                              <strong>Category:</strong> {message.category}
+                            </p>
+                            <p className="text-sm text-gray-600 mb-1">
+                              <strong>Subject:</strong> {message.subject}
+                            </p>
+                            <p className="text-sm text-gray-500">
+                              <strong>Received:</strong> {new Date(message.createdAt).toLocaleString()}
+                            </p>
+                          </div>
+                        </div>
+                        
+                        <div className="mb-4">
+                          <h4 className="text-sm font-medium text-gray-700 mb-2">Message:</h4>
+                          <p className="text-gray-600 bg-gray-50 p-3 rounded-lg">
+                            {message.message}
+                          </p>
+                        </div>
+
+                        {message.reviewedBy && (
+                          <div className="mb-4 p-3 bg-blue-50 rounded-lg">
+                            <p className="text-sm text-blue-700">
+                              <strong>Reviewed by:</strong> {message.reviewedBy.name} on {new Date(message.updatedAt).toLocaleString()}
+                            </p>
+                          </div>
+                        )}
+
+                        <div className="flex space-x-2">
+                          {message.status === 'new' && (
+                            <Button
+                              onClick={() => updateContactMessageStatus(message.id, 'read')}
+                              size="sm"
+                              variant="outline"
+                              className="text-blue-600 border-blue-600 hover:bg-blue-50"
+                            >
+                              Mark as Read
+                            </Button>
+                          )}
+                          {message.status === 'read' && (
+                            <Button
+                              onClick={() => updateContactMessageStatus(message.id, 'replied')}
+                              size="sm"
+                              variant="outline"
+                              className="text-purple-600 border-purple-600 hover:bg-purple-50"
+                            >
+                              Mark as Replied
+                            </Button>
+                          )}
+                          <Button
+                            onClick={() => deleteContactMessage(message.id)}
+                            size="sm"
+                            variant="destructive"
+                          >
+                            Delete
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        );
+      
       case 'volunteers':
         return (
           <Card className="bg-white shadow-sm">
@@ -1742,6 +1966,17 @@ export default function AdminDashboard() {
               Adopt
             </button>
             <button 
+              onClick={() => setActiveTab('contact')}
+              className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                activeTab === 'contact' 
+                  ? 'text-white bg-gradient-to-r from-green-600 to-teal-600' 
+                  : 'text-gray-700 hover:text-green-600 hover:bg-green-50'
+              }`}
+            >
+              <Mail className="w-5 h-5 mr-3" />
+              Contact Messages
+            </button>
+            <button 
               onClick={() => setActiveTab('volunteers')}
               className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
                 activeTab === 'volunteers' 
@@ -1844,6 +2079,7 @@ export default function AdminDashboard() {
               {activeTab === 'lost-reports' && 'Lost Reports Management'}
               {activeTab === 'found-reports' && 'Found Reports Management'}
               {activeTab === 'adopt' && 'Adoption Management'}
+              {activeTab === 'contact' && 'Contact Messages Management'}
               {activeTab === 'volunteers' && 'Volunteer Management'}
               {activeTab === 'donors' && 'Donor Management'}
               {activeTab === 'heatmap' && 'Heat Map Analytics'}

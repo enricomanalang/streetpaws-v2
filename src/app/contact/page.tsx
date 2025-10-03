@@ -8,6 +8,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ref, push } from 'firebase/database';
+import { database } from '@/lib/firebase';
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -23,13 +25,41 @@ export default function ContactPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setSubmitStatus('idle');
     
-    // Simulate form submission
-    setTimeout(() => {
-      setIsSubmitting(false);
-      setSubmitStatus('success');
+    try {
+      if (!database) {
+        throw new Error('Database not initialized');
+      }
+
+      // Prepare contact message data
+      const contactMessage = {
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        subject: formData.subject.trim(),
+        category: formData.category,
+        message: formData.message.trim(),
+        status: 'new',
+        createdAt: new Date().toISOString(),
+        messageId: `MSG-${Date.now()}`
+      };
+
+      // Save to Firebase Realtime Database
+      const contactRef = ref(database, 'contactMessages');
+      await push(contactRef, contactMessage);
+      
+      console.log('Contact message saved successfully:', contactMessage);
+      
+      // Reset form and show success
       setFormData({ name: '', email: '', subject: '', category: '', message: '' });
-    }, 2000);
+      setSubmitStatus('success');
+      
+    } catch (error) {
+      console.error('Error saving contact message:', error);
+      setSubmitStatus('error');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleInputChange = (field: string, value: string) => {
