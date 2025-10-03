@@ -36,16 +36,33 @@ const processDataByMonth = (data: any[], dateField: string = 'createdAt') => {
     value: 0
   }));
 
-  data.forEach(item => {
-    if (item[dateField]) {
-      const date = new Date(item[dateField]);
-      const monthIndex = date.getMonth();
-      if (monthIndex >= 0 && monthIndex < 12) {
-        monthlyData[monthIndex].value += 1;
+  console.log(`Processing ${data.length} items with dateField: ${dateField}`);
+  
+  data.forEach((item, index) => {
+    const dateValue = item[dateField];
+    if (dateValue) {
+      try {
+        const date = new Date(dateValue);
+        if (!isNaN(date.getTime())) {
+          const monthIndex = date.getMonth();
+          if (monthIndex >= 0 && monthIndex < 12) {
+            monthlyData[monthIndex].value += 1;
+            console.log(`Item ${index}: ${dateValue} -> Month ${monthIndex} (${getMonthAbbr(monthIndex)})`);
+          } else {
+            console.log(`Item ${index}: Invalid month index ${monthIndex} for date ${dateValue}`);
+          }
+        } else {
+          console.log(`Item ${index}: Invalid date ${dateValue}`);
+        }
+      } catch (error) {
+        console.log(`Item ${index}: Error parsing date ${dateValue}:`, error);
       }
+    } else {
+      console.log(`Item ${index}: No ${dateField} field found`);
     }
   });
 
+  console.log('Final monthly data:', monthlyData);
   return monthlyData;
 };
 
@@ -260,8 +277,18 @@ export const AbuseReportsChart = () => {
               ...reportsData[key],
               status
             }));
-            return processDataByMonth(reportsList);
+            console.log(`${status} reports found:`, reportsList.length);
+            console.log(`${status} sample data:`, reportsList[0]);
+            
+            // Try different date fields
+            const processedData = processDataByMonth(reportsList, 'createdAt') || 
+                                 processDataByMonth(reportsList, 'updatedAt') ||
+                                 processDataByMonth(reportsList, 'submittedAt');
+            
+            console.log(`${status} processed data:`, processedData);
+            return processedData;
           }
+          console.log(`No ${status} reports found`);
           return Array.from({ length: 12 }, (_, i) => ({
             month: getMonthAbbr(i),
             value: 0
