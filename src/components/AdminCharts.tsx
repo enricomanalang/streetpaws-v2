@@ -665,8 +665,8 @@ export const AdminDashboardCharts = () => {
         const years = new Set<number>();
         const currentYear = new Date().getFullYear();
         
-        // Add current year and previous years
-        for (let year = currentYear; year >= 2020; year--) {
+        // Add years from 2020 to 2030
+        for (let year = 2030; year >= 2020; year--) {
           years.add(year);
         }
         
