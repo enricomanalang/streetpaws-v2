@@ -40,6 +40,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import HeatMap from '@/components/HeatMap';
 import { AdminDashboardCharts } from '@/components/AdminCharts';
+import DonationManagement from '@/components/DonationManagement';
 import { ref, onValue, off, update, get, set, remove } from 'firebase/database';
 // import { collection, onSnapshot, doc, updateDoc, serverTimestamp, query, orderBy } from 'firebase/firestore';
 import { database } from '@/lib/firebase';
@@ -1808,6 +1809,9 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
         );
+
+      case 'donations':
+        return <DonationManagement />;
       
       case 'volunteers':
         return (
@@ -1978,6 +1982,17 @@ export default function AdminDashboard() {
               Contact Messages
             </button>
             <button 
+              onClick={() => setActiveTab('donations')}
+              className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                activeTab === 'donations' 
+                  ? 'text-white bg-gradient-to-r from-orange-600 to-red-600' 
+                  : 'text-gray-700 hover:text-orange-600 hover:bg-orange-50'
+              }`}
+            >
+              <DollarSign className="w-5 h-5 mr-3" />
+              Donations
+            </button>
+            <button 
               onClick={() => setActiveTab('volunteers')}
               className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
                 activeTab === 'volunteers' 
@@ -2081,6 +2096,7 @@ export default function AdminDashboard() {
               {activeTab === 'found-reports' && 'Found Reports Management'}
               {activeTab === 'adopt' && 'Adoption Management'}
               {activeTab === 'contact' && 'Contact Messages Management'}
+              {activeTab === 'donations' && 'Donation Management'}
               {activeTab === 'volunteers' && 'Volunteer Management'}
               {activeTab === 'donors' && 'Donor Management'}
               {activeTab === 'heatmap' && 'Heat Map Analytics'}
