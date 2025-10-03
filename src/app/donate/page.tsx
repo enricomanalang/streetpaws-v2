@@ -3,7 +3,8 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import DonationForm from '@/components/DonationForm';
+import PayPalDonationForm from '@/components/PayPalDonationForm';
+import { PayPalScriptProvider } from '@paypal/react-paypal-js';
 import { Heart, Shield, Users, PawPrint } from 'lucide-react';
 
 export default function DonatePage() {
@@ -145,7 +146,14 @@ export default function DonatePage() {
               <h2 className="text-2xl font-bold text-gray-900 mb-2">Make a Donation</h2>
               <p className="text-gray-600">Help us make a difference in the lives of stray animals</p>
             </div>
-            <DonationForm onSuccess={handleDonationSuccess} />
+            <PayPalScriptProvider 
+              options={{ 
+                "client-id": process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || "test",
+                currency: "PHP"
+              }}
+            >
+              <PayPalDonationForm onSuccess={handleDonationSuccess} />
+            </PayPalScriptProvider>
             <div className="mt-6 text-center">
               <Button 
                 onClick={() => setShowForm(false)}
