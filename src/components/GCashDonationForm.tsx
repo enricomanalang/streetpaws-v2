@@ -35,6 +35,9 @@ export default function GCashDonationForm({ gcashName, gcashNumber, gcashQrUrl, 
     purpose: 'general',
     message: '',
   });
+  const [emailTouched, setEmailTouched] = useState(false);
+
+  const isValidEmail = (value: string) => /.+@.+\..+/.test(value);
 
   const isReferenceValid = formData.referenceNumber.length === 13;
   const isRequiredFieldsValid = !!formData.donorName && !!formData.donorEmail && getFinalAmount() >= 50;
@@ -78,6 +81,10 @@ export default function GCashDonationForm({ gcashName, gcashNumber, gcashQrUrl, 
     }
     if (!formData.donorName || !formData.donorEmail) {
       setError('Please fill in your name and email');
+      return;
+    }
+    if (!isValidEmail(formData.donorEmail)) {
+      setError('Please enter a valid email address');
       return;
     }
     if (!formData.referenceNumber) {
@@ -184,7 +191,21 @@ export default function GCashDonationForm({ gcashName, gcashNumber, gcashQrUrl, 
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
-          <Input type="email" value={formData.donorEmail} onChange={(e) => handleInputChange('donorEmail', e.target.value)} required />
+          <Input
+            type="text"
+            inputMode="email"
+            autoComplete="off"
+            spellCheck={false}
+            value={formData.donorEmail}
+            onChange={(e) => handleInputChange('donorEmail', e.target.value)}
+            onBlur={() => setEmailTouched(true)}
+            required
+            placeholder="name@example.com"
+            aria-invalid={emailTouched && !isValidEmail(formData.donorEmail)}
+          />
+          {emailTouched && formData.donorEmail && !isValidEmail(formData.donorEmail) && (
+            <div className="mt-1 text-xs text-blue-700">Enter a valid email (e.g., name@example.com)</div>
+          )}
         </div>
       </div>
 
