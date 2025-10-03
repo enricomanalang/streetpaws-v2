@@ -36,7 +36,16 @@ export default function GCashDonationForm({ gcashName, gcashNumber, gcashQrUrl, 
     message: '',
   });
 
+  const isReferenceValid = formData.referenceNumber.length === 13;
+  const isRequiredFieldsValid = !!formData.donorName && !!formData.donorEmail && getFinalAmount() >= 50;
+
   const handleInputChange = (field: string, value: any) => {
+    if (field === 'donorPhone') {
+      const digits = String(value).replace(/\D/g, '').slice(0, 11);
+      setFormData(prev => ({ ...prev, donorPhone: digits }));
+      setError('');
+      return;
+    }
     setFormData(prev => ({ ...prev, [field]: value }));
     setError('');
   };
@@ -204,9 +213,12 @@ export default function GCashDonationForm({ gcashName, gcashNumber, gcashQrUrl, 
             required 
             placeholder="Enter the 13-digit reference number" 
             inputMode="numeric"
-            pattern="\\d*"
             maxLength={13}
+            aria-invalid={!isReferenceValid}
           />
+          {!isReferenceValid && (
+            <div className="mt-1 text-xs text-blue-700">Reference number must be exactly 13 digits.</div>
+          )}
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2"><Upload className="w-4 h-4" /> Screenshot (optional)</label>
@@ -216,7 +228,7 @@ export default function GCashDonationForm({ gcashName, gcashNumber, gcashQrUrl, 
 
       {error && <div className="p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">{error}</div>}
 
-      <Button type="submit" disabled={uploading} className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 text-lg font-semibold">
+      <Button type="submit" disabled={uploading || !isReferenceValid || !isRequiredFieldsValid} className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 text-lg font-semibold">
         Submit GCash Donation
       </Button>
 
