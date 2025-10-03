@@ -50,6 +50,13 @@ export default function GCashDonationForm({ gcashName, gcashNumber, gcashQrUrl, 
     setFormData(prev => ({ ...prev, customAmount: value, amount }));
   };
 
+  // Enforce digits-only and max length 13 for GCash reference number
+  const handleReferenceChange = (value: string) => {
+    const digitsOnly = value.replace(/\D/g, '').slice(0, 13);
+    setFormData(prev => ({ ...prev, referenceNumber: digitsOnly }));
+    setError('');
+  };
+
   const getFinalAmount = () => (formData.customAmount ? parseFloat(formData.customAmount) : formData.amount);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -66,6 +73,10 @@ export default function GCashDonationForm({ gcashName, gcashNumber, gcashQrUrl, 
     }
     if (!formData.referenceNumber) {
       setError('Please enter the GCash reference number');
+      return;
+    }
+    if (formData.referenceNumber.length !== 13) {
+      setError('GCash reference number must be exactly 13 digits');
       return;
     }
 
@@ -187,7 +198,15 @@ export default function GCashDonationForm({ gcashName, gcashNumber, gcashQrUrl, 
       <div className="grid md:grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">GCash Reference No. *</label>
-          <Input value={formData.referenceNumber} onChange={(e) => handleInputChange('referenceNumber', e.target.value)} required placeholder="Enter the 13-digit reference number" />
+          <Input 
+            value={formData.referenceNumber}
+            onChange={(e) => handleReferenceChange(e.target.value)}
+            required 
+            placeholder="Enter the 13-digit reference number" 
+            inputMode="numeric"
+            pattern="\\d*"
+            maxLength={13}
+          />
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2"><Upload className="w-4 h-4" /> Screenshot (optional)</label>
