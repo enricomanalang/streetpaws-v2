@@ -90,37 +90,31 @@ export default function GCashDonationForm({ gcashName, gcashNumber, gcashQrUrl, 
     }
 
     try {
-      if (!database) throw new Error('Database not initialized');
+      setError('');
+      const res = await fetch('/api/donations/gcash', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: finalAmount,
+          donorName: formData.donorName,
+          donorEmail: formData.donorEmail,
+          donorPhone: formData.donorPhone,
+          purpose: formData.purpose,
+          message: formData.message,
+          referenceNumber: formData.referenceNumber,
+          screenshots: imageUrls,
+        }),
+      });
 
-      const donationData = {
-        method: 'gcash',
-        amount: finalAmount,
-        currency: 'PHP',
-        donorName: formData.donorName,
-        donorEmail: formData.donorEmail,
-        donorPhone: formData.donorPhone,
-        purpose: formData.purpose,
-        message: formData.message,
-        referenceNumber: formData.referenceNumber,
-        screenshots: imageUrls,
-        status: 'pending',
-        createdAt: new Date().toISOString(),
-      };
-
-      const donationsRef = ref(database, 'donations');
-      const newRef = push(donationsRef);
-
-      try {
-        await set(newRef, donationData);
-      } catch (writeErr: any) {
-        console.error('Firebase write error:', writeErr);
-        throw writeErr;
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data?.error || 'Server error');
       }
 
       setSuccess(true);
-      onSuccess?.(donationData);
+      onSuccess?.(data.donation);
     } catch (err: any) {
-      console.error('GCash donation error:', err);
+      console.error('GCash donation submit error:', err);
       setError(err?.message || 'Failed to save donation');
     }
   };
