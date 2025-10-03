@@ -9,7 +9,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
 import { Heart, CreditCard, Shield, CheckCircle } from 'lucide-react';
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+const stripePromise = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY 
+  ? loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
+  : null;
 
 interface DonationFormProps {
   onSuccess?: (donation: any) => void;
@@ -355,6 +357,23 @@ function CheckoutForm({ onSuccess }: DonationFormProps) {
 }
 
 export default function DonationForm({ onSuccess }: DonationFormProps) {
+  if (!stripePromise) {
+    return (
+      <div className="text-center py-12">
+        <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <Shield className="w-8 h-8 text-yellow-600" />
+        </div>
+        <h3 className="text-lg font-medium text-gray-900 mb-2">Payment System Not Configured</h3>
+        <p className="text-gray-600 mb-4">
+          The donation system is currently being set up. Please check back later or contact us directly.
+        </p>
+        <p className="text-sm text-gray-500">
+          For now, you can reach us through our contact page.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <Elements stripe={stripePromise}>
       <CheckoutForm onSuccess={onSuccess} />
