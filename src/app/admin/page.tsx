@@ -324,6 +324,52 @@ export default function AdminDashboard() {
     }
   }, [activeTab]);
 
+  // Load dashboard data when dashboard tab is active
+  useEffect(() => {
+    if (activeTab === 'dashboard' && database) {
+      console.log('Loading dashboard data...');
+      
+      // Load all reports for status cards
+      const reportsRef = ref(database, 'reports');
+      const unsubscribeReports = onValue(reportsRef, (snapshot) => {
+        if (snapshot.exists()) {
+          const data = snapshot.val();
+          const reportsArray = Object.keys(data).map(key => ({
+            id: key,
+            ...data[key]
+          }));
+          setReports(reportsArray);
+          console.log('Loaded reports for dashboard:', reportsArray.length);
+        } else {
+          setReports([]);
+          console.log('No reports found for dashboard');
+        }
+      });
+
+      // Load lost pets for status cards
+      const lostPetsRef = ref(database, 'lostPets');
+      const unsubscribeLostPets = onValue(lostPetsRef, (snapshot) => {
+        if (snapshot.exists()) {
+          const data = snapshot.val();
+          const lostPetsArray = Object.keys(data).map(key => ({
+            id: key,
+            ...data[key]
+          }));
+          setLostPets(lostPetsArray);
+          console.log('Loaded lost pets for dashboard:', lostPetsArray.length);
+        } else {
+          setLostPets([]);
+          console.log('No lost pets found for dashboard');
+        }
+      });
+
+      return () => {
+        off(reportsRef, 'value', unsubscribeReports);
+        off(lostPetsRef, 'value', unsubscribeLostPets);
+      };
+    }
+  }, [activeTab, database]);
+
   const handleLogout = async () => {
     await logout();
     router.push('/');
