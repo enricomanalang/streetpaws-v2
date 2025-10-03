@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { database } from '@/lib/firebase';
-import { ref, onValue, off, query, orderByChild, limitToLast } from 'firebase/database';
+import { ref, onValue, off, query, orderByChild, limitToLast, update } from 'firebase/database';
+import { useAuth } from '@/contexts/AuthContext';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,15 +27,21 @@ interface Donation {
   donorName: string;
   donorEmail: string;
   donorPhone?: string;
-  isAnonymous: boolean;
+  isAnonymous?: boolean;
   purpose: string;
   dedication?: string;
-  paymentMethod: string;
-  paymentIntentId: string;
+  paymentMethod?: string; // stripe/paypal
+  paymentIntentId?: string; // stripe
+  method?: string; // gcash
+  referenceNumber?: string; // gcash
+  screenshots?: string[]; // gcash
   status: 'pending' | 'completed' | 'failed' | 'refunded';
   createdAt: string;
   completedAt?: string;
-  receiptSent: boolean;
+  receiptSent?: boolean;
+  verifiedAt?: string;
+  verifiedBy?: string;
+  verificationNotes?: string;
 }
 
 interface DonationStats {
@@ -46,6 +53,7 @@ interface DonationStats {
 }
 
 export default function DonationManagement() {
+  const { user, profile } = useAuth();
   const [donations, setDonations] = useState<Donation[]>([]);
   const [stats, setStats] = useState<DonationStats>({
     totalAmount: 0,
@@ -120,15 +128,52 @@ export default function DonationManagement() {
   };
 
   const filteredDonations = donations.filter(donation => {
-    const matchesSearch = donation.donorName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         donation.donorEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         donation.paymentIntentId.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = statusFilter === 'all' || donation.status === statusFilter;
+    const needle = searchTerm.toLowerCase();
+    const matchesSearch =
+      (donation.donorName || '').toLowerCase().includes(needle) ||
+      (donation.donorEmail || '').toLowerCase().includes(needle) ||
+      (donation.paymentIntentId || '').toLowerCase().includes(needle) ||
+      (donation.referenceNumber || '').toLowerCase().includes(needle);
+
+    const matchesStatus = statusFilter === 'all' || donation.status === statusFilter as any;
     const matchesPurpose = purposeFilter === 'all' || donation.purpose === purposeFilter;
-    
+
     return matchesSearch && matchesStatus && matchesPurpose;
   });
+
+  const approveDonation = async (donation: Donation) => {
+    if (!database) return;
+    const notes = window.prompt('Optional: add verification notes', '');
+    await update(ref(database, `donations/${donation.id}`), {
+      status: 'completed',
+      verifiedAt: new Date().toISOString(),
+      verifiedBy: profile?.email || user?.email || 'admin',
+      verificationNotes: notes || '',
+      completedAt: new Date().toISOString(),
+    });
+  };
+
+  const rejectDonation = async (donation: Donation) => {
+    if (!database) return;
+    const notes = window.prompt('Reason for rejection?', 'Invalid reference number');
+    await update(ref(database, `donations/${donation.id}`), {
+      status: 'failed',
+      verifiedAt: new Date().toISOString(),
+      verifiedBy: profile?.email || user?.email || 'admin',
+      verificationNotes: notes || '',
+    });
+  };
+
+  const renderMethodMeta = (donation: Donation) => {
+    if (donation.method === 'gcash') {
+      return (
+        <div className="text-xs text-gray-500 mt-1">
+          Ref: {donation.referenceNumber || '—'}
+        </div>
+      );
+    }
+    return null;
+  };
 
   const exportDonations = () => {
     const csvContent = [
@@ -348,7 +393,14 @@ export default function DonationManagement() {
                           <Mail className="w-4 h-4" />
                         </Button>
                       )}
+                      {donation.method === 'gcash' && donation.status === 'pending' && (
+                        <>
+                          <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => approveDonation(donation)}>Approve</Button>
+                          <Button size="sm" variant="destructive" onClick={() => rejectDonation(donation)}>Reject</Button>
+                        </>
+                      )}
                     </div>
+                    {renderMethodMeta(donation)}
                   </td>
                 </tr>
               ))}
