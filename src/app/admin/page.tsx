@@ -63,7 +63,8 @@ import {
   UserPlus,
   Map,
   LogOut,
-  Camera
+  Camera,
+  Mail
 } from 'lucide-react';
 
 export default function AdminDashboard() {

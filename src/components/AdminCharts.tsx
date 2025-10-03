@@ -18,7 +18,7 @@ import {
   Pie,
   Cell
 } from 'recharts';
-import { ref, onValue, off } from 'firebase/database';
+import { ref, onValue, off, get } from 'firebase/database';
 import { database } from '@/lib/firebase';
 
 const COLORS = ['#60A5FA', '#3B82F6'];
@@ -91,6 +91,11 @@ export const MonthlyTrendChart = ({ selectedYear }: { selectedYear: number }) =>
         console.log('Fetching dashboard trend data...');
         
         // Get data from all collections
+        if (!database) {
+          console.error('Database not initialized');
+          return;
+        }
+
         const [reportsSnap, approvedSnap, rejectedSnap, lostSnap, foundSnap, adoptSnap] = await Promise.all([
           get(ref(database, 'reports')),
           get(ref(database, 'approvedReports')),
@@ -269,6 +274,11 @@ export const AbuseReportsChart = ({ selectedYear }: { selectedYear: number }) =>
     const fetchAllReports = async () => {
       try {
         console.log('Fetching reports data for stacked chart...');
+        
+        if (!database) {
+          console.error('Database not initialized');
+          return;
+        }
         
         const [pendingSnap, approvedSnap, rejectedSnap] = await Promise.all([
           get(ref(database, 'reports')),
@@ -557,7 +567,7 @@ export const AnimalTypeChart = ({ selectedYear }: { selectedYear: number }) => {
             if (pet.animalType) {
               const animalType = pet.animalType.toUpperCase();
               if (animalType === 'CAT' || animalType === 'DOG') {
-                quarterlyData[quarter][animalType as keyof typeof quarterlyData[0]] += 1;
+                (quarterlyData[quarter] as any)[animalType] += 1;
               }
             }
           }
@@ -631,16 +641,16 @@ export const PieChartComponent = () => {
       <ResponsiveContainer width="100%" height={300}>
         <PieChart>
           <Pie
-            data={animalTypeData}
+            data={data}
             cx="50%"
             cy="50%"
             labelLine={false}
-            label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+            label={({ name, percent }: { name: string; percent: number }) => `${name} ${(percent * 100).toFixed(0)}%`}
             outerRadius={80}
             fill="#8884d8"
             dataKey="value"
           >
-            {animalTypeData.map((entry, index) => (
+            {data.map((entry: any, index: number) => (
               <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
             ))}
           </Pie>
