@@ -6,10 +6,12 @@ import { Card } from '@/components/ui/card';
 import PayPalDonationForm from '@/components/PayPalDonationForm';
 import { PayPalScriptProvider } from '@paypal/react-paypal-js';
 import { Heart, Shield, Users, PawPrint } from 'lucide-react';
+import GCashDonationForm from '@/components/GCashDonationForm';
 
 export default function DonatePage() {
   const [showForm, setShowForm] = useState(false);
   const [donationSuccess, setDonationSuccess] = useState<any>(null);
+  const [method, setMethod] = useState<'paypal' | 'gcash'>('gcash');
 
   const handleDonationSuccess = (donation: any) => {
     setDonationSuccess(donation);
@@ -146,14 +148,39 @@ export default function DonatePage() {
               <h2 className="text-2xl font-bold text-gray-900 mb-2">Make a Donation</h2>
               <p className="text-gray-600">Help us make a difference in the lives of stray animals</p>
             </div>
-            <PayPalScriptProvider 
-              options={{ 
-                "client-id": process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || "test",
-                currency: "PHP"
-              }}
-            >
-              <PayPalDonationForm onSuccess={handleDonationSuccess} />
-            </PayPalScriptProvider>
+
+            <div className="flex items-center justify-center gap-2 mb-6">
+              <button
+                className={`px-4 py-2 rounded-full text-sm font-medium border ${method === 'gcash' ? 'bg-orange-500 text-white border-orange-500' : 'bg-white text-gray-700 border-gray-200'}`}
+                onClick={() => setMethod('gcash')}
+              >
+                GCash
+              </button>
+              <button
+                className={`px-4 py-2 rounded-full text-sm font-medium border ${method === 'paypal' ? 'bg-orange-500 text-white border-orange-500' : 'bg-white text-gray-700 border-gray-200'}`}
+                onClick={() => setMethod('paypal')}
+              >
+                PayPal / Card
+              </button>
+            </div>
+
+            {method === 'gcash' ? (
+              <GCashDonationForm
+                gcashName="StreetPaws"
+                gcashNumber="09XX XXX XXXX"
+                onSuccess={handleDonationSuccess}
+              />
+            ) : (
+              <PayPalScriptProvider 
+                options={{ 
+                  "client-id": process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || "test",
+                  currency: "PHP"
+                }}
+              >
+                <PayPalDonationForm onSuccess={handleDonationSuccess} />
+              </PayPalScriptProvider>
+            )}
+
             <div className="mt-6 text-center">
               <Button 
                 onClick={() => setShowForm(false)}
