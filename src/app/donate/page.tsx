@@ -12,6 +12,7 @@ export default function DonatePage() {
   const [showForm, setShowForm] = useState(false);
   const [donationSuccess, setDonationSuccess] = useState<any>(null);
   const [method, setMethod] = useState<'paypal' | 'gcash'>('gcash');
+  const paypalClientId = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID;
 
   const handleDonationSuccess = (donation: any) => {
     setDonationSuccess(donation);
@@ -171,14 +172,23 @@ export default function DonatePage() {
                 onSuccess={handleDonationSuccess}
               />
             ) : (
-              <PayPalScriptProvider 
-                options={{ 
-                  "client-id": process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || "test",
-                  currency: "PHP"
-                }}
-              >
-                <PayPalDonationForm onSuccess={handleDonationSuccess} />
-              </PayPalScriptProvider>
+              paypalClientId ? (
+                <PayPalScriptProvider 
+                  options={{ 
+                    "client-id": paypalClientId,
+                    currency: "PHP"
+                  }}
+                >
+                  <PayPalDonationForm onSuccess={handleDonationSuccess} />
+                </PayPalScriptProvider>
+              ) : (
+                <div className="text-center py-8">
+                  <div className="max-w-xl mx-auto bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <p className="text-blue-800 font-medium">PayPal is not configured yet.</p>
+                    <p className="text-sm text-blue-700 mt-1">Add NEXT_PUBLIC_PAYPAL_CLIENT_ID in Vercel Environment Variables to enable PayPal checkout. You can still donate via GCash.</p>
+                  </div>
+                </div>
+              )
             )}
 
             <div className="mt-6 text-center">

@@ -128,6 +128,7 @@ export default function PayPalDonationForm({ onSuccess }: PayPalDonationFormProp
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [showPayPal, setShowPayPal] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -148,25 +149,34 @@ export default function PayPalDonationForm({ onSuccess }: PayPalDonationFormProp
   };
 
   const handleProceedToPayment = () => {
-    const finalAmount = getFinalAmount();
-    
-    if (finalAmount < 50) {
-      setError('Minimum donation amount is ₱50');
-      return;
-    }
+    try {
+      const finalAmount = getFinalAmount();
+      
+      if (finalAmount < 50) {
+        setError('Minimum donation amount is ₱50');
+        return;
+      }
 
-    if (!formData.donorName || !formData.donorEmail) {
-      setError('Please fill in all required fields');
-      return;
-    }
+      if (!formData.donorName || !formData.donorEmail) {
+        setError('Please fill in all required fields');
+        return;
+      }
 
-    setShowPayPal(true);
-    setError('');
+      setShowPayPal(true);
+      setError('');
+      setSubmitError('');
+    } catch (e: any) {
+      setSubmitError('Something went wrong initializing PayPal. Please try again.');
+    }
   };
 
   const handleSuccess = (donation: any) => {
-    setSuccess(true);
-    onSuccess?.(donation);
+    try {
+      setSuccess(true);
+      onSuccess?.(donation);
+    } catch (e) {
+      // swallow to avoid crashing
+    }
   };
 
   const handleError = (errorMessage: string) => {
@@ -323,6 +333,10 @@ export default function PayPalDonationForm({ onSuccess }: PayPalDonationFormProp
             <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
               {error}
             </div>
+          )}
+
+          {submitError && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm mt-3">{submitError}</div>
           )}
 
           <Button
