@@ -14,6 +14,7 @@ const nextConfig: NextConfig = {
     // optimizePackageImports can cause unexpected client-side errors in some bundles; disable for stability
     // optimizePackageImports: ['lucide-react'],
   },
+  productionBrowserSourceMaps: true,
   // Suppress hydration warnings for known browser extension attributes
   onDemandEntries: {
     // period (in ms) where the server will keep pages in the buffer
