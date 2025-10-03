@@ -40,7 +40,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import HeatMap from '@/components/HeatMap';
 import { AdminDashboardCharts } from '@/components/AdminCharts';
-import { ref, onValue, off, update, get, set, remove } from 'firebase/database';
+import { ref, onValue, off, update, get, set } from 'firebase/database';
 // import { collection, onSnapshot, doc, updateDoc, serverTimestamp, query, orderBy } from 'firebase/firestore';
 import { database } from '@/lib/firebase';
 import { 
@@ -587,65 +587,6 @@ export default function AdminDashboard() {
     }
   };
 
-  const clearAllTestData = async () => {
-    if (!database) {
-      alert('Database not initialized');
-      return;
-    }
-
-    if (!user || !profile) {
-      alert('Authentication error. Please log in again.');
-      return;
-    }
-
-    // Double confirmation
-    const confirm1 = confirm('⚠️ WARNING: This will delete ALL test data!\n\nThis includes:\n- All reports (pending, approved, rejected)\n- All lost/found pets\n- All adoption requests\n\nThis cannot be undone!\n\nAre you sure you want to continue?');
-    if (!confirm1) return;
-
-    const confirm2 = confirm('🚨 FINAL WARNING!\n\nYou are about to delete ALL data from:\n- reports\n- approvedReports\n- rejectedReports\n- lostPets\n- foundPets\n- adoptionRequests\n- adoptions\n\nType "DELETE ALL" to confirm:');
-    if (confirm2 !== 'DELETE ALL') {
-      alert('Operation cancelled. Data is safe.');
-      return;
-    }
-
-    try {
-      console.log('Starting to clear all test data...');
-      
-      // Collections to clear
-      const collections = [
-        'reports',
-        'approvedReports', 
-        'rejectedReports',
-        'lostPets',
-        'foundPets',
-        'adoptionRequests',
-        'adoptions'
-      ];
-
-      // Clear each collection
-      for (const collection of collections) {
-        console.log(`Clearing collection: ${collection}`);
-        const collectionRef = ref(database, collection);
-        await remove(collectionRef);
-        console.log(`✅ Cleared: ${collection}`);
-      }
-
-      // Clear local state
-      setReports([]);
-      setApprovedReports([]);
-      setRejectedReports([]);
-      setLostPets([]);
-      setAdoptionRequests([]);
-
-      alert('🎉 All test data cleared successfully!\n\nDashboard will now show 0 for all status cards.');
-      console.log('All test data cleared successfully');
-
-    } catch (error) {
-      console.error('Error clearing test data:', error);
-      alert(`Error clearing data: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50" suppressHydrationWarning={true}>
@@ -726,28 +667,6 @@ export default function AdminDashboard() {
                 </CardContent>
               </Card>
             </div>
-
-            {/* Clear Test Data Button */}
-            <Card className="bg-gradient-to-r from-red-50 to-orange-50 border-red-200">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-lg font-semibold text-red-800 mb-2">🗑️ Clear Test Data</h3>
-                    <p className="text-sm text-red-600 mb-4">
-                      Delete all test data from Firebase. This will clear all reports, lost pets, and adoption requests.
-                    </p>
-                    <Button 
-                      onClick={clearAllTestData}
-                      variant="destructive"
-                      className="bg-red-600 hover:bg-red-700"
-                    >
-                      Clear All Test Data
-                    </Button>
-                  </div>
-                  <AlertTriangle className="w-12 h-12 text-red-500" />
-                </div>
-              </CardContent>
-            </Card>
 
             {/* Charts Section */}
             <AdminDashboardCharts />
