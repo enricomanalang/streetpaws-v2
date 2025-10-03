@@ -11,8 +11,8 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   experimental: {
-    // Reduce hydration mismatches from browser extensions
-    optimizePackageImports: ['lucide-react'],
+    // optimizePackageImports can cause unexpected client-side errors in some bundles; disable for stability
+    // optimizePackageImports: ['lucide-react'],
   },
   // Suppress hydration warnings for known browser extension attributes
   onDemandEntries: {
