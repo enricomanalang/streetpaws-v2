@@ -3,11 +3,13 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import PayPalDonationForm from '@/components/PayPalDonationForm';
+import dynamic from 'next/dynamic';
+import ErrorBoundary from '@/components/ErrorBoundary';
+
+const DynamicPayPalDonationForm = dynamic(() => import('@/components/PayPalDonationForm'), { ssr: false });
 import { PayPalScriptProvider } from '@paypal/react-paypal-js';
 import { Heart, Shield, Users, PawPrint } from 'lucide-react';
 import GCashDonationForm from '@/components/GCashDonationForm';
-import ErrorBoundary from '@/components/ErrorBoundary';
 
 export default function DonatePage() {
   const [showForm, setShowForm] = useState(false);
@@ -181,7 +183,7 @@ export default function DonatePage() {
                     currency: "PHP"
                   }}
                 >
-                  <PayPalDonationForm onSuccess={handleDonationSuccess} />
+                  <DynamicPayPalDonationForm onSuccess={handleDonationSuccess} />
                 </PayPalScriptProvider>
               ) : (
                 <div className="text-center py-8">
