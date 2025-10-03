@@ -30,13 +30,13 @@ const getMonthAbbr = (monthIndex: number) => {
 };
 
 // Helper function to process data by month
-const processDataByMonth = (data: any[], dateField: string = 'createdAt') => {
+const processDataByMonth = (data: any[], dateField: string = 'createdAt', targetYear?: number) => {
   const monthlyData = Array.from({ length: 12 }, (_, i) => ({
     month: getMonthAbbr(i),
     value: 0
   }));
 
-  console.log(`Processing ${data.length} items with dateField: ${dateField}`);
+  console.log(`Processing ${data.length} items with dateField: ${dateField}, targetYear: ${targetYear}`);
   
   data.forEach((item, index) => {
     const dateValue = item[dateField];
@@ -44,10 +44,18 @@ const processDataByMonth = (data: any[], dateField: string = 'createdAt') => {
       try {
         const date = new Date(dateValue);
         if (!isNaN(date.getTime())) {
+          const year = date.getFullYear();
           const monthIndex = date.getMonth();
+          
+          // Filter by year if targetYear is specified
+          if (targetYear && year !== targetYear) {
+            console.log(`Item ${index}: Skipping ${dateValue} - year ${year} doesn't match target ${targetYear}`);
+            return;
+          }
+          
           if (monthIndex >= 0 && monthIndex < 12) {
             monthlyData[monthIndex].value += 1;
-            console.log(`Item ${index}: ${dateValue} -> Month ${monthIndex} (${getMonthAbbr(monthIndex)})`);
+            console.log(`Item ${index}: ${dateValue} -> Year ${year}, Month ${monthIndex} (${getMonthAbbr(monthIndex)})`);
           } else {
             console.log(`Item ${index}: Invalid month index ${monthIndex} for date ${dateValue}`);
           }
@@ -67,7 +75,7 @@ const processDataByMonth = (data: any[], dateField: string = 'createdAt') => {
 };
 
 
-export const MonthlyTrendChart = () => {
+export const MonthlyTrendChart = ({ selectedYear }: { selectedYear: number }) => {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -119,7 +127,7 @@ export const MonthlyTrendChart = () => {
         });
 
         console.log(`Total items for trend analysis: ${allData.length}`);
-        const processedData = processDataByMonth(allData);
+        const processedData = processDataByMonth(allData, 'createdAt', selectedYear);
         setData(processedData);
         
       } catch (error) {
@@ -134,12 +142,12 @@ export const MonthlyTrendChart = () => {
     };
 
     fetchAllData();
-  }, []);
+  }, [selectedYear]);
 
   if (loading) {
     return (
       <div className="bg-white p-6 rounded-lg shadow-sm border">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Monthly Activity Trend (2025)</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Monthly Activity Trend ({selectedYear})</h3>
         <div className="flex items-center justify-center h-[300px]">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
         </div>
@@ -149,7 +157,7 @@ export const MonthlyTrendChart = () => {
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm border">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">Monthly Activity Trend (2025)</h3>
+      <h3 className="text-lg font-semibold text-gray-900 mb-4">Monthly Activity Trend ({selectedYear})</h3>
       <ResponsiveContainer width="100%" height={300}>
         <LineChart data={data}>
           <CartesianGrid strokeDasharray="3 3" />
@@ -169,7 +177,7 @@ export const MonthlyTrendChart = () => {
   );
 };
 
-export const AdoptionChart = () => {
+export const AdoptionChart = ({ selectedYear }: { selectedYear: number }) => {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -190,7 +198,7 @@ export const AdoptionChart = () => {
           ...adoptionRequestsData[key]
         }));
         console.log(`Found ${adoptionRequestsList.length} adoption requests`);
-        const processedData = processDataByMonth(adoptionRequestsList).map(item => ({
+        const processedData = processDataByMonth(adoptionRequestsList, 'createdAt', selectedYear).map(item => ({
           month: item.month,
           adoptions: item.value
         }));
@@ -211,12 +219,12 @@ export const AdoptionChart = () => {
     return () => {
       off(adoptionRequestsRef, 'value', unsubscribe);
     };
-  }, []);
+  }, [selectedYear]);
 
   if (loading) {
     return (
       <div className="bg-white p-6 rounded-lg shadow-sm border">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">ADOPTIONS (2025)</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">ADOPTIONS ({selectedYear})</h3>
         <div className="flex items-center justify-center h-[300px]">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
         </div>
@@ -226,7 +234,7 @@ export const AdoptionChart = () => {
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm border">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">ADOPTIONS (2025)</h3>
+      <h3 className="text-lg font-semibold text-gray-900 mb-4">ADOPTIONS ({selectedYear})</h3>
       <ResponsiveContainer width="100%" height={300}>
         <LineChart data={data}>
           <CartesianGrid strokeDasharray="3 3" />
@@ -247,7 +255,7 @@ export const AdoptionChart = () => {
   );
 };
 
-export const AbuseReportsChart = () => {
+export const AbuseReportsChart = ({ selectedYear }: { selectedYear: number }) => {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -329,7 +337,7 @@ export const AbuseReportsChart = () => {
   if (loading) {
     return (
       <div className="bg-white p-6 rounded-lg shadow-sm border">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">REPORTS STATUS (2025)</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">REPORTS STATUS ({selectedYear})</h3>
         <div className="flex items-center justify-center h-[300px]">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
         </div>
@@ -339,7 +347,7 @@ export const AbuseReportsChart = () => {
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm border">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">REPORTS STATUS (2025)</h3>
+      <h3 className="text-lg font-semibold text-gray-900 mb-4">REPORTS STATUS ({selectedYear})</h3>
       <ResponsiveContainer width="100%" height={300}>
         <BarChart data={data}>
           <CartesianGrid strokeDasharray="3 3" />
@@ -356,7 +364,7 @@ export const AbuseReportsChart = () => {
   );
 };
 
-export const LostChart = () => {
+export const LostChart = ({ selectedYear }: { selectedYear: number }) => {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -403,7 +411,7 @@ export const LostChart = () => {
   if (loading) {
     return (
       <div className="bg-white p-6 rounded-lg shadow-sm border">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">LOST PETS (2025)</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">LOST PETS ({selectedYear})</h3>
         <div className="flex items-center justify-center h-[300px]">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
         </div>
@@ -413,7 +421,7 @@ export const LostChart = () => {
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm border">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">LOST PETS (2025)</h3>
+      <h3 className="text-lg font-semibold text-gray-900 mb-4">LOST PETS ({selectedYear})</h3>
       <ResponsiveContainer width="100%" height={300}>
         <AreaChart data={data}>
           <CartesianGrid strokeDasharray="3 3" />
@@ -434,7 +442,7 @@ export const LostChart = () => {
   );
 };
 
-export const FoundChart = () => {
+export const FoundChart = ({ selectedYear }: { selectedYear: number }) => {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -481,7 +489,7 @@ export const FoundChart = () => {
   if (loading) {
     return (
       <div className="bg-white p-6 rounded-lg shadow-sm border">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">FOUND PETS (2025)</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">FOUND PETS ({selectedYear})</h3>
         <div className="flex items-center justify-center h-[300px]">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
         </div>
@@ -491,7 +499,7 @@ export const FoundChart = () => {
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm border">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">FOUND PETS (2025)</h3>
+      <h3 className="text-lg font-semibold text-gray-900 mb-4">FOUND PETS ({selectedYear})</h3>
       <ResponsiveContainer width="100%" height={300}>
         <AreaChart data={data}>
           <CartesianGrid strokeDasharray="3 3" />
@@ -512,7 +520,7 @@ export const FoundChart = () => {
   );
 };
 
-export const AnimalTypeChart = () => {
+export const AnimalTypeChart = ({ selectedYear }: { selectedYear: number }) => {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -578,7 +586,7 @@ export const AnimalTypeChart = () => {
   if (loading) {
     return (
       <div className="bg-white p-6 rounded-lg shadow-sm border">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">ANIMAL TYPES (2025)</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">ANIMAL TYPES ({selectedYear})</h3>
         <div className="flex items-center justify-center h-[300px]">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
         </div>
@@ -588,7 +596,7 @@ export const AnimalTypeChart = () => {
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm border">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">ANIMAL TYPES (2025)</h3>
+      <h3 className="text-lg font-semibold text-gray-900 mb-4">ANIMAL TYPES ({selectedYear})</h3>
       <div className="flex items-center justify-center mb-4">
         <div className="flex space-x-4">
           <div className="flex items-center">
@@ -645,30 +653,84 @@ export const PieChartComponent = () => {
 
 // Main dashboard charts component
 export const AdminDashboardCharts = () => {
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [availableYears, setAvailableYears] = useState<number[]>([]);
+
+  // Get available years from data
+  useEffect(() => {
+    const getAvailableYears = async () => {
+      if (!database) return;
+      
+      try {
+        const years = new Set<number>();
+        const currentYear = new Date().getFullYear();
+        
+        // Add current year and previous years
+        for (let year = currentYear; year >= 2020; year--) {
+          years.add(year);
+        }
+        
+        setAvailableYears(Array.from(years).sort((a, b) => b - a));
+      } catch (error) {
+        console.error('Error getting available years:', error);
+        setAvailableYears([new Date().getFullYear()]);
+      }
+    };
+
+    getAvailableYears();
+  }, []);
+
   return (
     <div className="space-y-6">
+      {/* Year Filter */}
+      <div className="bg-white p-4 rounded-lg shadow-sm border">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-gray-900">Dashboard Filters</h3>
+          <div className="flex items-center space-x-4">
+            <label htmlFor="year-filter" className="text-sm font-medium text-gray-700">
+              Year:
+            </label>
+            <select
+              id="year-filter"
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+              className="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              {availableYears.map(year => (
+                <option key={year} value={year}>
+                  {year}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+        <p className="text-sm text-gray-500 mt-2">
+          Showing data for {selectedYear}. Charts will update automatically when you change the year.
+        </p>
+      </div>
+
       {/* Top row - Line chart and Bar charts */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-1">
-          <MonthlyTrendChart />
+          <MonthlyTrendChart selectedYear={selectedYear} />
         </div>
         <div className="lg:col-span-1">
-          <AdoptionChart />
+          <AdoptionChart selectedYear={selectedYear} />
         </div>
         <div className="lg:col-span-1">
-          <AbuseReportsChart />
+          <AbuseReportsChart selectedYear={selectedYear} />
         </div>
       </div>
 
       {/* Middle row - Lost and Found charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <LostChart />
-        <FoundChart />
+        <LostChart selectedYear={selectedYear} />
+        <FoundChart selectedYear={selectedYear} />
       </div>
 
       {/* Bottom row - Animal Types */}
       <div className="grid grid-cols-1 lg:grid-cols-1 gap-6">
-        <AnimalTypeChart />
+        <AnimalTypeChart selectedYear={selectedYear} />
       </div>
     </div>
   );
