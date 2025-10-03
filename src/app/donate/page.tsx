@@ -7,6 +7,7 @@ import PayPalDonationForm from '@/components/PayPalDonationForm';
 import { PayPalScriptProvider } from '@paypal/react-paypal-js';
 import { Heart, Shield, Users, PawPrint } from 'lucide-react';
 import GCashDonationForm from '@/components/GCashDonationForm';
+import ErrorBoundary from '@/components/ErrorBoundary';
 
 export default function DonatePage() {
   const [showForm, setShowForm] = useState(false);
@@ -57,6 +58,7 @@ export default function DonatePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
+      <ErrorBoundary>
       {!showForm ? (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           {/* Hero Section */}
@@ -202,6 +204,7 @@ export default function DonatePage() {
           </Card>
         </div>
       )}
+      </ErrorBoundary>
     </div>
   );
 }
