@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { firestore } from '@/lib/firebase';
 import { collection, addDoc } from 'firebase/firestore';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -20,6 +21,7 @@ interface GCashDonationFormProps {
 const QUICK_AMOUNTS = [100, 200, 300, 500, 1000, 2500];
 
 export default function GCashDonationForm({ gcashName, gcashNumber, gcashQrUrl, onSuccess }: GCashDonationFormProps) {
+  const { user } = useAuth();
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
@@ -74,6 +76,13 @@ export default function GCashDonationForm({ gcashName, gcashNumber, gcashQrUrl, 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Check if user is authenticated
+    if (!user) {
+      setError('Please log in to submit a donation');
+      return;
+    }
+    
     const finalAmount = getFinalAmount();
 
     if (finalAmount < 50) {
@@ -133,6 +142,23 @@ export default function GCashDonationForm({ gcashName, gcashNumber, gcashQrUrl, 
         <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Thank you!</h2>
         <p className="text-gray-600">We have received your GCash donation submission. Our team will verify it shortly.</p>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="text-center py-12">
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+          <h2 className="text-xl font-bold text-blue-800 mb-2">Please Log In</h2>
+          <p className="text-blue-700 mb-4">You need to be logged in to submit a donation.</p>
+          <Button 
+            onClick={() => window.location.href = '/login'}
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+          >
+            Go to Login
+          </Button>
+        </div>
       </div>
     );
   }
