@@ -82,19 +82,59 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = async (email: string, password: string) => {
-    await signInWithEmailAndPassword(auth, email, password);
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch (error: any) {
+      // Handle Firebase authentication errors with user-friendly messages
+      switch (error.code) {
+        case 'auth/user-not-found':
+          throw new Error('No account found with this email address.');
+        case 'auth/wrong-password':
+          throw new Error('Incorrect password. Please try again.');
+        case 'auth/invalid-credential':
+          throw new Error('Invalid email or password. Please check your credentials.');
+        case 'auth/invalid-email':
+          throw new Error('Please enter a valid email address.');
+        case 'auth/user-disabled':
+          throw new Error('This account has been disabled. Please contact support.');
+        case 'auth/too-many-requests':
+          throw new Error('Too many failed attempts. Please try again later.');
+        case 'auth/network-request-failed':
+          throw new Error('Network error. Please check your internet connection.');
+        default:
+          throw new Error('Login failed. Please try again.');
+      }
+    }
   };
 
   const register = async (email: string, password: string, name: string, role: UserRole = 'user') => {
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    const userProfile: UserProfile = {
-      uid: userCredential.user.uid,
-      email,
-      role,
-      name,
-    };
-    const userRef = ref(database, `users/${userCredential.user.uid}`);
-    await set(userRef, userProfile);
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const userProfile: UserProfile = {
+        uid: userCredential.user.uid,
+        email,
+        role,
+        name,
+      };
+      const userRef = ref(database, `users/${userCredential.user.uid}`);
+      await set(userRef, userProfile);
+    } catch (error: any) {
+      // Handle Firebase registration errors with user-friendly messages
+      switch (error.code) {
+        case 'auth/email-already-in-use':
+          throw new Error('An account with this email already exists. Please sign in instead.');
+        case 'auth/invalid-email':
+          throw new Error('Please enter a valid email address.');
+        case 'auth/weak-password':
+          throw new Error('Password should be at least 6 characters long.');
+        case 'auth/operation-not-allowed':
+          throw new Error('Email registration is not enabled. Please contact support.');
+        case 'auth/network-request-failed':
+          throw new Error('Network error. Please check your internet connection.');
+        default:
+          throw new Error('Registration failed. Please try again.');
+      }
+    }
   };
 
   const logout = async () => {
