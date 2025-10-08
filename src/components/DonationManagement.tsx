@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { 
   DollarSign, 
   Users, 
@@ -66,6 +67,8 @@ export default function DonationManagement() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [purposeFilter, setPurposeFilter] = useState('all');
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [selectedDonation, setSelectedDonation] = useState<Donation | null>(null);
 
   useEffect(() => {
     if (!firestore) return;
@@ -148,6 +151,29 @@ export default function DonationManagement() {
       verifiedBy: profile?.email || user?.email || 'admin',
       verificationNotes: notes || '',
     });
+  };
+
+  const openDetails = (donation: Donation) => {
+    setSelectedDonation(donation);
+    setDetailsOpen(true);
+  };
+
+  const sendReceipt = async (donation: Donation) => {
+    if (!donation.donorEmail) return;
+    const subject = encodeURIComponent('StreetPaws Donation Receipt');
+    const body = encodeURIComponent(
+      `Hi ${donation.donorName || 'Donor'},\n\n` +
+      `Thank you for your donation of ₱${donation.amount.toLocaleString()} for ${getPurposeLabel(donation.purpose)}.\n` +
+      `Date: ${new Date(donation.createdAt).toLocaleString()}\n` +
+      (donation.method === 'gcash' && donation.referenceNumber ? `GCash Ref: ${donation.referenceNumber}\n` : '') +
+      `\nWe appreciate your support!\n\n— StreetPaws`
+    );
+    window.open(`mailto:${donation.donorEmail}?subject=${subject}&body=${body}`);
+    try {
+      if (firestore) {
+        await updateDoc(doc(firestore, 'donations', donation.id), { receiptSent: true });
+      }
+    } catch {}
   };
 
   const renderMethodMeta = (donation: Donation) => {
@@ -371,11 +397,11 @@ export default function DonationManagement() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex space-x-2">
-                      <Button size="sm" variant="outline">
+                      <Button size="sm" variant="outline" onClick={() => openDetails(donation)}>
                         <Eye className="w-4 h-4" />
                       </Button>
-                      {donation.status === 'completed' && !donation.receiptSent && (
-                        <Button size="sm" variant="outline">
+                      {donation.status === 'completed' && !donation.receiptSent && donation.donorEmail && (
+                        <Button size="sm" variant="outline" onClick={() => sendReceipt(donation)}>
                           <Mail className="w-4 h-4" />
                         </Button>
                       )}
@@ -400,6 +426,70 @@ export default function DonationManagement() {
           )}
         </div>
       </Card>
+      <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Donation Details</DialogTitle>
+          </DialogHeader>
+          {selectedDonation && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <div className="text-sm text-gray-500">Donor</div>
+                  <div className="font-medium">{selectedDonation.isAnonymous ? 'Anonymous' : selectedDonation.donorName}</div>
+                  <div className="text-sm text-gray-600">{selectedDonation.donorEmail || '—'}</div>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-500">Amount</div>
+                  <div className="font-medium">₱{selectedDonation.amount.toLocaleString()} {selectedDonation.currency?.toUpperCase()}</div>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-500">Purpose</div>
+                  <div className="font-medium">{getPurposeLabel(selectedDonation.purpose)}</div>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-500">Status</div>
+                  <div>{getStatusBadge(selectedDonation.status)}</div>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-500">Date</div>
+                  <div className="font-medium">{new Date(selectedDonation.createdAt).toLocaleString()}</div>
+                </div>
+                {selectedDonation.method === 'gcash' && (
+                  <div>
+                    <div className="text-sm text-gray-500">GCash Ref</div>
+                    <div className="font-medium">{selectedDonation.referenceNumber || '—'}</div>
+                  </div>
+                )}
+              </div>
+              {selectedDonation.message && (
+                <div>
+                  <div className="text-sm text-gray-500 mb-1">Message</div>
+                  <div className="p-3 bg-gray-50 rounded border text-sm text-gray-700">{selectedDonation.message}</div>
+                </div>
+              )}
+              {!!selectedDonation.screenshots?.length && (
+                <div>
+                  <div className="text-sm text-gray-500 mb-2">Screenshots</div>
+                  <div className="grid grid-cols-3 gap-3">
+                    {selectedDonation.screenshots!.map((url, idx) => (
+                      <a key={idx} href={url} target="_blank" rel="noreferrer">
+                        <img src={url} alt={`receipt-${idx}`} className="w-full h-24 object-cover rounded border" />
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div className="flex justify-end gap-2">
+                {selectedDonation.status === 'completed' && !selectedDonation.receiptSent && selectedDonation.donorEmail && (
+                  <Button variant="outline" onClick={() => sendReceipt(selectedDonation)}>Send Receipt</Button>
+                )}
+                <Button onClick={() => setDetailsOpen(false)}>Close</Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
