@@ -5,13 +5,14 @@ export const dynamic = 'force-dynamic';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import NextDynamic from 'next/dynamic';
 import ErrorBoundary from '@/components/ErrorBoundary';
 
-const DynamicPayPalDonationForm = dynamic(() => import('@/components/PayPalDonationForm'), { ssr: false });
+const DynamicPayPalDonationForm = NextDynamic(() => import('@/components/PayPalDonationForm'), { ssr: false });
 import { PayPalScriptProvider } from '@paypal/react-paypal-js';
 import { Heart, Shield, Users, PawPrint } from 'lucide-react';
 import GCashDonationForm from '@/components/GCashDonationForm';
-const InKindDonationForm = dynamic(() => import('@/components/InKindDonationForm'), { ssr: false });
+const InKindDonationForm = NextDynamic(() => import('@/components/InKindDonationForm'), { ssr: false });
 
 export default function DonatePage() {
   const [showForm, setShowForm] = useState(false);
