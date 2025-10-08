@@ -3,14 +3,12 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import dynamic from 'next/dynamic';
 import ErrorBoundary from '@/components/ErrorBoundary';
 
 const DynamicPayPalDonationForm = dynamic(() => import('@/components/PayPalDonationForm'), { ssr: false });
 import { PayPalScriptProvider } from '@paypal/react-paypal-js';
 import { Heart, Shield, Users, PawPrint } from 'lucide-react';
 import GCashDonationForm from '@/components/GCashDonationForm';
-import dynamic from 'next/dynamic';
 const InKindDonationForm = dynamic(() => import('@/components/InKindDonationForm'), { ssr: false });
 
 export default function DonatePage() {
