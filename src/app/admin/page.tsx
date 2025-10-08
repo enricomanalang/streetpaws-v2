@@ -41,6 +41,7 @@ import { Badge } from '@/components/ui/badge';
 import HeatMap from '@/components/HeatMap';
 import { AdminDashboardCharts } from '@/components/AdminCharts';
 import DonationManagement from '@/components/DonationManagement';
+import DonorsManagement from '@/components/DonorsManagement';
 import { ref, onValue, off, update, get, set, remove } from 'firebase/database';
 // import { collection, onSnapshot, doc, updateDoc, serverTimestamp, query, orderBy } from 'firebase/firestore';
 import { database } from '@/lib/firebase';
@@ -1831,21 +1832,7 @@ export default function AdminDashboard() {
         );
       
       case 'donors':
-        return (
-          <Card className="bg-white shadow-sm">
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold text-gray-900">Donor Management</CardTitle>
-              <CardDescription>Manage donors and donations</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-12">
-                <DollarSign className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Donors Section</h3>
-                <p className="text-gray-500">This section is ready for your donor management functionality.</p>
-              </div>
-            </CardContent>
-          </Card>
-        );
+        return <DonorsManagement />;
       
       case 'heatmap':
         return <HeatMap />;
