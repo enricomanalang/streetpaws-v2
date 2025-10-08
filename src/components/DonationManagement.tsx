@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { database } from '@/lib/firebase';
-import { ref, onValue, off, query, orderByChild, limitToLast, update } from 'firebase/database';
+import { firestore } from '@/lib/firebase';
+import { collection, onSnapshot, query as fsQuery, orderBy, updateDoc, doc } from 'firebase/firestore';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -68,33 +68,19 @@ export default function DonationManagement() {
   const [purposeFilter, setPurposeFilter] = useState('all');
 
   useEffect(() => {
-    if (!database) return;
+    if (!firestore) return;
 
-    // Listen to donations
-    const donationsRef = ref(database, 'donations');
-    const unsubscribe = onValue(donationsRef, (snapshot) => {
-      if (snapshot.exists()) {
-        const donationsData = snapshot.val();
-        const donationsList = Object.keys(donationsData).map(key => ({
-          id: key,
-          ...donationsData[key]
-        }));
-        
-        // Sort by creation date (newest first)
-        donationsList.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-        setDonations(donationsList);
-        
-        // Calculate stats
-        calculateStats(donationsList);
-      } else {
-        setDonations([]);
-      }
+    // Listen to donations from Firestore
+    const donationsCol = collection(firestore, 'donations');
+    const q = fsQuery(donationsCol, orderBy('createdAt', 'desc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const donationsList = snapshot.docs.map((d) => ({ id: d.id, ...(d.data() as any) }));
+      setDonations(donationsList as any);
+      calculateStats(donationsList as any);
       setLoading(false);
-    });
+    }, () => setLoading(false));
 
-    return () => {
-      off(donationsRef, 'value', unsubscribe as any);
-    };
+    return () => unsubscribe();
   }, []);
 
   const calculateStats = (donationsList: Donation[]) => {
@@ -142,9 +128,9 @@ export default function DonationManagement() {
   });
 
   const approveDonation = async (donation: Donation) => {
-    if (!database) return;
+    if (!firestore) return;
     const notes = window.prompt('Optional: add verification notes', '');
-    await update(ref(database, `donations/${donation.id}`), {
+    await updateDoc(doc(firestore, 'donations', donation.id), {
       status: 'completed',
       verifiedAt: new Date().toISOString(),
       verifiedBy: profile?.email || user?.email || 'admin',
@@ -154,9 +140,9 @@ export default function DonationManagement() {
   };
 
   const rejectDonation = async (donation: Donation) => {
-    if (!database) return;
+    if (!firestore) return;
     const notes = window.prompt('Reason for rejection?', 'Invalid reference number');
-    await update(ref(database, `donations/${donation.id}`), {
+    await updateDoc(doc(firestore, 'donations', donation.id), {
       status: 'failed',
       verifiedAt: new Date().toISOString(),
       verifiedBy: profile?.email || user?.email || 'admin',
