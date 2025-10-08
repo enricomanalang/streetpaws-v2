@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { database } from '@/lib/firebase';
-import { ref, push, set } from 'firebase/database';
+import { firestore } from '@/lib/firebase';
+import { collection, addDoc } from 'firebase/firestore';
 
 export async function POST(req: NextRequest) {
   try {
-    if (!database) {
+    if (!firestore) {
       return NextResponse.json({ error: 'Database not initialized' }, { status: 500 });
     }
 
@@ -45,11 +45,10 @@ export async function POST(req: NextRequest) {
       createdAt: new Date().toISOString(),
     };
 
-    const donationsRef = ref(database, 'donations');
-    const newRef = push(donationsRef);
-    await set(newRef, donationData);
+    const donationsRef = collection(firestore, 'donations');
+    const docRef = await addDoc(donationsRef, donationData);
 
-    return NextResponse.json({ ok: true, id: newRef.key, donation: donationData });
+    return NextResponse.json({ ok: true, id: docRef.id, donation: donationData });
   } catch (err: any) {
     console.error('API GCash donation error:', err);
     return NextResponse.json({ error: err?.message || 'Server error' }, { status: 500 });

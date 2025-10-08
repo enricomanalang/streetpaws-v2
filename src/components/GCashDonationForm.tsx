@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { database } from '@/lib/firebase';
-import { ref, push, set } from 'firebase/database';
+import { firestore } from '@/lib/firebase';
+import { collection, addDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
