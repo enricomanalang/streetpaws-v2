@@ -10,11 +10,13 @@ const DynamicPayPalDonationForm = dynamic(() => import('@/components/PayPalDonat
 import { PayPalScriptProvider } from '@paypal/react-paypal-js';
 import { Heart, Shield, Users, PawPrint } from 'lucide-react';
 import GCashDonationForm from '@/components/GCashDonationForm';
+import dynamic from 'next/dynamic';
+const InKindDonationForm = dynamic(() => import('@/components/InKindDonationForm'), { ssr: false });
 
 export default function DonatePage() {
   const [showForm, setShowForm] = useState(false);
   const [donationSuccess, setDonationSuccess] = useState<any>(null);
-  const [method, setMethod] = useState<'paypal' | 'gcash'>('gcash');
+  const [method, setMethod] = useState<'paypal' | 'gcash' | 'inkind'>('gcash');
   const paypalClientId = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID;
 
   const handleDonationSuccess = (donation: any) => {
@@ -167,6 +169,12 @@ export default function DonatePage() {
               >
                 PayPal / Card
               </button>
+              <button
+                className={`px-4 py-2 rounded-full text-sm font-medium border ${method === 'inkind' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-200'}`}
+                onClick={() => setMethod('inkind')}
+              >
+                Goods
+              </button>
             </div>
 
             {method === 'gcash' ? (
@@ -175,7 +183,7 @@ export default function DonatePage() {
                 gcashNumber="09XX XXX XXXX"
                 onSuccess={handleDonationSuccess}
               />
-            ) : (
+            ) : method === 'paypal' ? (
               paypalClientId ? (
                 <PayPalScriptProvider 
                   options={{ 
@@ -193,6 +201,8 @@ export default function DonatePage() {
                   </div>
                 </div>
               )
+            ) : (
+              <InKindDonationForm onSuccess={handleDonationSuccess} />
             )}
 
             <div className="mt-6 text-center">

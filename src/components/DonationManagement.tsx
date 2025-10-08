@@ -184,6 +184,14 @@ export default function DonationManagement() {
         </div>
       );
     }
+    if ((donation as any).method === 'in-kind') {
+      const d: any = donation as any;
+      return (
+        <div className="text-xs text-gray-500 mt-1">
+          {d.itemName || 'Item'} • {d.quantity} {d.unit}
+        </div>
+      );
+    }
     return null;
   };
 
@@ -409,6 +417,16 @@ export default function DonationManagement() {
                         <>
                           <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => approveDonation(donation)}>Approve</Button>
                           <Button size="sm" variant="destructive" onClick={() => rejectDonation(donation)}>Reject</Button>
+                        </>
+                      )}
+                      {(donation as any).method === 'in-kind' && donation.status !== 'distributed' && (
+                        <>
+                          {donation.status === 'pledged' && (
+                            <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => approveDonation({ ...donation, status: 'completed' } as any)}>Mark Received</Button>
+                          )}
+                          {donation.status === 'completed' && (
+                            <Button size="sm" variant="outline" onClick={() => approveDonation({ ...donation, status: 'distributed' } as any)}>Mark Distributed</Button>
+                          )}
                         </>
                       )}
                     </div>

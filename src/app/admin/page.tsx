@@ -42,6 +42,7 @@ import HeatMap from '@/components/HeatMap';
 import { AdminDashboardCharts } from '@/components/AdminCharts';
 import DonationManagement from '@/components/DonationManagement';
 import DonorsManagement from '@/components/DonorsManagement';
+import Inventory from '@/components/Inventory';
 import { ref, onValue, off, update, get, set, remove } from 'firebase/database';
 // import { collection, onSnapshot, doc, updateDoc, serverTimestamp, query, orderBy } from 'firebase/firestore';
 import { database } from '@/lib/firebase';
@@ -1854,6 +1855,9 @@ export default function AdminDashboard() {
           </Card>
         );
       
+      case 'inventory':
+        return <Inventory />;
+      
       default:
         return null;
     }
@@ -2002,6 +2006,17 @@ export default function AdminDashboard() {
               Donors
             </button>
             <button 
+              onClick={() => setActiveTab('inventory')}
+              className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                activeTab === 'inventory' 
+                  ? 'text-white bg-gradient-to-r from-blue-600 to-purple-600' 
+                  : 'text-gray-700 hover:text-blue-600 hover:bg-blue-50'
+              }`}
+            >
+              <Users className="w-5 h-5 mr-3" />
+              Inventory
+            </button>
+            <button 
               onClick={() => setActiveTab('heatmap')}
               className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
                 activeTab === 'heatmap' 
@@ -2086,6 +2101,7 @@ export default function AdminDashboard() {
               {activeTab === 'donations' && 'Donation Management'}
               {activeTab === 'volunteers' && 'Volunteer Management'}
               {activeTab === 'donors' && 'Donor Management'}
+              {activeTab === 'inventory' && 'Inventory'}
               {activeTab === 'heatmap' && 'Heat Map Analytics'}
               {activeTab === 'report' && 'Report Generation'}
             </h1>
