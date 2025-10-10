@@ -8,8 +8,6 @@ import { Card } from '@/components/ui/card';
 import NextDynamic from 'next/dynamic';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 
-const DynamicPayPalDonationForm = NextDynamic(() => import('@/components/PayPalDonationForm'), { ssr: false });
-import { PayPalScriptProvider } from '@paypal/react-paypal-js';
 import { Heart, Shield, Users, PawPrint } from 'lucide-react';
 import GCashDonationForm from '@/components/GCashDonationForm';
 const InKindDonationForm = NextDynamic(() => import('@/components/InKindDonationForm'), { ssr: false });
@@ -18,8 +16,7 @@ const MayaDonationForm = NextDynamic(() => import('@/components/MayaDonationForm
 export default function DonatePage() {
   const [showForm, setShowForm] = useState(false);
   const [donationSuccess, setDonationSuccess] = useState<any>(null);
-  const [method, setMethod] = useState<'paypal' | 'gcash' | 'maya' | 'inkind'>('gcash');
-  const paypalClientId = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID;
+  const [method, setMethod] = useState<'gcash' | 'maya' | 'inkind'>('gcash');
 
   const handleDonationSuccess = (donation: any) => {
     setDonationSuccess(donation);
@@ -172,12 +169,6 @@ export default function DonatePage() {
                 Maya
               </button>
               <button
-                className={`px-4 py-2 rounded-full text-sm font-medium border ${method === 'paypal' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-200'}`}
-                onClick={() => setMethod('paypal')}
-              >
-                PayPal / Card
-              </button>
-              <button
                 className={`px-4 py-2 rounded-full text-sm font-medium border ${method === 'inkind' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-200'}`}
                 onClick={() => setMethod('inkind')}
               >
@@ -193,24 +184,6 @@ export default function DonatePage() {
               />
             ) : method === 'maya' ? (
               <MayaDonationForm onSuccess={handleDonationSuccess} />
-            ) : method === 'paypal' ? (
-              paypalClientId ? (
-                <PayPalScriptProvider 
-                  options={{ 
-                    "client-id": paypalClientId,
-                    currency: "PHP"
-                  }}
-                >
-                  <DynamicPayPalDonationForm onSuccess={handleDonationSuccess} />
-                </PayPalScriptProvider>
-              ) : (
-                <div className="text-center py-8">
-                  <div className="max-w-xl mx-auto bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <p className="text-blue-800 font-medium">PayPal is not configured yet.</p>
-                    <p className="text-sm text-blue-700 mt-1">Add NEXT_PUBLIC_PAYPAL_CLIENT_ID in Vercel Environment Variables to enable PayPal checkout. You can still donate via GCash or Maya.</p>
-                  </div>
-                </div>
-              )
             ) : (
               <InKindDonationForm onSuccess={handleDonationSuccess} />
             )}
