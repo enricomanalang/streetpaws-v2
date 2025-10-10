@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, GoogleAuthProvider, FacebookAuthProvider, signInWithPopup, sendEmailVerification } from 'firebase/auth';
+import { User, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, GoogleAuthProvider, FacebookAuthProvider, signInWithPopup } from 'firebase/auth';
 import { ref, get, set } from 'firebase/database';
 import { auth, database } from '@/lib/firebase';
 
@@ -19,13 +19,10 @@ interface AuthContextType {
   profile: UserProfile | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, name: string, role?: UserRole) => Promise<User>;
+  register: (email: string, password: string, name: string, role?: UserRole) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
   loginWithFacebook: () => Promise<void>;
   logout: () => Promise<void>;
-  sendVerificationEmail: () => Promise<void>;
-  checkEmailVerified: () => Promise<boolean>;
-  completeRegistration: (name: string, role: UserRole) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -49,64 +46,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(false);
       return;
     }
-
-    if (!database) {
-      console.log('Firebase database not initialized');
-      setLoading(false);
-      return;
-    }
-
     console.log('Setting up onAuthStateChanged listener');
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       console.log('onAuthStateChanged triggered:', firebaseUser);
       if (firebaseUser) {
         setUser(firebaseUser);
-        
-        // Check if email is verified OR if user is admin (admin bypass)
+        // Fetch user profile from database
+        const userRef = ref(database, `users/${firebaseUser.uid}`);
         try {
-          const userRef = ref(database, `users/${firebaseUser.uid}`);
           const snapshot = await get(userRef);
-          
           if (snapshot.exists()) {
-            const profileData = snapshot.val();
-            const isAdmin = profileData && profileData.role === 'admin';
-            console.log('User profile found:', profileData);
-            
-            // If user is admin, bypass email verification
-            if (isAdmin || firebaseUser.emailVerified) {
-              setProfile(profileData);
-            } else {
-              console.log('Email not verified and not admin, not loading profile');
-              setProfile(null);
-            }
+            console.log('User profile found:', snapshot.val());
+            setProfile(snapshot.val());
           } else {
-            // If no profile exists, check if email is verified first
-            if (firebaseUser.emailVerified) {
-              // Create a default profile for verified users
-              const defaultProfile: UserProfile = {
-                uid: firebaseUser.uid,
-                email: firebaseUser.email!,
-                role: 'user',
-                name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
-              };
-              await set(userRef, defaultProfile);
-              console.log('Created default profile:', defaultProfile);
-              setProfile(defaultProfile);
-            } else {
-              console.log('No profile exists and email not verified, not loading profile');
-              setProfile(null);
-            }
+            // Create default profile
+            const defaultProfile: UserProfile = {
+              uid: firebaseUser.uid,
+              email: firebaseUser.email!,
+              role: 'user',
+            };
+            await set(userRef, defaultProfile);
+            console.log('Created default profile:', defaultProfile);
+            setProfile(defaultProfile);
           }
         } catch (error) {
           console.error('Error fetching/setting user profile:', error);
-          // Create a minimal profile to prevent crashes
-          const fallbackProfile: UserProfile = {
-            uid: firebaseUser.uid,
-            email: firebaseUser.email!,
-            role: 'user',
-            name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
-          };
-          setProfile(fallbackProfile);
+          setProfile(null);
         }
       } else {
         setUser(null);
@@ -120,35 +85,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (email: string, password: string) => {
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      
-      // Check if database is available
-      if (!database) {
-        console.warn('Database not available, skipping admin check');
-        return;
-      }
-      
-      // Check if user is admin first (admin bypass)
-      try {
-        const userRef = ref(database, `users/${userCredential.user.uid}`);
-        const snapshot = await get(userRef);
-        let isAdmin = false;
-        
-        if (snapshot.exists()) {
-          const profileData = snapshot.val();
-          isAdmin = profileData && profileData.role === 'admin';
-        }
-        
-        // Check if email is verified (unless user is admin)
-        if (!userCredential.user.emailVerified && !isAdmin) {
-          // Sign out the user since they're not verified and not admin
-          await signOut(auth);
-          throw new Error('Please verify your email address before logging in. Check your inbox for a verification email.');
-        }
-      } catch (dbError) {
-        console.error('Database error during login:', dbError);
-        // Continue with login even if database check fails
-      }
+      await signInWithEmailAndPassword(auth, email, password);
     } catch (error: any) {
       // Handle Firebase authentication errors with user-friendly messages
       switch (error.code) {
@@ -167,7 +104,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         case 'auth/network-request-failed':
           throw new Error('Network error. Please check your internet connection.');
         default:
-          throw new Error(error.message || 'Login failed. Please try again.');
+          throw new Error('Login failed. Please try again.');
       }
     }
   };
@@ -175,19 +112,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const register = async (email: string, password: string, name: string, role: UserRole = 'user') => {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      
-      // Send verification email
-      await sendEmailVerification(userCredential.user);
-      
-      // Store user data temporarily in sessionStorage for verification page
-      sessionStorage.setItem('pendingUser', JSON.stringify({
+      const userProfile: UserProfile = {
+        uid: userCredential.user.uid,
         email,
-        name,
         role,
-        uid: userCredential.user.uid
-      }));
-      
-      return userCredential.user;
+        name,
+      };
+      const userRef = ref(database, `users/${userCredential.user.uid}`);
+      await set(userRef, userProfile);
     } catch (error: any) {
       // Handle Firebase registration errors with user-friendly messages
       switch (error.code) {
@@ -221,12 +153,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           uid: result.user.uid,
           email: result.user.email!,
           role: 'user',
-          name: result.user.displayName || result.user.email?.split('@')[0] || 'Google User',
+          name: result.user.displayName || 'Google User',
         };
         await set(userRef, userProfile);
-        console.log('Created Google user profile:', userProfile);
-      } else {
-        console.log('Google user profile already exists:', snapshot.val());
       }
     } catch (error: any) {
       switch (error.code) {
@@ -258,12 +187,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           uid: result.user.uid,
           email: result.user.email!,
           role: 'user',
-          name: result.user.displayName || result.user.email?.split('@')[0] || 'Facebook User',
+          name: result.user.displayName || 'Facebook User',
         };
         await set(userRef, userProfile);
-        console.log('Created Facebook user profile:', userProfile);
-      } else {
-        console.log('Facebook user profile already exists:', snapshot.val());
       }
     } catch (error: any) {
       switch (error.code) {
@@ -283,57 +209,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     await signOut(auth);
-    // Clear pending user data
-    sessionStorage.removeItem('pendingUser');
-  };
-
-  const sendVerificationEmail = async () => {
-    if (!auth.currentUser) {
-      throw new Error('No user logged in');
-    }
-    
-    try {
-      await sendEmailVerification(auth.currentUser);
-    } catch (error: any) {
-      // Handle Firebase rate limiting errors
-      switch (error.code) {
-        case 'auth/too-many-requests':
-          throw new Error('Too many verification emails sent. Please wait 1 hour before trying again, or use Google/Facebook login instead.');
-        case 'auth/network-request-failed':
-          throw new Error('Network error. Please check your internet connection and try again.');
-        case 'auth/user-not-found':
-          throw new Error('User not found. Please try signing up again.');
-        default:
-          throw new Error(error.message || 'Failed to send verification email. Please try again later.');
-      }
-    }
-  };
-
-  const checkEmailVerified = async () => {
-    if (!auth.currentUser) {
-      return false;
-    }
-    await auth.currentUser.reload();
-    return auth.currentUser.emailVerified;
-  };
-
-  const completeRegistration = async (name: string, role: UserRole) => {
-    if (!auth.currentUser || !auth.currentUser.emailVerified) {
-      throw new Error('User not verified');
-    }
-    
-    const userProfile: UserProfile = {
-      uid: auth.currentUser.uid,
-      email: auth.currentUser.email!,
-      role,
-      name,
-    };
-    
-    const userRef = ref(database, `users/${auth.currentUser.uid}`);
-    await set(userRef, userProfile);
-    
-    // Clear pending user data
-    sessionStorage.removeItem('pendingUser');
   };
 
   const value = {
@@ -345,9 +220,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     loginWithGoogle,
     loginWithFacebook,
     logout,
-    sendVerificationEmail,
-    checkEmailVerified,
-    completeRegistration,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
