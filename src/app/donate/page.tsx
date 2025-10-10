@@ -13,10 +13,12 @@ import GCashDonationForm from '@/components/GCashDonationForm';
 const InKindDonationForm = NextDynamic(() => import('@/components/InKindDonationForm'), { ssr: false });
 const MayaDonationForm = NextDynamic(() => import('@/components/MayaDonationForm'), { ssr: false });
 
+const mayaEnabled = process.env.NEXT_PUBLIC_MAYA_ENABLED === '1';
+
 export default function DonatePage() {
   const [showForm, setShowForm] = useState(false);
   const [donationSuccess, setDonationSuccess] = useState<any>(null);
-  const [method, setMethod] = useState<'gcash' | 'maya' | 'inkind'>('gcash');
+  const [method, setMethod] = useState<'gcash' | 'maya' | 'inkind'>(mayaEnabled ? 'maya' : 'gcash');
 
   const handleDonationSuccess = (donation: any) => {
     setDonationSuccess(donation);
@@ -162,12 +164,14 @@ export default function DonatePage() {
               >
                 GCash
               </button>
-              <button
-                className={`px-4 py-2 rounded-full text-sm font-medium border ${method === 'maya' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-200'}`}
-                onClick={() => setMethod('maya')}
-              >
-                Maya
-              </button>
+              {mayaEnabled && (
+                <button
+                  className={`px-4 py-2 rounded-full text-sm font-medium border ${method === 'maya' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-200'}`}
+                  onClick={() => setMethod('maya')}
+                >
+                  Maya
+                </button>
+              )}
               <button
                 className={`px-4 py-2 rounded-full text-sm font-medium border ${method === 'inkind' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-200'}`}
                 onClick={() => setMethod('inkind')}
@@ -182,7 +186,7 @@ export default function DonatePage() {
                 gcashNumber="09XX XXX XXXX"
                 onSuccess={handleDonationSuccess}
               />
-            ) : method === 'maya' ? (
+            ) : method === 'maya' && mayaEnabled ? (
               <MayaDonationForm onSuccess={handleDonationSuccess} />
             ) : (
               <InKindDonationForm onSuccess={handleDonationSuccess} />
