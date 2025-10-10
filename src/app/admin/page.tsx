@@ -2080,7 +2080,7 @@ export default function AdminDashboard() {
       )}
 
       {/* Main content */}
-      <div className="ml-64 min-h-screen overflow-y-auto">
+      <div className="lg:ml-64 ml-0 min-h-screen overflow-y-auto">
         {/* Top bar */}
         <div className="bg-white shadow-sm border-b border-gray-200 lg:hidden">
           <div className="flex items-center justify-between h-16 px-4">
@@ -2101,7 +2101,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Main content area */}
-        <main className="p-6">
+        <main className="p-4 md:p-6">
           {/* Header */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
