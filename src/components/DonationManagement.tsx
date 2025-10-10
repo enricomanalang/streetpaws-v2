@@ -413,7 +413,7 @@ export default function DonationManagement() {
                           <Mail className="w-4 h-4" />
                         </Button>
                       )}
-                      {donation.method === 'gcash' && donation.status === 'pending' && (
+                      {(donation.method === 'gcash' || (donation as any).method === 'bank') && donation.status === 'pending' && (
                         <>
                           <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => approveDonation(donation)}>Approve</Button>
                           <Button size="sm" variant="destructive" onClick={() => rejectDonation(donation)}>Reject</Button>
