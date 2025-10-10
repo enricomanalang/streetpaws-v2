@@ -23,6 +23,19 @@ console.log('Supabase client created:', !!supabase);
 // Storage bucket name for images
 export const STORAGE_BUCKET = 'images';
 
+const fileToDataUrl = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    try {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ''));
+      reader.onerror = (e) => reject(e);
+      reader.readAsDataURL(file);
+    } catch (e) {
+      reject(e);
+    }
+  });
+};
+
 // Image upload function
 export const uploadImage = async (file: File, folder: string = 'general'): Promise<string> => {
   try {
@@ -30,10 +43,10 @@ export const uploadImage = async (file: File, folder: string = 'general'): Promi
     console.log('Supabase client available:', !!supabase);
     console.log('File:', file.name, file.type, file.size);
     
-    // If Supabase is not available, return a placeholder URL
+    // If Supabase is not available, return a data URL (base64)
     if (!supabase) {
-      console.warn('Supabase not configured, returning placeholder URL');
-      return `placeholder-${Date.now()}-${file.name}`;
+      console.warn('Supabase not configured, returning base64 data URL');
+      return await fileToDataUrl(file);
     }
 
     // Generate unique filename
@@ -42,7 +55,7 @@ export const uploadImage = async (file: File, folder: string = 'general'): Promi
     const filePath = `${folder}/${fileName}`;
 
     // Upload file to Supabase Storage
-    const { data, error } = await supabase.storage
+    const { error } = await supabase.storage
       .from(STORAGE_BUCKET)
       .upload(filePath, file, {
         cacheControl: '3600',
@@ -51,7 +64,8 @@ export const uploadImage = async (file: File, folder: string = 'general'): Promi
 
     if (error) {
       console.error('Error uploading image:', error);
-      throw new Error(`Failed to upload image: ${error.message}`);
+      // Fallback to base64 data URL so user is not blocked
+      return await fileToDataUrl(file);
     }
 
     // Get public URL
@@ -61,8 +75,9 @@ export const uploadImage = async (file: File, folder: string = 'general'): Promi
 
     return publicUrl;
   } catch (error) {
-    console.error('Upload error:', error);
-    throw error;
+    console.error('Upload error, falling back to base64:', error);
+    // Ultimate fallback
+    return await fileToDataUrl(file);
   }
 };
 
