@@ -55,18 +55,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (firebaseUser) {
         setUser(firebaseUser);
         
-        // Only load profile if email is verified
-        if (firebaseUser.emailVerified) {
-          // Fetch user profile from database
-          const userRef = ref(database, `users/${firebaseUser.uid}`);
-          try {
-            const snapshot = await get(userRef);
-            if (snapshot.exists()) {
-              const profileData = snapshot.val();
-              console.log('User profile found:', profileData);
+        // Check if email is verified OR if user is admin (admin bypass)
+        const userRef = ref(database, `users/${firebaseUser.uid}`);
+        let isAdmin = false;
+        
+        try {
+          const snapshot = await get(userRef);
+          if (snapshot.exists()) {
+            const profileData = snapshot.val();
+            isAdmin = profileData.role === 'admin';
+            console.log('User profile found:', profileData);
+            
+            // If user is admin, bypass email verification
+            if (isAdmin || firebaseUser.emailVerified) {
               setProfile(profileData);
             } else {
-              // If no profile exists but email is verified, create a default profile
+              console.log('Email not verified and not admin, not loading profile');
+              setProfile(null);
+            }
+          } else {
+            // If no profile exists, check if email is verified first
+            if (firebaseUser.emailVerified) {
+              // Create a default profile for verified users
               const defaultProfile: UserProfile = {
                 uid: firebaseUser.uid,
                 email: firebaseUser.email!,
@@ -76,14 +86,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               await set(userRef, defaultProfile);
               console.log('Created default profile:', defaultProfile);
               setProfile(defaultProfile);
+            } else {
+              console.log('No profile exists and email not verified, not loading profile');
+              setProfile(null);
             }
-          } catch (error) {
-            console.error('Error fetching/setting user profile:', error);
-            setProfile(null);
           }
-        } else {
-          // Email not verified, don't load profile
-          console.log('Email not verified, not loading profile');
+        } catch (error) {
+          console.error('Error fetching/setting user profile:', error);
           setProfile(null);
         }
       } else {
@@ -100,9 +109,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       
-      // Check if email is verified
-      if (!userCredential.user.emailVerified) {
-        // Sign out the user since they're not verified
+      // Check if user is admin first (admin bypass)
+      const userRef = ref(database, `users/${userCredential.user.uid}`);
+      const snapshot = await get(userRef);
+      let isAdmin = false;
+      
+      if (snapshot.exists()) {
+        const profileData = snapshot.val();
+        isAdmin = profileData.role === 'admin';
+      }
+      
+      // Check if email is verified (unless user is admin)
+      if (!userCredential.user.emailVerified && !isAdmin) {
+        // Sign out the user since they're not verified and not admin
         await signOut(auth);
         throw new Error('Please verify your email address before logging in. Check your inbox for a verification email.');
       }
