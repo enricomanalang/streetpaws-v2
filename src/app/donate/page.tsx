@@ -13,11 +13,12 @@ import { PayPalScriptProvider } from '@paypal/react-paypal-js';
 import { Heart, Shield, Users, PawPrint } from 'lucide-react';
 import GCashDonationForm from '@/components/GCashDonationForm';
 const InKindDonationForm = NextDynamic(() => import('@/components/InKindDonationForm'), { ssr: false });
+const MayaDonationForm = NextDynamic(() => import('@/components/MayaDonationForm'), { ssr: false });
 
 export default function DonatePage() {
   const [showForm, setShowForm] = useState(false);
   const [donationSuccess, setDonationSuccess] = useState<any>(null);
-  const [method, setMethod] = useState<'paypal' | 'gcash' | 'inkind'>('gcash');
+  const [method, setMethod] = useState<'paypal' | 'gcash' | 'maya' | 'inkind'>('gcash');
   const paypalClientId = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID;
 
   const handleDonationSuccess = (donation: any) => {
@@ -165,6 +166,12 @@ export default function DonatePage() {
                 GCash
               </button>
               <button
+                className={`px-4 py-2 rounded-full text-sm font-medium border ${method === 'maya' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-200'}`}
+                onClick={() => setMethod('maya')}
+              >
+                Maya
+              </button>
+              <button
                 className={`px-4 py-2 rounded-full text-sm font-medium border ${method === 'paypal' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-200'}`}
                 onClick={() => setMethod('paypal')}
               >
@@ -184,6 +191,8 @@ export default function DonatePage() {
                 gcashNumber="09XX XXX XXXX"
                 onSuccess={handleDonationSuccess}
               />
+            ) : method === 'maya' ? (
+              <MayaDonationForm onSuccess={handleDonationSuccess} />
             ) : method === 'paypal' ? (
               paypalClientId ? (
                 <PayPalScriptProvider 
@@ -198,7 +207,7 @@ export default function DonatePage() {
                 <div className="text-center py-8">
                   <div className="max-w-xl mx-auto bg-blue-50 border border-blue-200 rounded-lg p-4">
                     <p className="text-blue-800 font-medium">PayPal is not configured yet.</p>
-                    <p className="text-sm text-blue-700 mt-1">Add NEXT_PUBLIC_PAYPAL_CLIENT_ID in Vercel Environment Variables to enable PayPal checkout. You can still donate via GCash.</p>
+                    <p className="text-sm text-blue-700 mt-1">Add NEXT_PUBLIC_PAYPAL_CLIENT_ID in Vercel Environment Variables to enable PayPal checkout. You can still donate via GCash or Maya.</p>
                   </div>
                 </div>
               )
