@@ -241,7 +241,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!auth.currentUser) {
       throw new Error('No user logged in');
     }
-    await sendEmailVerification(auth.currentUser);
+    
+    try {
+      await sendEmailVerification(auth.currentUser);
+    } catch (error: any) {
+      // Handle Firebase rate limiting errors
+      switch (error.code) {
+        case 'auth/too-many-requests':
+          throw new Error('Too many verification emails sent. Please wait 1 hour before trying again, or use Google/Facebook login instead.');
+        case 'auth/network-request-failed':
+          throw new Error('Network error. Please check your internet connection and try again.');
+        case 'auth/user-not-found':
+          throw new Error('User not found. Please try signing up again.');
+        default:
+          throw new Error(error.message || 'Failed to send verification email. Please try again later.');
+      }
+    }
   };
 
   const checkEmailVerified = async () => {
