@@ -10,6 +10,7 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 import { Heart, Shield, Users, PawPrint } from 'lucide-react';
 import GCashDonationForm from '@/components/GCashDonationForm';
+import BankDepositDonationForm from '@/components/BankDepositDonationForm';
 const InKindDonationForm = NextDynamic(() => import('@/components/InKindDonationForm'), { ssr: false });
 const MayaDonationForm = NextDynamic(() => import('@/components/MayaDonationForm'), { ssr: false });
 
@@ -18,7 +19,7 @@ const mayaEnabled = process.env.NEXT_PUBLIC_MAYA_ENABLED === '1';
 export default function DonatePage() {
   const [showForm, setShowForm] = useState(false);
   const [donationSuccess, setDonationSuccess] = useState<any>(null);
-  const [method, setMethod] = useState<'gcash' | 'maya' | 'inkind'>(mayaEnabled ? 'maya' : 'gcash');
+  const [method, setMethod] = useState<'gcash' | 'bank' | 'maya' | 'inkind'>(mayaEnabled ? 'maya' : 'gcash');
 
   const handleDonationSuccess = (donation: any) => {
     setDonationSuccess(donation);
@@ -164,6 +165,12 @@ export default function DonatePage() {
               >
                 GCash
               </button>
+              <button
+                className={`px-4 py-2 rounded-full text-sm font-medium border ${method === 'bank' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-200'}`}
+                onClick={() => setMethod('bank')}
+              >
+                Bank Transfer
+              </button>
               {mayaEnabled && (
                 <button
                   className={`px-4 py-2 rounded-full text-sm font-medium border ${method === 'maya' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-200'}`}
@@ -184,6 +191,13 @@ export default function DonatePage() {
               <GCashDonationForm
                 gcashName="StreetPaws"
                 gcashNumber="09XX XXX XXXX"
+                onSuccess={handleDonationSuccess}
+              />
+            ) : method === 'bank' ? (
+              <BankDepositDonationForm
+                bankName="BPI"
+                accountName="StreetPaws Foundation"
+                accountNumberMasked="XXXX-XX-XXXX"
                 onSuccess={handleDonationSuccess}
               />
             ) : method === 'maya' && mayaEnabled ? (
