@@ -62,15 +62,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           try {
             const snapshot = await get(userRef);
             if (snapshot.exists()) {
-              console.log('User profile found:', snapshot.val());
-              setProfile(snapshot.val());
+              const profileData = snapshot.val();
+              console.log('User profile found:', profileData);
+              setProfile(profileData);
             } else {
-              // If no profile exists but email is verified, this shouldn't happen
-              // but we'll create a default profile
+              // If no profile exists but email is verified, create a default profile
               const defaultProfile: UserProfile = {
                 uid: firebaseUser.uid,
                 email: firebaseUser.email!,
                 role: 'user',
+                name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
               };
               await set(userRef, defaultProfile);
               console.log('Created default profile:', defaultProfile);
@@ -177,9 +178,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           uid: result.user.uid,
           email: result.user.email!,
           role: 'user',
-          name: result.user.displayName || 'Google User',
+          name: result.user.displayName || result.user.email?.split('@')[0] || 'Google User',
         };
         await set(userRef, userProfile);
+        console.log('Created Google user profile:', userProfile);
+      } else {
+        console.log('Google user profile already exists:', snapshot.val());
       }
     } catch (error: any) {
       switch (error.code) {
@@ -211,9 +215,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           uid: result.user.uid,
           email: result.user.email!,
           role: 'user',
-          name: result.user.displayName || 'Facebook User',
+          name: result.user.displayName || result.user.email?.split('@')[0] || 'Facebook User',
         };
         await set(userRef, userProfile);
+        console.log('Created Facebook user profile:', userProfile);
+      } else {
+        console.log('Facebook user profile already exists:', snapshot.val());
       }
     } catch (error: any) {
       switch (error.code) {
