@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import NextDynamic from 'next/dynamic';
-import ErrorBoundary from '@/components/ErrorBoundary';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 const DynamicPayPalDonationForm = NextDynamic(() => import('@/components/PayPalDonationForm'), { ssr: false });
 import { PayPalScriptProvider } from '@paypal/react-paypal-js';
