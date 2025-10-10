@@ -49,6 +49,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(false);
       return;
     }
+
+    if (!database) {
+      console.log('Firebase database not initialized');
+      setLoading(false);
+      return;
+    }
+
     console.log('Setting up onAuthStateChanged listener');
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       console.log('onAuthStateChanged triggered:', firebaseUser);
@@ -56,14 +63,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(firebaseUser);
         
         // Check if email is verified OR if user is admin (admin bypass)
-        const userRef = ref(database, `users/${firebaseUser.uid}`);
-        let isAdmin = false;
-        
         try {
+          const userRef = ref(database, `users/${firebaseUser.uid}`);
           const snapshot = await get(userRef);
+          
           if (snapshot.exists()) {
             const profileData = snapshot.val();
-            isAdmin = profileData && profileData.role === 'admin';
+            const isAdmin = profileData && profileData.role === 'admin';
             console.log('User profile found:', profileData);
             
             // If user is admin, bypass email verification
@@ -116,21 +122,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       
-      // Check if user is admin first (admin bypass)
-      const userRef = ref(database, `users/${userCredential.user.uid}`);
-      const snapshot = await get(userRef);
-      let isAdmin = false;
-      
-      if (snapshot.exists()) {
-        const profileData = snapshot.val();
-        isAdmin = profileData.role === 'admin';
+      // Check if database is available
+      if (!database) {
+        console.warn('Database not available, skipping admin check');
+        return;
       }
       
-      // Check if email is verified (unless user is admin)
-      if (!userCredential.user.emailVerified && !isAdmin) {
-        // Sign out the user since they're not verified and not admin
-        await signOut(auth);
-        throw new Error('Please verify your email address before logging in. Check your inbox for a verification email.');
+      // Check if user is admin first (admin bypass)
+      try {
+        const userRef = ref(database, `users/${userCredential.user.uid}`);
+        const snapshot = await get(userRef);
+        let isAdmin = false;
+        
+        if (snapshot.exists()) {
+          const profileData = snapshot.val();
+          isAdmin = profileData && profileData.role === 'admin';
+        }
+        
+        // Check if email is verified (unless user is admin)
+        if (!userCredential.user.emailVerified && !isAdmin) {
+          // Sign out the user since they're not verified and not admin
+          await signOut(auth);
+          throw new Error('Please verify your email address before logging in. Check your inbox for a verification email.');
+        }
+      } catch (dbError) {
+        console.error('Database error during login:', dbError);
+        // Continue with login even if database check fails
       }
     } catch (error: any) {
       // Handle Firebase authentication errors with user-friendly messages

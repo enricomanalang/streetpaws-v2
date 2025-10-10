@@ -1,36 +1,88 @@
-"use client";
+'use client';
 
 import React from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { AlertTriangle, RefreshCw } from 'lucide-react';
 
-type Props = { children: React.ReactNode };
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error?: Error;
+}
 
-type State = { hasError: boolean; message?: string };
+interface ErrorBoundaryProps {
+  children: React.ReactNode;
+  fallback?: React.ComponentType<{ error?: Error; resetError: () => void }>;
+}
 
-export default class ErrorBoundary extends React.Component<Props, State> {
-  constructor(props: Props) {
+export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false };
   }
 
-  static getDerivedStateFromError(error: any): State {
-    return { hasError: true, message: error?.message || 'Something went wrong.' };
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { hasError: true, error };
   }
 
-  componentDidCatch(error: any, errorInfo: any) {
-    // eslint-disable-next-line no-console
-    console.error('Donation ErrorBoundary:', error, errorInfo);
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('ErrorBoundary caught an error:', error, errorInfo);
   }
+
+  resetError = () => {
+    this.setState({ hasError: false, error: undefined });
+  };
 
   render() {
     if (this.state.hasError) {
+      if (this.props.fallback) {
+        const FallbackComponent = this.props.fallback;
+        return <FallbackComponent error={this.state.error} resetError={this.resetError} />;
+      }
+
       return (
-        <div className="max-w-2xl mx-auto p-6 my-6 bg-red-50 border border-red-200 rounded-md text-red-800">
-          <h3 className="font-semibold mb-2">We encountered a problem.</h3>
-          <p className="text-sm">{this.state.message}</p>
-          <p className="text-xs mt-2 text-red-700">Please try again or refresh the page.</p>
+        <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <div className="flex items-center space-x-2">
+                <AlertTriangle className="w-6 h-6 text-red-600" />
+                <CardTitle className="text-red-600">Something went wrong</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-gray-600">
+                An unexpected error occurred. Please try refreshing the page or contact support if the problem persists.
+              </p>
+              {this.state.error && (
+                <details className="text-sm text-gray-500">
+                  <summary className="cursor-pointer">Error details</summary>
+                  <pre className="mt-2 p-2 bg-gray-100 rounded text-xs overflow-auto">
+                    {this.state.error.message}
+                  </pre>
+                </details>
+              )}
+              <div className="flex space-x-2">
+                <Button onClick={this.resetError} variant="outline">
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Try Again
+                </Button>
+                <Button onClick={() => window.location.reload()}>
+                  Refresh Page
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       );
     }
+
     return this.props.children;
   }
+}
+
+// Hook version for functional components
+export function useErrorHandler() {
+  return (error: Error, errorInfo?: React.ErrorInfo) => {
+    console.error('Error caught by useErrorHandler:', error, errorInfo);
+  };
 }
