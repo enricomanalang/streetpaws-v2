@@ -717,7 +717,20 @@ export default function AdminDashboard() {
   }
 
   if (!user || !profile || profile.role !== 'admin') {
-    return null;
+    console.log('Admin access denied:', { user: !!user, profile: !!profile, role: profile?.role });
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading admin panel...</p>
+          <p className="mt-2 text-sm text-gray-500">
+            User: {user ? 'Logged in' : 'Not logged in'} | 
+            Profile: {profile ? 'Loaded' : 'Not loaded'} | 
+            Role: {profile?.role || 'Unknown'}
+          </p>
+        </div>
+      </div>
+    );
   }
 
 

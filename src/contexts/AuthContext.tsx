@@ -63,7 +63,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const snapshot = await get(userRef);
           if (snapshot.exists()) {
             const profileData = snapshot.val();
-            isAdmin = profileData.role === 'admin';
+            isAdmin = profileData && profileData.role === 'admin';
             console.log('User profile found:', profileData);
             
             // If user is admin, bypass email verification
@@ -93,7 +93,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         } catch (error) {
           console.error('Error fetching/setting user profile:', error);
-          setProfile(null);
+          // Create a minimal profile to prevent crashes
+          const fallbackProfile: UserProfile = {
+            uid: firebaseUser.uid,
+            email: firebaseUser.email!,
+            role: 'user',
+            name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
+          };
+          setProfile(fallbackProfile);
         }
       } else {
         setUser(null);
