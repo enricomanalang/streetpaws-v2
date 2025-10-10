@@ -171,13 +171,8 @@ export default function BankDepositDonationForm({ bankName, accountName, account
 				</div>
 
 				<div>
-					<label className="block text-sm font-medium mb-1">Message (optional)</label>
-					<Textarea value={formData.message} onChange={(e) => handleInputChange('message', e.target.value)} />
-				</div>
-
-				<div>
 					<label className="block text-sm font-medium mb-1">Upload Proof (screenshot)</label>
-					<ImageUploader imageUrls={imageUrls} setImageUrls={setImageUrls} uploading={uploading} setUploading={setUploading} />
+					<ImageUploader folder="bank-receipts" max={3} onChange={setImageUrls} onUploadingChange={setUploading} />
 				</div>
 
 				{error && <div className="text-red-600 text-sm">{error}</div>}
