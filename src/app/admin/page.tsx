@@ -38,11 +38,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import HeatMap from '@/components/HeatMap';
-import { AdminDashboardCharts } from '@/components/AdminCharts';
-import DonationManagement from '@/components/DonationManagement';
-import DonorsManagement from '@/components/DonorsManagement';
-import Inventory from '@/components/Inventory';
+// Temporarily commented out to fix loading issues
+// import HeatMap from '@/components/HeatMap';
+// import { AdminDashboardCharts } from '@/components/AdminCharts';
+// import DonationManagement from '@/components/DonationManagement';
+// import DonorsManagement from '@/components/DonorsManagement';
+// import Inventory from '@/components/Inventory';
 import { ref, onValue, off, update, get, set, remove } from 'firebase/database';
 // import { collection, onSnapshot, doc, updateDoc, serverTimestamp, query, orderBy } from 'firebase/firestore';
 import { database } from '@/lib/firebase';
