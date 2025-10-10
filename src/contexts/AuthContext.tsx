@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, GoogleAuthProvider, FacebookAuthProvider, signInWithPopup } from 'firebase/auth';
+import { User, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
 import { ref, get, set } from 'firebase/database';
 import { auth, database } from '@/lib/firebase';
 
@@ -20,8 +20,6 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name: string, role?: UserRole) => Promise<void>;
-  loginWithGoogle: () => Promise<void>;
-  loginWithFacebook: () => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -139,74 +137,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const loginWithGoogle = async () => {
-    try {
-      const provider = new GoogleAuthProvider();
-      const result = await signInWithPopup(auth, provider);
-      
-      // Check if user profile exists, if not create one
-      const userRef = ref(database, `users/${result.user.uid}`);
-      const snapshot = await get(userRef);
-      
-      if (!snapshot.exists()) {
-        const userProfile: UserProfile = {
-          uid: result.user.uid,
-          email: result.user.email!,
-          role: 'user',
-          name: result.user.displayName || 'Google User',
-        };
-        await set(userRef, userProfile);
-      }
-    } catch (error: any) {
-      switch (error.code) {
-        case 'auth/popup-closed-by-user':
-          throw new Error('Sign-in cancelled. Please try again.');
-        case 'auth/popup-blocked':
-          throw new Error('Popup was blocked. Please allow popups and try again.');
-        case 'auth/cancelled-popup-request':
-          throw new Error('Sign-in cancelled. Please try again.');
-        case 'auth/network-request-failed':
-          throw new Error('Network error. Please check your internet connection.');
-        default:
-          throw new Error('Google sign-in failed. Please try again.');
-      }
-    }
-  };
-
-  const loginWithFacebook = async () => {
-    try {
-      const provider = new FacebookAuthProvider();
-      const result = await signInWithPopup(auth, provider);
-      
-      // Check if user profile exists, if not create one
-      const userRef = ref(database, `users/${result.user.uid}`);
-      const snapshot = await get(userRef);
-      
-      if (!snapshot.exists()) {
-        const userProfile: UserProfile = {
-          uid: result.user.uid,
-          email: result.user.email!,
-          role: 'user',
-          name: result.user.displayName || 'Facebook User',
-        };
-        await set(userRef, userProfile);
-      }
-    } catch (error: any) {
-      switch (error.code) {
-        case 'auth/popup-closed-by-user':
-          throw new Error('Sign-in cancelled. Please try again.');
-        case 'auth/popup-blocked':
-          throw new Error('Popup was blocked. Please allow popups and try again.');
-        case 'auth/cancelled-popup-request':
-          throw new Error('Sign-in cancelled. Please try again.');
-        case 'auth/network-request-failed':
-          throw new Error('Network error. Please check your internet connection.');
-        default:
-          throw new Error('Facebook sign-in failed. Please try again.');
-      }
-    }
-  };
-
   const logout = async () => {
     await signOut(auth);
   };
@@ -217,8 +147,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     loading,
     login,
     register,
-    loginWithGoogle,
-    loginWithFacebook,
     logout,
   };
 

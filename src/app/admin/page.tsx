@@ -717,7 +717,20 @@ export default function AdminDashboard() {
   }
 
   if (!user || !profile || profile.role !== 'admin') {
-    return null;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h1>
+          <p className="text-gray-600 mb-4">You don't have admin privileges.</p>
+          <p className="text-sm text-gray-500 mb-4">
+            User: {user ? 'Logged in' : 'Not logged in'} | 
+            Profile: {profile ? 'Loaded' : 'Not loaded'} | 
+            Role: {profile?.role || 'Unknown'}
+          </p>
+          <Button onClick={handleLogout}>Logout</Button>
+        </div>
+      </div>
+    );
   }
 
 
@@ -1838,6 +1851,9 @@ export default function AdminDashboard() {
       case 'heatmap':
         return <HeatMap />;
       
+      case 'inventory':
+        return <Inventory />;
+      
       case 'report':
         return (
           <Card className="bg-white shadow-sm">
@@ -1854,9 +1870,6 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
         );
-      
-      case 'inventory':
-        return <Inventory />;
       
       default:
         return null;
@@ -2013,7 +2026,7 @@ export default function AdminDashboard() {
                   : 'text-gray-700 hover:text-blue-600 hover:bg-blue-50'
               }`}
             >
-              <Users className="w-5 h-5 mr-3" />
+              <UserPlus className="w-5 h-5 mr-3" />
               Inventory
             </button>
             <button 
@@ -2101,7 +2114,7 @@ export default function AdminDashboard() {
               {activeTab === 'donations' && 'Donation Management'}
               {activeTab === 'volunteers' && 'Volunteer Management'}
               {activeTab === 'donors' && 'Donor Management'}
-              {activeTab === 'inventory' && 'Inventory'}
+              {activeTab === 'inventory' && 'Inventory Management'}
               {activeTab === 'heatmap' && 'Heat Map Analytics'}
               {activeTab === 'report' && 'Report Generation'}
             </h1>
