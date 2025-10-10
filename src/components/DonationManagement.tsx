@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { firestore } from '@/lib/firebase';
+import { firestore, database } from '@/lib/firebase';
 import { collection, onSnapshot, query as fsQuery, orderBy, updateDoc, doc } from 'firebase/firestore';
+import { ref, push, set } from 'firebase/database';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -151,6 +152,26 @@ export default function DonationManagement() {
       verifiedBy: profile?.email || user?.email || 'admin',
       verificationNotes: notes || '',
     });
+
+    // Send notification to donor (if we have their userId)
+    try {
+      const userId = (donation as any).userId;
+      if (database && userId) {
+        const notifsRef = ref(database, `notifications/${userId}`);
+        const notifRef = push(notifsRef);
+        await set(notifRef, {
+          type: 'donation_rejected',
+          message: `Your donation was rejected${notes ? `: ${notes}` : ''}.`,
+          amount: donation.amount,
+          purpose: donation.purpose,
+          referenceNumber: donation.referenceNumber || null,
+          createdAt: new Date().toISOString(),
+          read: false,
+        });
+      }
+    } catch (e) {
+      console.error('Failed to create rejection notification:', e);
+    }
   };
 
   const openDetails = (donation: Donation) => {
