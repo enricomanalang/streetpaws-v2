@@ -6,7 +6,7 @@ import { collection, onSnapshot } from 'firebase/firestore';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Mail, Download, Users } from 'lucide-react';
+import { Mail, Download, Users, Trophy, Medal, Crown } from 'lucide-react';
 
 interface Donation {
   id: string;
@@ -123,6 +123,43 @@ export default function DonorsManagement() {
               <Download className="w-4 h-4 mr-2" /> Export CSV
             </Button>
           </div>
+        </div>
+      </Card>
+
+      {/* Top Donors Leaderboard */}
+      <Card className="p-6 bg-gradient-to-br from-amber-50 to-orange-50 border-amber-200">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2 text-amber-700">
+            <Trophy className="w-5 h-5" />
+            <span className="font-semibold">Top Donors</span>
+          </div>
+          <div className="text-xs text-amber-700">Sorted by total given</div>
+        </div>
+        <div className="grid md:grid-cols-3 gap-4">
+          {donors.slice(0, 3).map((d, idx) => (
+            <div key={d.donorEmail} className={`rounded-xl p-4 bg-white shadow-sm border ${idx===0?'border-amber-300':'border-gray-100'}`}>
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white ${idx===0?'bg-amber-500':idx===1?'bg-gray-400':'bg-orange-400'}`}>
+                  {idx===0? <Crown className="w-5 h-5" /> : idx===1? <Medal className="w-5 h-5" /> : <Trophy className="w-5 h-5" />}
+                </div>
+                <div className="flex-1">
+                  <div className="font-semibold text-gray-900 truncate">{d.donorName || 'Anonymous'}</div>
+                  <div className="text-xs text-gray-500 truncate">{d.donorEmail}</div>
+                </div>
+                <div className="text-right">
+                  <div className="text-sm text-gray-500">Total</div>
+                  <div className="text-lg font-bold text-amber-700">₱{d.totalAmount.toLocaleString()}</div>
+                </div>
+              </div>
+              <div className="mt-3 flex items-center justify-between text-xs text-gray-500">
+                <span>{d.donationCount} donation{d.donationCount===1?'':'s'}</span>
+                <span>Last: {new Date(d.lastDonationAt).toLocaleDateString()}</span>
+              </div>
+            </div>
+          ))}
+          {donors.length===0 && (
+            <div className="md:col-span-3 text-center text-gray-500">No donors yet</div>
+          )}
         </div>
       </Card>
 
