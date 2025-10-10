@@ -68,7 +68,8 @@ export default function SignupPage() {
 
     try {
       await register(email, password, name, role);
-      // Note: The useEffect above will handle the redirect based on role
+      // Redirect to verification page instead of dashboard
+      router.push('/verify-email');
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
