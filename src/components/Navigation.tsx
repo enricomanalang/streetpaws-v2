@@ -133,7 +133,21 @@ export default function Navigation() {
                     aria-haspopup="menu"
                     aria-expanded={isUserMenuOpen}
                   >
-                    <UserCircle2 className="w-8 h-8 text-gray-800" />
+                    {(profile?.photoURL || user?.photoURL) ? (
+                      <img 
+                        key={`button-profile-img-${profile?.photoURL || user?.photoURL}`}
+                        src={profile?.photoURL || user?.photoURL} 
+                        alt="Profile" 
+                        className="w-8 h-8 rounded-full object-cover"
+                        onError={(e) => {
+                          console.log('Button image failed to load:', e);
+                          e.currentTarget.style.display = 'none';
+                        }}
+                        onLoad={() => console.log('Button image loaded successfully')}
+                      />
+                    ) : (
+                      <UserCircle2 className="w-8 h-8 text-gray-800" />
+                    )}
                   </button>
                   {isUserMenuOpen && (
                     <div className="absolute right-0 mt-2 w-64 bg-white border border-orange-300 shadow-lg rounded-md p-4 z-50">
