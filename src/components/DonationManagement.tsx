@@ -19,7 +19,8 @@ import {
   Filter,
   Eye,
   Mail,
-  Calendar
+  Calendar,
+  AlertTriangle
 } from 'lucide-react';
 
 interface Donation {
@@ -72,7 +73,11 @@ export default function DonationManagement() {
   const [selectedDonation, setSelectedDonation] = useState<Donation | null>(null);
 
   useEffect(() => {
-    if (!firestore) return;
+    if (!firestore) {
+      console.warn('Firestore not available. Donation management will not work.');
+      setLoading(false);
+      return;
+    }
 
     // Listen to donations from Firestore
     const donationsCol = collection(firestore, 'donations');
@@ -82,7 +87,10 @@ export default function DonationManagement() {
       setDonations(donationsList as any);
       calculateStats(donationsList as any);
       setLoading(false);
-    }, () => setLoading(false));
+    }, (error) => {
+      console.error('Error fetching donations:', error);
+      setLoading(false);
+    });
 
     return () => unsubscribe();
   }, []);
@@ -266,6 +274,27 @@ export default function DonationManagement() {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+      </div>
+    );
+  }
+
+  if (!firestore) {
+    return (
+      <div className="space-y-6">
+        <Card className="p-6 bg-red-50 border-red-200">
+          <div className="flex items-center">
+            <div className="p-3 bg-red-500 rounded-lg">
+              <AlertTriangle className="w-6 h-6 text-white" />
+            </div>
+            <div className="ml-4">
+              <h3 className="text-lg font-semibold text-red-900">Firebase Configuration Error</h3>
+              <p className="text-red-700">Firebase is not properly configured. Please check your environment variables.</p>
+              <p className="text-sm text-red-600 mt-2">
+                Missing: NEXT_PUBLIC_FIREBASE_API_KEY, NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN, etc.
+              </p>
+            </div>
+          </div>
+        </Card>
       </div>
     );
   }

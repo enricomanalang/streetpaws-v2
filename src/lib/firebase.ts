@@ -14,7 +14,17 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Firebase config validation is handled in the try-catch block below
+// Check if Firebase config is valid
+const isFirebaseConfigValid = () => {
+  return !!(
+    firebaseConfig.apiKey &&
+    firebaseConfig.authDomain &&
+    firebaseConfig.projectId &&
+    firebaseConfig.storageBucket &&
+    firebaseConfig.messagingSenderId &&
+    firebaseConfig.appId
+  );
+};
 
 let app: ReturnType<typeof initializeApp> | null = null;
 let auth: ReturnType<typeof getAuth> | null = null;
@@ -22,18 +32,34 @@ let database: ReturnType<typeof getDatabase> | null = null;
 let storage: ReturnType<typeof getStorage> | null = null;
 let firestore: ReturnType<typeof getFirestore> | null = null;
 
-try {
-  app = initializeApp(firebaseConfig);
-  auth = getAuth(app);
-  database = getDatabase(app);
-  storage = getStorage(app);
-  firestore = getFirestore(app);
+if (isFirebaseConfigValid()) {
+  try {
+    app = initializeApp(firebaseConfig);
+    auth = getAuth(app);
+    database = getDatabase(app);
+    storage = getStorage(app);
+    firestore = getFirestore(app);
 
-  // Skip emulator connection - use production Firebase directly
-  // This prevents connection issues when emulators are not running
-  console.log('Firebase initialized successfully with production config');
-} catch (error) {
-  console.error('Firebase initialization failed:', error);
+    console.log('Firebase initialized successfully with production config');
+  } catch (error) {
+    console.error('Firebase initialization failed:', error);
+    // Set all to null to prevent further errors
+    app = null;
+    auth = null;
+    database = null;
+    storage = null;
+    firestore = null;
+  }
+} else {
+  console.warn('Firebase configuration is incomplete. Please check your environment variables.');
+  console.warn('Missing variables:', {
+    apiKey: !firebaseConfig.apiKey,
+    authDomain: !firebaseConfig.authDomain,
+    projectId: !firebaseConfig.projectId,
+    storageBucket: !firebaseConfig.storageBucket,
+    messagingSenderId: !firebaseConfig.messagingSenderId,
+    appId: !firebaseConfig.appId,
+  });
 }
 
 export { auth, database, storage, firestore };
