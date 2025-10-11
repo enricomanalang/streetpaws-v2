@@ -115,6 +115,8 @@ export default function AdminDashboard() {
   const [loadingVolunteerApplications, setLoadingVolunteerApplications] = useState(false);
   const [selectedVolunteer, setSelectedVolunteer] = useState<any>(null);
   const [showVolunteerModal, setShowVolunteerModal] = useState(false);
+  const [selectedReport, setSelectedReport] = useState<any>(null);
+  const [showReportModal, setShowReportModal] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -831,6 +833,16 @@ export default function AdminDashboard() {
     setSelectedVolunteer(null);
   };
 
+  const openReportDetailModal = (report: any) => {
+    setSelectedReport(report);
+    setShowReportModal(true);
+  };
+
+  const closeReportModal = () => {
+    setShowReportModal(false);
+    setSelectedReport(null);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50" suppressHydrationWarning={true}>
@@ -1062,189 +1074,77 @@ export default function AdminDashboard() {
                   </div>
                 </div>
               ) : (
-                <div className="space-y-4">
-                  {reports.map((report) => (
-                    <Card key={report.id} className="border-l-4 border-l-red-500">
-                      <CardContent className="pt-6">
-                        <div className="flex justify-between items-start mb-4">
-                          <div>
-                            <h3 className="text-lg font-semibold text-gray-900">
-                              {report.animalType} - {report.condition}
-                            </h3>
-                            <p className="text-sm text-gray-600">
-                              Report ID: {report.reportId}
-                            </p>
-                            <p className="text-sm text-gray-500">
-                              Submitted by: {report.submittedBy?.name} on {new Date(report.createdAt).toLocaleDateString()}
-                            </p>
-                          </div>
-                          <Badge 
-                            variant={report.status === 'pending' ? 'destructive' : 
-                                   report.status === 'approved' ? 'default' : 'secondary'}
-                          >
-                            {report.status}
-                          </Badge>
-                        </div>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                          <div>
-                            <p className="text-sm font-medium text-gray-700">Location:</p>
-                            <p className="text-sm text-gray-600">{report.location}</p>
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium text-gray-700">Urgency:</p>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-gray-200">
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">REPORT</th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">LOCATION</th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">URGENCY</th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">STATUS</th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">DATE</th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">ACTIONS</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {reports.map((report) => (
+                        <tr key={report.id} className="border-b border-gray-100 hover:bg-gray-50">
+                          <td className="py-4 px-4">
+                            <div>
+                              <div className="font-medium text-gray-900">
+                                {report.animalType} - {report.condition}
+                              </div>
+                              <div className="text-sm text-gray-500">ID: {report.reportId}</div>
+                              <div className="text-sm text-gray-500">By: {report.submittedBy?.name}</div>
+                            </div>
+                          </td>
+                          <td className="py-4 px-4">
+                            <div className="text-sm text-gray-900">{report.location}</div>
+                          </td>
+                          <td className="py-4 px-4">
                             <Badge variant="outline" className="capitalize">
                               {report.urgency}
                             </Badge>
-                          </div>
-                        </div>
-                        
-                        <div className="mb-4">
-                          <p className="text-sm font-medium text-gray-700">Description:</p>
-                          <p className="text-sm text-gray-600">{report.description}</p>
-                        </div>
-                        
-                        {/* Display Images if available */}
-                        {report.images && report.images.length > 0 && (
-                          <div className="mb-4">
-                            <p className="text-sm font-medium text-gray-700 mb-2">Evidence Photos:</p>
-                            
-                            
-        {/* Check if all images are placeholders */}
-        {report.images.every((img: string) => img.startsWith('placeholder-')) && (
-          <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-sm text-blue-800">
-              <strong>Note:</strong> This report was submitted before the image system was updated. 
-              Images are not available for display. New reports will show images properly.
-            </p>
-          </div>
-        )}
-        
-                            
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                              {report.images.map((imageUrl: string, index: number) => {
-                                // Check if it's a placeholder URL or not a valid image URL
-                                const isPlaceholder = imageUrl.startsWith('placeholder-');
-                                const isBase64 = imageUrl.startsWith('data:image');
-                                const isSupabase = imageUrl.includes('supabase.co');
-                                const isValidImage = isBase64 || isSupabase || (!isPlaceholder && (imageUrl.startsWith('http') || imageUrl.startsWith('https')));
-                                
-                                return (
-                                  <div key={index} className="relative">
-                                    {!isValidImage ? (
-                                      <div className="w-full h-24 bg-gray-200 rounded-lg border border-gray-300 flex items-center justify-center">
-                                        <div className="text-center">
-                                          <div className="w-8 h-8 bg-gray-400 rounded-full mx-auto mb-2 flex items-center justify-center">
-                                            <span className="text-white text-xs font-bold">{index + 1}</span>
-                                          </div>
-                                          <p className="text-xs text-gray-500">
-                                            {isPlaceholder ? 'Image Not Available' : 'Invalid Image'}
-                                          </p>
-                                        </div>
-                                      </div>
-                                    ) : (
-                                      <img
-                                        src={imageUrl}
-                                        alt={`Evidence ${index + 1}`}
-                                        className="w-full h-24 object-cover rounded-lg border border-gray-200 cursor-pointer hover:opacity-80 transition-opacity"
-                                        onError={(e) => {
-                                          console.error('Image failed to load:', imageUrl);
-                                          // Replace with placeholder on error
-                                          const target = e.target as HTMLImageElement;
-                                          target.style.display = 'none';
-                                          const placeholder = target.nextElementSibling as HTMLElement;
-                                          if (placeholder) {
-                                            placeholder.style.display = 'block';
-                                          }
-                                        }}
-                                        onClick={() => {
-                                          // Open image in new tab for full view
-                                          const newWindow = window.open();
-                                          if (newWindow) {
-                                            newWindow.document.write(`
-                                              <html>
-                                                <head><title>Evidence Photo ${index + 1}</title></head>
-                                                <body style="margin:0; padding:20px; background:#f5f5f5; display:flex; justify-content:center; align-items:center; min-height:100vh;">
-                                                  <img src="${imageUrl}" style="max-width:100%; max-height:100%; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15);" />
-                                                </body>
-                                              </html>
-                                            `);
-                                          }
-                                        }}
-                                      />
-                                    )}
-                                    {/* Fallback placeholder (hidden by default) */}
-                                    <div className="w-full h-24 bg-gray-200 rounded-lg border border-gray-300 flex items-center justify-center" style={{display: 'none'}}>
-                                      <div className="text-center">
-                                        <div className="w-8 h-8 bg-gray-400 rounded-full mx-auto mb-2 flex items-center justify-center">
-                                          <span className="text-white text-xs font-bold">{index + 1}</span>
-                                        </div>
-                                        <p className="text-xs text-gray-500">Failed to Load</p>
-                                      </div>
-                                    </div>
-                                    <div className="absolute top-1 right-1 bg-black bg-opacity-50 text-white text-xs px-1 py-0.5 rounded">
-                                      {index + 1}
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        )}
-                        
-                        <div className="flex justify-end space-x-2">
-                          {/* Show approve/reject buttons for pending and investigating reports */}
-                          {(report.status === 'pending' || report.status === 'investigating') && (
-                            <>
-                              <Button
-                                size="sm"
-                                onClick={() => updateReportStatus(report.id, 'approved')}
-                                className="bg-green-600 hover:bg-green-700"
-                              >
-                                <CheckCircle className="w-4 h-4 mr-1" />
-                                Approve
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="destructive"
-                                onClick={() => updateReportStatus(report.id, 'rejected')}
-                              >
-                                <X className="w-4 h-4 mr-1" />
-                                Reject
-                              </Button>
-                            </>
-                          )}
-                          
-                          {/* Show investigate button only for pending reports */}
-                          {report.status === 'pending' && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => updateReportStatus(report.id, 'investigating')}
+                          </td>
+                          <td className="py-4 px-4">
+                            <Badge 
+                              className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                report.status === 'pending' 
+                                  ? 'bg-yellow-100 text-yellow-800' 
+                                  : report.status === 'approved'
+                                  ? 'bg-green-100 text-green-800'
+                                  : 'bg-red-100 text-red-800'
+                              }`}
                             >
-                              <Eye className="w-4 h-4 mr-1" />
-                              Investigate
-                            </Button>
-                          )}
-                          
-                          {/* Show status for completed reports */}
-                          {report.status === 'approved' && (
-                            <div className="flex items-center text-green-600 text-sm">
-                              <CheckCircle className="w-4 h-4 mr-1" />
-                              Approved
+                              {report.status}
+                            </Badge>
+                          </td>
+                          <td className="py-4 px-4">
+                            <div className="text-sm text-gray-900">
+                              {new Date(report.createdAt).toLocaleDateString()}
                             </div>
-                          )}
-                          
-                          {report.status === 'rejected' && (
-                            <div className="flex items-center text-red-600 text-sm">
-                              <X className="w-4 h-4 mr-1" />
-                              Rejected
+                            <div className="text-xs text-gray-500">
+                              {new Date(report.createdAt).toLocaleTimeString()}
                             </div>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                          </td>
+                          <td className="py-4 px-4">
+                            <div className="flex items-center space-x-2">
+                              <button
+                                onClick={() => openReportDetailModal(report)}
+                                className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+                                title="View Details"
+                              >
+                                <Eye className="w-4 h-4 text-gray-600" />
+                              </button>
+                            </div>
+                            <div className="text-xs text-gray-500 mt-1">
+                              Ref: {report.reportId}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </CardContent>
@@ -1271,103 +1171,70 @@ export default function AdminDashboard() {
                   <p className="text-gray-600">No reports have been approved yet.</p>
                 </div>
               ) : (
-                <div className="space-y-4">
-                  {approvedReports.map((report) => (
-                    <Card key={report.id} className="border-l-4 border-l-green-500">
-                      <CardContent className="p-6">
-                        <div className="flex justify-between items-start mb-4">
-                          <div>
-                            <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                              {report.animalType} - {report.condition}
-                            </h3>
-                            <p className="text-sm text-gray-600">Report ID: {report.reportId}</p>
-                            <p className="text-sm text-gray-600">
-                              Submitted by: {report.submittedBy?.email} on {new Date(report.createdAt).toLocaleDateString()}
-                            </p>
-                          </div>
-                          <Badge className="bg-green-100 text-green-800 border-green-200">
-                            Approved
-                          </Badge>
-                        </div>
-                        
-                        <div className="mb-4">
-                          <p className="text-sm font-medium text-gray-700">Location:</p>
-                          <p className="text-sm text-gray-600">{report.location}</p>
-                        </div>
-                        
-                        <div className="mb-4">
-                          <p className="text-sm font-medium text-gray-700">Description:</p>
-                          <p className="text-sm text-gray-600">{report.description}</p>
-                        </div>
-                        
-                        {report.images && report.images.length > 0 && (
-                          <div className="mb-4">
-                            <p className="text-sm font-medium text-gray-700 mb-2">Evidence Photos:</p>
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                              {report.images.map((imageUrl: string, index: number) => {
-                                const isPlaceholder = imageUrl.startsWith('placeholder-');
-                                const isBase64 = imageUrl.startsWith('data:image');
-                                
-                                return (
-                                  <div key={index} className="relative group">
-                                    <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
-                                      {isPlaceholder ? (
-                                        <div className="w-full h-full flex items-center justify-center text-gray-400">
-                                          <Camera className="w-8 h-8" />
-                                        </div>
-                                      ) : (
-                                        <img
-                                          src={isBase64 ? imageUrl : imageUrl}
-                                          alt={`Evidence ${index + 1}`}
-                                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                                          onError={(e) => {
-                                            const target = e.target as HTMLImageElement;
-                                            target.style.display = 'none';
-                                            target.nextElementSibling?.classList.remove('hidden');
-                                          }}
-                                        />
-                                      )}
-                                      <div className="hidden w-full h-full flex items-center justify-center text-gray-400">
-                                        <Camera className="w-8 h-8" />
-                                      </div>
-                                    </div>
-                                    <div className="absolute top-1 right-1 bg-black bg-opacity-50 text-white text-xs px-1 py-0.5 rounded">
-                                      {index + 1}
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        )}
-                        
-                        <div className="flex justify-between items-center">
-                          <div className="flex items-center text-green-600 text-sm">
-                            <CheckCircle className="w-4 h-4 mr-1" />
-                            Approved by {report.reviewedBy?.name} on {new Date(report.updatedAt).toLocaleDateString()}
-                          </div>
-                          
-                          <div className="flex space-x-2">
-                            {!report.availableForAdoption ? (
-                              <Button
-                                size="sm"
-                                onClick={() => markForAdoption(report.id)}
-                                className="bg-purple-600 hover:bg-purple-700"
-                              >
-                                <Heart className="w-4 h-4 mr-1" />
-                                Mark for Adoption
-                              </Button>
-                            ) : (
-                              <div className="flex items-center text-purple-600 text-sm">
-                                <Heart className="w-4 h-4 mr-1" />
-                                Available for Adoption
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-gray-200">
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">REPORT</th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">LOCATION</th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">STATUS</th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">APPROVED BY</th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">DATE</th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">ACTIONS</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {approvedReports.map((report) => (
+                        <tr key={report.id} className="border-b border-gray-100 hover:bg-gray-50">
+                          <td className="py-4 px-4">
+                            <div>
+                              <div className="font-medium text-gray-900">
+                                {report.animalType} - {report.condition}
                               </div>
-                            )}
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                              <div className="text-sm text-gray-500">ID: {report.reportId}</div>
+                              <div className="text-sm text-gray-500">By: {report.submittedBy?.email}</div>
+                            </div>
+                          </td>
+                          <td className="py-4 px-4">
+                            <div className="text-sm text-gray-900">{report.location}</div>
+                          </td>
+                          <td className="py-4 px-4">
+                            <Badge className="bg-green-100 text-green-800 border-green-200">
+                              Approved
+                            </Badge>
+                          </td>
+                          <td className="py-4 px-4">
+                            <div className="text-sm text-gray-900">{report.reviewedBy?.name || 'Admin'}</div>
+                            <div className="text-xs text-gray-500">
+                              {report.updatedAt ? new Date(report.updatedAt).toLocaleDateString() : 'N/A'}
+                            </div>
+                          </td>
+                          <td className="py-4 px-4">
+                            <div className="text-sm text-gray-900">
+                              {new Date(report.createdAt).toLocaleDateString()}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {new Date(report.createdAt).toLocaleTimeString()}
+                            </div>
+                          </td>
+                          <td className="py-4 px-4">
+                            <div className="flex items-center space-x-2">
+                              <button
+                                onClick={() => openReportDetailModal(report)}
+                                className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+                                title="View Details"
+                              >
+                                <Eye className="w-4 h-4 text-gray-600" />
+                              </button>
+                            </div>
+                            <div className="text-xs text-gray-500 mt-1">
+                              Ref: {report.reportId}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </CardContent>
@@ -1394,85 +1261,70 @@ export default function AdminDashboard() {
                   <p className="text-gray-600">No reports have been rejected yet.</p>
                 </div>
               ) : (
-                <div className="space-y-4">
-                  {rejectedReports.map((report) => (
-                    <Card key={report.id} className="border-l-4 border-l-gray-500">
-                      <CardContent className="p-6">
-                        <div className="flex justify-between items-start mb-4">
-                          <div>
-                            <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                              {report.animalType} - {report.condition}
-                            </h3>
-                            <p className="text-sm text-gray-600">Report ID: {report.reportId}</p>
-                            <p className="text-sm text-gray-600">
-                              Submitted by: {report.submittedBy?.email} on {new Date(report.createdAt).toLocaleDateString()}
-                            </p>
-                          </div>
-                          <Badge className="bg-gray-100 text-gray-800 border-gray-200">
-                            Rejected
-                          </Badge>
-                        </div>
-                        
-                        <div className="mb-4">
-                          <p className="text-sm font-medium text-gray-700">Location:</p>
-                          <p className="text-sm text-gray-600">{report.location}</p>
-                        </div>
-                        
-                        <div className="mb-4">
-                          <p className="text-sm font-medium text-gray-700">Description:</p>
-                          <p className="text-sm text-gray-600">{report.description}</p>
-                        </div>
-                        
-                        {report.images && report.images.length > 0 && (
-                          <div className="mb-4">
-                            <p className="text-sm font-medium text-gray-700 mb-2">Evidence Photos:</p>
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                              {report.images.map((imageUrl: string, index: number) => {
-                                const isPlaceholder = imageUrl.startsWith('placeholder-');
-                                const isBase64 = imageUrl.startsWith('data:image');
-                                
-                                return (
-                                  <div key={index} className="relative group">
-                                    <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
-                                      {isPlaceholder ? (
-                                        <div className="w-full h-full flex items-center justify-center text-gray-400">
-                                          <Camera className="w-8 h-8" />
-                                        </div>
-                                      ) : (
-                                        <img
-                                          src={isBase64 ? imageUrl : imageUrl}
-                                          alt={`Evidence ${index + 1}`}
-                                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                                          onError={(e) => {
-                                            const target = e.target as HTMLImageElement;
-                                            target.style.display = 'none';
-                                            target.nextElementSibling?.classList.remove('hidden');
-                                          }}
-                                        />
-                                      )}
-                                      <div className="hidden w-full h-full flex items-center justify-center text-gray-400">
-                                        <Camera className="w-8 h-8" />
-                                      </div>
-                                    </div>
-                                    <div className="absolute top-1 right-1 bg-black bg-opacity-50 text-white text-xs px-1 py-0.5 rounded">
-                                      {index + 1}
-                                    </div>
-                                  </div>
-                                );
-                              })}
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-gray-200">
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">REPORT</th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">LOCATION</th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">STATUS</th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">REJECTED BY</th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">DATE</th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">ACTIONS</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rejectedReports.map((report) => (
+                        <tr key={report.id} className="border-b border-gray-100 hover:bg-gray-50">
+                          <td className="py-4 px-4">
+                            <div>
+                              <div className="font-medium text-gray-900">
+                                {report.animalType} - {report.condition}
+                              </div>
+                              <div className="text-sm text-gray-500">ID: {report.reportId}</div>
+                              <div className="text-sm text-gray-500">By: {report.submittedBy?.email}</div>
                             </div>
-                          </div>
-                        )}
-                        
-                        <div className="flex justify-end space-x-2">
-                          <div className="flex items-center text-gray-600 text-sm">
-                            <X className="w-4 h-4 mr-1" />
-                            Rejected by {report.reviewedBy?.name} on {new Date(report.updatedAt).toLocaleDateString()}
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                          </td>
+                          <td className="py-4 px-4">
+                            <div className="text-sm text-gray-900">{report.location}</div>
+                          </td>
+                          <td className="py-4 px-4">
+                            <Badge className="bg-gray-100 text-gray-800 border-gray-200">
+                              Rejected
+                            </Badge>
+                          </td>
+                          <td className="py-4 px-4">
+                            <div className="text-sm text-gray-900">{report.reviewedBy?.name || 'Admin'}</div>
+                            <div className="text-xs text-gray-500">
+                              {report.updatedAt ? new Date(report.updatedAt).toLocaleDateString() : 'N/A'}
+                            </div>
+                          </td>
+                          <td className="py-4 px-4">
+                            <div className="text-sm text-gray-900">
+                              {new Date(report.createdAt).toLocaleDateString()}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {new Date(report.createdAt).toLocaleTimeString()}
+                            </div>
+                          </td>
+                          <td className="py-4 px-4">
+                            <div className="flex items-center space-x-2">
+                              <button
+                                onClick={() => openReportDetailModal(report)}
+                                className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+                                title="View Details"
+                              >
+                                <Eye className="w-4 h-4 text-gray-600" />
+                              </button>
+                            </div>
+                            <div className="text-xs text-gray-500 mt-1">
+                              Ref: {report.reportId}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </CardContent>
@@ -2328,6 +2180,170 @@ export default function AdminDashboard() {
           {renderContent()}
         </main>
       </div>
+
+      {/* Report Detail Modal */}
+      {showReportModal && selectedReport && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-start mb-6">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">
+                    {selectedReport.animalType} - {selectedReport.condition}
+                  </h2>
+                  <p className="text-gray-600">Report ID: {selectedReport.reportId}</p>
+                  <p className="text-sm text-gray-500">Submitted by: {selectedReport.submittedBy?.name}</p>
+                </div>
+                <button
+                  onClick={closeReportModal}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div>
+                  <h3 className="text-sm font-medium text-gray-700 mb-2">Location</h3>
+                  <p className="text-sm text-gray-900">{selectedReport.location}</p>
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium text-gray-700 mb-2">Urgency</h3>
+                  <Badge variant="outline" className="capitalize">
+                    {selectedReport.urgency}
+                  </Badge>
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium text-gray-700 mb-2">Status</h3>
+                  <Badge 
+                    className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      selectedReport.status === 'pending' 
+                        ? 'bg-yellow-100 text-yellow-800' 
+                        : selectedReport.status === 'approved'
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-red-100 text-red-800'
+                    }`}
+                  >
+                    {selectedReport.status}
+                  </Badge>
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium text-gray-700 mb-2">Date</h3>
+                  <p className="text-sm text-gray-900">
+                    {new Date(selectedReport.createdAt).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mb-6">
+                <h3 className="text-sm font-medium text-gray-700 mb-2">Description</h3>
+                <div className="bg-gray-50 p-4 rounded-md">
+                  <p className="text-sm text-gray-900">{selectedReport.description}</p>
+                </div>
+              </div>
+
+              {/* Display Images if available */}
+              {selectedReport.images && selectedReport.images.length > 0 && (
+                <div className="mb-6">
+                  <h3 className="text-sm font-medium text-gray-700 mb-2">Evidence Photos</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {selectedReport.images.map((imageUrl: string, index: number) => {
+                      const isPlaceholder = imageUrl.startsWith('placeholder-');
+                      const isBase64 = imageUrl.startsWith('data:image');
+                      const isSupabase = imageUrl.includes('supabase.co');
+                      const isValidImage = isBase64 || isSupabase || (!isPlaceholder && (imageUrl.startsWith('http') || imageUrl.startsWith('https')));
+                      
+                      return (
+                        <div key={index} className="relative">
+                          {!isValidImage ? (
+                            <div className="w-full h-32 bg-gray-200 rounded-lg border border-gray-300 flex items-center justify-center">
+                              <div className="text-center">
+                                <div className="w-8 h-8 bg-gray-400 rounded-full mx-auto mb-2 flex items-center justify-center">
+                                  <span className="text-white text-xs font-bold">{index + 1}</span>
+                                </div>
+                                <p className="text-xs text-gray-500">
+                                  {isPlaceholder ? 'Image Not Available' : 'Invalid Image'}
+                                </p>
+                              </div>
+                            </div>
+                          ) : (
+                            <img
+                              src={imageUrl}
+                              alt={`Evidence ${index + 1}`}
+                              className="w-full h-32 object-cover rounded-lg border border-gray-200 cursor-pointer hover:opacity-80 transition-opacity"
+                              onClick={() => {
+                                const newWindow = window.open();
+                                if (newWindow) {
+                                  newWindow.document.write(`
+                                    <html>
+                                      <head><title>Evidence Photo ${index + 1}</title></head>
+                                      <body style="margin:0; padding:20px; background:#f5f5f5; display:flex; justify-content:center; align-items:center; min-height:100vh;">
+                                        <img src="${imageUrl}" style="max-width:100%; max-height:100%; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15);" />
+                                      </body>
+                                    </html>
+                                  `);
+                                }
+                              }}
+                            />
+                          )}
+                          <div className="absolute top-2 right-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
+                            {index + 1}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex justify-end space-x-3">
+                {(selectedReport.status === 'pending' || selectedReport.status === 'investigating') && (
+                  <>
+                    <Button
+                      onClick={() => {
+                        updateReportStatus(selectedReport.id, 'approved');
+                        closeReportModal();
+                      }}
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      <CheckCircle className="w-4 h-4 mr-1" />
+                      Approve
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        updateReportStatus(selectedReport.id, 'rejected');
+                        closeReportModal();
+                      }}
+                      variant="destructive"
+                    >
+                      <X className="w-4 h-4 mr-1" />
+                      Reject
+                    </Button>
+                  </>
+                )}
+                {selectedReport.status === 'pending' && (
+                  <Button
+                    onClick={() => {
+                      updateReportStatus(selectedReport.id, 'investigating');
+                      closeReportModal();
+                    }}
+                    variant="outline"
+                  >
+                    <Eye className="w-4 h-4 mr-1" />
+                    Investigate
+                  </Button>
+                )}
+                <Button
+                  onClick={closeReportModal}
+                  variant="outline"
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Volunteer Detail Modal */}
       {showVolunteerModal && selectedVolunteer && (
