@@ -228,13 +228,60 @@ export default function Navigation() {
               {user ? (
                 <div className="pt-4 border-t border-gray-200">
                   <div className="px-3 py-2">
-                    <p className="text-sm text-gray-700">
-                      {profile?.name || profile?.email}
-                    </p>
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 mt-1">
-                      {profile?.role}
-                    </span>
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="rounded-full border-2 border-orange-400 p-1">
+                        <UserCircle2 className="w-7 h-7 text-gray-800" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-gray-800">
+                          {profile?.name || profile?.email || 'User'}
+                        </p>
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          {profile?.role}
+                        </span>
+                      </div>
+                    </div>
                   </div>
+                  
+                  {/* Mobile Notification Button */}
+                  <div className="px-3 py-2">
+                    <button 
+                      className="w-full flex items-center justify-between bg-orange-100 hover:bg-orange-200 text-gray-900 rounded-md px-4 py-2 mb-3"
+                      onClick={() => setIsNotifOpen((v) => !v)}
+                    >
+                      <span className="flex items-center gap-2"><Mail className="w-4 h-4" /> Notification</span>
+                      {unreadCount > 0 && (
+                        <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full">{unreadCount}</span>
+                      )}
+                    </button>
+                    
+                    {/* Mobile Notification Dropdown */}
+                    {isNotifOpen && (
+                      <div className="max-h-64 overflow-auto -mx-1 px-1 mb-3 space-y-2">
+                        {notifications.length === 0 ? (
+                          <div className="text-sm text-gray-600">No notifications</div>
+                        ) : (
+                          notifications.map((n) => (
+                            <div key={n.id} className={`p-3 border rounded-md ${n.read ? 'bg-white' : 'bg-yellow-50'}`}>
+                              <div className="text-sm font-medium text-gray-900 mb-1">
+                                {n.type === 'sighting' ? 'New sighting reported' : 'Notification'}
+                              </div>
+                              {n.petName && <div className="text-sm text-gray-700">Pet: {n.petName}</div>}
+                              {n.message && <div className="text-sm text-gray-600 mt-1 line-clamp-2">{n.message}</div>}
+                              <div className="flex justify-between items-center mt-2">
+                                <span className="text-xs text-gray-500">{new Date(n.createdAt).toLocaleString()}</span>
+                                {!n.read && (
+                                  <button className="text-xs text-blue-600 hover:underline" onClick={() => markNotifAsRead(n.id)}>Mark as read</button>
+                                )}
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Dashboard/Admin Link */}
                   {profile?.role === 'admin' ? (
                     <Link
                       href="/admin"
@@ -252,6 +299,8 @@ export default function Navigation() {
                       Dashboard
                     </Link>
                   )}
+                  
+                  {/* Logout Button */}
                   <button
                     onClick={handleLogout}
                     className="block w-full text-left px-3 py-2 text-gray-700 hover:text-blue-600 transition-colors"
