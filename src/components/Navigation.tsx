@@ -136,9 +136,9 @@ export default function Navigation() {
                     <div className="absolute right-0 mt-2 w-64 bg-white border border-orange-300 shadow-lg rounded-md p-4 z-50">
                       <div className="flex items-center gap-3 mb-3">
                         <div className="rounded-full border-2 border-orange-400 p-1">
-                          {profile?.photoURL ? (
+                          {(profile?.photoURL || user?.photoURL) ? (
                             <img 
-                              src={profile.photoURL} 
+                              src={profile?.photoURL || user?.photoURL} 
                               alt="Profile" 
                               className="w-7 h-7 rounded-full object-cover"
                             />
@@ -146,7 +146,7 @@ export default function Navigation() {
                             <UserCircle2 className="w-7 h-7 text-gray-800" />
                           )}
                         </div>
-                        <div className="font-semibold text-gray-800 truncate">{profile?.name || profile?.email || 'User'}</div>
+                        <div className="font-semibold text-gray-800 truncate">{profile?.name || user?.displayName || profile?.email || user?.email || 'User'}</div>
                       </div>
                       <button 
                         className="w-full flex items-center justify-between bg-orange-100 hover:bg-orange-200 text-gray-900 rounded-md px-4 py-2 mb-3"
@@ -244,9 +244,9 @@ export default function Navigation() {
                   <div className="px-3 py-2">
                     <div className="flex items-center gap-3 mb-3">
                       <div className="rounded-full border-2 border-orange-400 p-1">
-                        {profile?.photoURL ? (
+                        {(profile?.photoURL || user?.photoURL) ? (
                           <img 
-                            src={profile.photoURL} 
+                            src={profile?.photoURL || user?.photoURL} 
                             alt="Profile" 
                             className="w-7 h-7 rounded-full object-cover"
                           />
@@ -256,7 +256,7 @@ export default function Navigation() {
                       </div>
                       <div>
                         <p className="text-sm font-semibold text-gray-800">
-                          {profile?.name || profile?.email || 'User'}
+                          {profile?.name || user?.displayName || profile?.email || user?.email || 'User'}
                         </p>
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                           {profile?.role}
