@@ -21,6 +21,9 @@ export default function Navigation() {
   useEffect(() => {
     console.log('Navigation - Profile data:', profile);
     console.log('Navigation - User data:', user);
+    console.log('Navigation - Profile photoURL:', profile?.photoURL);
+    console.log('Navigation - User photoURL:', user?.photoURL);
+    console.log('Navigation - Will show image?', !!(profile?.photoURL || user?.photoURL));
   }, [profile, user]);
 
   const handleLogout = async () => {
@@ -138,9 +141,15 @@ export default function Navigation() {
                         <div className="rounded-full border-2 border-orange-400 p-1">
                           {(profile?.photoURL || user?.photoURL) ? (
                             <img 
+                              key={`profile-img-${profile?.photoURL || user?.photoURL}`}
                               src={profile?.photoURL || user?.photoURL} 
                               alt="Profile" 
                               className="w-7 h-7 rounded-full object-cover"
+                              onError={(e) => {
+                                console.log('Image failed to load:', e);
+                                e.currentTarget.style.display = 'none';
+                              }}
+                              onLoad={() => console.log('Image loaded successfully')}
                             />
                           ) : (
                             <UserCircle2 className="w-7 h-7 text-gray-800" />
@@ -246,9 +255,15 @@ export default function Navigation() {
                       <div className="rounded-full border-2 border-orange-400 p-1">
                         {(profile?.photoURL || user?.photoURL) ? (
                           <img 
+                            key={`mobile-profile-img-${profile?.photoURL || user?.photoURL}`}
                             src={profile?.photoURL || user?.photoURL} 
                             alt="Profile" 
                             className="w-7 h-7 rounded-full object-cover"
+                            onError={(e) => {
+                              console.log('Mobile image failed to load:', e);
+                              e.currentTarget.style.display = 'none';
+                            }}
+                            onLoad={() => console.log('Mobile image loaded successfully')}
                           />
                         ) : (
                           <UserCircle2 className="w-7 h-7 text-gray-800" />
