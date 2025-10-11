@@ -6,8 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { FileDown } from 'lucide-react';
-import { firestore } from '@/lib/firebase';
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { database } from '@/lib/firebase';
+import { ref, push, set } from 'firebase/database';
 
 export default function JoinUsPage() {
   const [submitting, setSubmitting] = useState(false);
@@ -41,7 +41,11 @@ export default function JoinUsPage() {
 
     setSubmitting(true);
     try {
-      await addDoc(collection(firestore!, 'volunteerApplications'), {
+      if (!database) {
+        throw new Error('Database not initialized');
+      }
+
+      const volunteerApplication = {
         firstName: data.get('firstName') || '',
         lastName: data.get('lastName') || '',
         address: data.get('address') || '',
@@ -52,12 +56,23 @@ export default function JoinUsPage() {
         background: data.get('occupation') || '',
         motivation: data.get('motivation') || '',
         skills: data.get('skills') || '',
-        status: data.get('status') || '',
+        status: 'pending', // Default status
         agree: true,
-        createdAt: serverTimestamp(),
-      });
+        createdAt: new Date().toISOString(),
+        applicationId: `VOL-${Date.now()}`
+      };
+
+      // Save to Firebase Realtime Database
+      const volunteerRef = ref(database, 'volunteerApplications');
+      const newVolunteerRef = push(volunteerRef);
+      await set(newVolunteerRef, volunteerApplication);
+
+      console.log('Volunteer application saved successfully:', volunteerApplication);
       alert('Thanks for applying to volunteer! Your application has been submitted.');
       form.reset();
+    } catch (error) {
+      console.error('Error saving volunteer application:', error);
+      alert('Error submitting application. Please try again.');
     } finally {
       setSubmitting(false);
     }

@@ -108,6 +108,11 @@ export default function AdminDashboard() {
     [key: string]: any;
   }>>([]);
   const [loadingContactMessages, setLoadingContactMessages] = useState(false);
+  const [volunteerApplications, setVolunteerApplications] = useState<Array<{
+    id: string;
+    [key: string]: any;
+  }>>([]);
+  const [loadingVolunteerApplications, setLoadingVolunteerApplications] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -254,6 +259,52 @@ export default function AdminDashboard() {
     } else if (activeTab !== 'contact') {
       setContactMessages([]);
       setLoadingContactMessages(false);
+    }
+  }, [activeTab]);
+
+  // Fetch volunteer applications when volunteers tab is active
+  useEffect(() => {
+    if (activeTab === 'volunteers' && database) {
+      setLoadingVolunteerApplications(true);
+      console.log('Fetching volunteer applications from Realtime Database...');
+      
+      const timeout = setTimeout(() => {
+        console.log('Timeout reached, stopping loading...');
+        setLoadingVolunteerApplications(false);
+      }, 10000);
+      
+      const volunteerApplicationsRef = ref(database, 'volunteerApplications');
+      
+      const unsubscribe = onValue(volunteerApplicationsRef, (snapshot) => {
+        clearTimeout(timeout);
+        setLoadingVolunteerApplications(false);
+        
+        if (snapshot.exists()) {
+          const data = snapshot.val();
+          const applicationsArray = Object.keys(data).map(key => ({
+            id: key,
+            ...data[key]
+          })).sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+          
+          setVolunteerApplications(applicationsArray);
+          console.log('Volunteer applications loaded:', applicationsArray.length);
+        } else {
+          setVolunteerApplications([]);
+          console.log('No volunteer applications found');
+        }
+      }, (error) => {
+        clearTimeout(timeout);
+        setLoadingVolunteerApplications(false);
+        console.error('Error fetching volunteer applications:', error);
+      });
+
+      return () => {
+        clearTimeout(timeout);
+        off(volunteerApplicationsRef, 'value', unsubscribe);
+      };
+    } else if (activeTab !== 'volunteers') {
+      setVolunteerApplications([]);
+      setLoadingVolunteerApplications(false);
     }
   }, [activeTab]);
 
@@ -702,6 +753,69 @@ export default function AdminDashboard() {
     } catch (error) {
       console.error('Error deleting contact message:', error);
       alert(`Error deleting contact message: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
+
+  const updateVolunteerApplicationStatus = async (applicationId: string, status: string) => {
+    if (!database) {
+      alert('Database not initialized');
+      return;
+    }
+
+    if (!user || !profile) {
+      alert('Authentication error. Please log in again.');
+      return;
+    }
+
+    console.log(`Attempting to update volunteer application ${applicationId} to status: ${status}`);
+    
+    try {
+      const applicationRef = ref(database, `volunteerApplications/${applicationId}`);
+      await update(applicationRef, {
+        status,
+        updatedAt: new Date().toISOString(),
+        reviewedBy: profile?.name || profile?.email || 'Admin'
+      });
+      
+      console.log(`Volunteer application ${applicationId} updated to ${status} successfully`);
+      setVolunteerApplications(prev => 
+        prev.map(app => 
+          app.id === applicationId 
+            ? { ...app, status, updatedAt: new Date().toISOString() }
+            : app
+        )
+      );
+      alert(`Volunteer application ${status} successfully`);
+    } catch (error) {
+      console.error('Error updating volunteer application status:', error);
+      alert(`Error updating volunteer application: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
+
+  const deleteVolunteerApplication = async (applicationId: string) => {
+    if (!database) {
+      alert('Database not initialized');
+      return;
+    }
+
+    if (!user || !profile) {
+      alert('Authentication error. Please log in again.');
+      return;
+    }
+
+    const confirmDelete = confirm('Are you sure you want to delete this volunteer application? This action cannot be undone.');
+    if (!confirmDelete) return;
+
+    try {
+      const applicationRef = ref(database, `volunteerApplications/${applicationId}`);
+      await remove(applicationRef);
+      
+      console.log(`Volunteer application ${applicationId} deleted successfully`);
+      setVolunteerApplications(prev => prev.filter(app => app.id !== applicationId));
+      alert('Volunteer application deleted successfully');
+    } catch (error) {
+      console.error('Error deleting volunteer application:', error);
+      alert(`Error deleting volunteer application: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
@@ -1833,14 +1947,126 @@ export default function AdminDashboard() {
           <Card className="bg-white shadow-sm">
             <CardHeader>
               <CardTitle className="text-lg font-semibold text-gray-900">Volunteer Management</CardTitle>
-              <CardDescription>Manage volunteers and their activities</CardDescription>
+              <CardDescription>Manage volunteer applications and their status</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-12">
-                <UserPlus className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Volunteers Section</h3>
-                <p className="text-gray-500">This section is ready for your volunteer management functionality.</p>
-              </div>
+              {loadingVolunteerApplications ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                  <span className="ml-2 text-gray-600">Loading volunteer applications...</span>
+                </div>
+              ) : volunteerApplications.length === 0 ? (
+                <div className="text-center py-8">
+                  <UserPlus className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Volunteer Applications</h3>
+                  <p className="text-gray-500">No volunteer applications have been submitted yet.</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {volunteerApplications.map((application) => (
+                    <Card key={application.id} className={`border-l-4 ${
+                      application.status === 'pending' ? 'border-l-yellow-500' : 
+                      application.status === 'approved' ? 'border-l-green-500' :
+                      application.status === 'rejected' ? 'border-l-red-500' : 'border-l-gray-500'
+                    }`}>
+                      <CardContent className="p-6">
+                        <div className="flex justify-between items-start mb-4">
+                          <div>
+                            <h3 className="text-lg font-semibold text-gray-900">
+                              {application.firstName} {application.lastName}
+                            </h3>
+                            <p className="text-sm text-gray-600">{application.email}</p>
+                            <p className="text-sm text-gray-500">Phone: {application.phone}</p>
+                          </div>
+                          <Badge variant={
+                            application.status === 'pending' ? 'secondary' :
+                            application.status === 'approved' ? 'default' :
+                            application.status === 'rejected' ? 'destructive' : 'outline'
+                          }>
+                            {application.status}
+                          </Badge>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                          <div>
+                            <p className="text-sm font-medium text-gray-700">Age</p>
+                            <p className="text-sm text-gray-600">{application.age}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-700">Background</p>
+                            <p className="text-sm text-gray-600">{application.background}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-700">Address</p>
+                            <p className="text-sm text-gray-600">{application.address}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-700">Birth Date</p>
+                            <p className="text-sm text-gray-600">{application.birthdate || 'Not provided'}</p>
+                          </div>
+                        </div>
+
+                        {application.motivation && (
+                          <div className="mb-4">
+                            <p className="text-sm font-medium text-gray-700 mb-2">Motivation</p>
+                            <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-md">
+                              {application.motivation}
+                            </p>
+                          </div>
+                        )}
+
+                        {application.skills && (
+                          <div className="mb-4">
+                            <p className="text-sm font-medium text-gray-700 mb-2">Skills</p>
+                            <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-md">
+                              {application.skills}
+                            </p>
+                          </div>
+                        )}
+
+                        <div className="flex justify-between items-center">
+                          <div className="text-xs text-gray-500">
+                            Applied: {new Date(application.createdAt).toLocaleString()}
+                            {application.updatedAt && (
+                              <span className="ml-2">
+                                Updated: {new Date(application.updatedAt).toLocaleString()}
+                              </span>
+                            )}
+                          </div>
+                          
+                          <div className="flex gap-2">
+                            {application.status === 'pending' && (
+                              <>
+                                <Button
+                                  onClick={() => updateVolunteerApplicationStatus(application.id, 'approved')}
+                                  size="sm"
+                                  className="bg-green-600 hover:bg-green-700"
+                                >
+                                  Approve
+                                </Button>
+                                <Button
+                                  onClick={() => updateVolunteerApplicationStatus(application.id, 'rejected')}
+                                  size="sm"
+                                  variant="destructive"
+                                >
+                                  Reject
+                                </Button>
+                              </>
+                            )}
+                            <Button
+                              onClick={() => deleteVolunteerApplication(application.id)}
+                              size="sm"
+                              variant="outline"
+                            >
+                              Delete
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         );
