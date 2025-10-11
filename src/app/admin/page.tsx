@@ -1850,22 +1850,6 @@ export default function AdminDashboard() {
       case 'inventory':
         return <Inventory />;
       
-      case 'report':
-        return (
-          <Card className="bg-white shadow-sm">
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold text-gray-900">Report Generation</CardTitle>
-              <CardDescription>Generate and manage system reports</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-12">
-                <BarChart3 className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Reports Section</h3>
-                <p className="text-gray-500">This section is ready for your report generation functionality.</p>
-              </div>
-            </CardContent>
-          </Card>
-        );
       
       default:
         return null;
@@ -2025,17 +2009,6 @@ export default function AdminDashboard() {
               <Map className="w-5 h-5 mr-3" />
               Heat Map
             </button>
-            <button 
-              onClick={() => setActiveTab('report')}
-              className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                activeTab === 'report' 
-                  ? 'text-white bg-gradient-to-r from-blue-600 to-purple-600' 
-                  : 'text-gray-700 hover:text-blue-600 hover:bg-blue-50'
-              }`}
-            >
-              <FileText className="w-5 h-5 mr-3" />
-              Report
-            </button>
           </div>
         </nav>
         
@@ -2100,7 +2073,6 @@ export default function AdminDashboard() {
               {activeTab === 'donors' && 'Donor Management'}
               {activeTab === 'inventory' && 'Inventory Management'}
               {activeTab === 'heatmap' && 'Heat Map Analytics'}
-              {activeTab === 'report' && 'Report Generation'}
             </h1>
             <p className="text-gray-600">Welcome back, {profile.name || profile.email}</p>
           </div>
