@@ -1404,124 +1404,91 @@ export default function AdminDashboard() {
                   <p className="text-gray-500">No lost pet reports have been submitted yet.</p>
                 </div>
               ) : (
-                <div className="space-y-4">
-                  {lostPets.map((pet) => (
-                    <Card key={pet.id} className="border-l-4 border-l-orange-500">
-                      <CardContent className="pt-6">
-                        <div className="flex justify-between items-start mb-4">
-                          <div>
-                            <h3 className="text-lg font-semibold text-gray-900">
-                              {pet.petName} - {pet.animalType}
-                            </h3>
-                            <p className="text-sm text-gray-600">
-                              Report ID: {pet.reportId}
-                            </p>
-                            <p className="text-sm text-gray-500">
-                              Submitted by: {pet.submittedBy?.name} on {new Date(pet.createdAt).toLocaleDateString()}
-                            </p>
-                          </div>
-                          <Badge 
-                            variant={pet.status === 'pending' ? 'destructive' :
-                                   pet.status === 'approved' ? 'default' :
-                                   pet.status === 'rejected' ? 'secondary' : 'secondary'}
-                          >
-                            {pet.status}
-                          </Badge>
-                        </div>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                          <div>
-                            <p className="text-sm font-medium text-gray-700">Pet Details:</p>
-                            <p className="text-sm text-gray-600">Breed: {pet.breed}</p>
-                            <p className="text-sm text-gray-600">Color: {pet.color}</p>
-                            <p className="text-sm text-gray-600">Size: {pet.size}</p>
-                            <p className="text-sm text-gray-600">Age: {pet.age}</p>
-                            <p className="text-sm text-gray-600">Gender: {pet.gender}</p>
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium text-gray-700">Last Seen:</p>
-                            <p className="text-sm text-gray-600 flex items-center">
-                              <MapPin className="w-4 h-4 mr-1" />
-                              {pet.lastSeenLocation}
-                            </p>
-                            <p className="text-sm text-gray-600 flex items-center">
-                              <Calendar className="w-4 h-4 mr-1" />
-                              {new Date(pet.lastSeenDate).toLocaleDateString()}
-                            </p>
-                            <p className="text-sm text-gray-600">Contact: {pet.contactInfo}</p>
-                          </div>
-                        </div>
-                        
-                        {pet.description && (
-                          <div className="mb-4">
-                            <p className="text-sm font-medium text-gray-700 mb-1">Description:</p>
-                            <p className="text-sm text-gray-600">{pet.description}</p>
-                          </div>
-                        )}
-                        
-                        <div className="flex flex-wrap gap-2">
-                          {pet.status === 'pending' && (
-                            <>
-                              <Button
-                                size="sm"
-                                onClick={() => updateLostPetStatus(pet.id, 'approved')}
-                                className="bg-green-600 hover:bg-green-700"
-                              >
-                                <CheckCircle className="w-4 h-4 mr-1" />
-                                Approve
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="destructive"
-                                onClick={() => updateLostPetStatus(pet.id, 'rejected')}
-                              >
-                                <X className="w-4 h-4 mr-1" />
-                                Reject
-                              </Button>
-                            </>
-                          )}
-                          {pet.status === 'approved' && (
-                            <>
-                              <Button
-                                size="sm"
-                                onClick={() => updateLostPetStatus(pet.id, 'found')}
-                                className="bg-green-600 hover:bg-green-700"
-                              >
-                                <CheckCircle className="w-4 h-4 mr-1" />
-                                Mark as Found
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => updateLostPetStatus(pet.id, 'closed')}
-                              >
-                                <AlertTriangle className="w-4 h-4 mr-1" />
-                                Close Report
-                              </Button>
-                            </>
-                          )}
-                          {pet.status === 'found' && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => updateLostPetStatus(pet.id, 'approved')}
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-gray-200">
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">PET</th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">DETAILS</th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">LAST SEEN</th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">STATUS</th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">DATE</th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">ACTIONS</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {lostPets.map((pet) => (
+                        <tr key={pet.id} className="border-b border-gray-100 hover:bg-gray-50">
+                          <td className="py-4 px-4">
+                            <div>
+                              <div className="font-medium text-gray-900">
+                                {pet.petName} - {pet.animalType}
+                              </div>
+                              <div className="text-sm text-gray-500">ID: {pet.reportId}</div>
+                              <div className="text-sm text-gray-500">By: {pet.submittedBy?.name}</div>
+                            </div>
+                          </td>
+                          <td className="py-4 px-4">
+                            <div className="text-sm text-gray-900">
+                              <div>Breed: {pet.breed}</div>
+                              <div>Color: {pet.color}</div>
+                              <div>Size: {pet.size}</div>
+                              <div>Age: {pet.age}</div>
+                            </div>
+                          </td>
+                          <td className="py-4 px-4">
+                            <div className="text-sm text-gray-900">
+                              <div className="flex items-center">
+                                <MapPin className="w-4 h-4 mr-1" />
+                                {pet.lastSeenLocation}
+                              </div>
+                              <div className="flex items-center">
+                                <Calendar className="w-4 h-4 mr-1" />
+                                {new Date(pet.lastSeenDate).toLocaleDateString()}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-4 px-4">
+                            <Badge 
+                              className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                pet.status === 'pending' 
+                                  ? 'bg-yellow-100 text-yellow-800' 
+                                  : pet.status === 'approved'
+                                  ? 'bg-green-100 text-green-800'
+                                  : pet.status === 'rejected'
+                                  ? 'bg-red-100 text-red-800'
+                                  : 'bg-gray-100 text-gray-800'
+                              }`}
                             >
-                              <AlertCircle className="w-4 h-4 mr-1" />
-                              Reopen Report
-                            </Button>
-                          )}
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => window.open(`mailto:${pet.contactInfo}?subject=Lost Pet Report - ${pet.petName}`)}
-                          >
-                            <Eye className="w-4 h-4 mr-1" />
-                            Contact Owner
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                              {pet.status}
+                            </Badge>
+                          </td>
+                          <td className="py-4 px-4">
+                            <div className="text-sm text-gray-900">
+                              {new Date(pet.createdAt).toLocaleDateString()}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {new Date(pet.createdAt).toLocaleTimeString()}
+                            </div>
+                          </td>
+                          <td className="py-4 px-4">
+                            <div className="flex items-center space-x-2">
+                              <button
+                                onClick={() => openReportDetailModal(pet)}
+                                className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+                                title="View Details"
+                              >
+                                <Eye className="w-4 h-4 text-gray-600" />
+                              </button>
+                            </div>
+                            <div className="text-xs text-gray-500 mt-1">
+                              Ref: {pet.reportId}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </CardContent>
