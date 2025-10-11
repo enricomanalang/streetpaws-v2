@@ -130,7 +130,15 @@ export default function Navigation() {
                     <div className="absolute right-0 mt-2 w-64 bg-white border border-orange-300 shadow-lg rounded-md p-4 z-50">
                       <div className="flex items-center gap-3 mb-3">
                         <div className="rounded-full border-2 border-orange-400 p-1">
-                          <UserCircle2 className="w-7 h-7 text-gray-800" />
+                          {profile?.photoURL ? (
+                            <img 
+                              src={profile.photoURL} 
+                              alt="Profile" 
+                              className="w-7 h-7 rounded-full object-cover"
+                            />
+                          ) : (
+                            <UserCircle2 className="w-7 h-7 text-gray-800" />
+                          )}
                         </div>
                         <div className="font-semibold text-gray-800 truncate">{profile?.name || profile?.email || 'User'}</div>
                       </div>
@@ -230,7 +238,15 @@ export default function Navigation() {
                   <div className="px-3 py-2">
                     <div className="flex items-center gap-3 mb-3">
                       <div className="rounded-full border-2 border-orange-400 p-1">
-                        <UserCircle2 className="w-7 h-7 text-gray-800" />
+                        {profile?.photoURL ? (
+                          <img 
+                            src={profile.photoURL} 
+                            alt="Profile" 
+                            className="w-7 h-7 rounded-full object-cover"
+                          />
+                        ) : (
+                          <UserCircle2 className="w-7 h-7 text-gray-800" />
+                        )}
                       </div>
                       <div>
                         <p className="text-sm font-semibold text-gray-800">

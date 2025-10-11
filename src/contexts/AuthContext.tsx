@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
+import { User, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, GoogleAuthProvider, FacebookAuthProvider, signInWithPopup } from 'firebase/auth';
 import { ref, get, set } from 'firebase/database';
 import { auth, database } from '@/lib/firebase';
 
@@ -12,6 +12,7 @@ export interface UserProfile {
   email: string;
   role: UserRole;
   name?: string;
+  photoURL?: string;
 }
 
 interface AuthContextType {
@@ -20,6 +21,8 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name: string, role?: UserRole) => Promise<void>;
+  loginWithGoogle: () => Promise<void>;
+  loginWithFacebook: () => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -57,11 +60,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             console.log('User profile found:', snapshot.val());
             setProfile(snapshot.val());
           } else {
-            // Create default profile
+            // Create default profile with social auth data
             const defaultProfile: UserProfile = {
               uid: firebaseUser.uid,
               email: firebaseUser.email!,
               role: 'user',
+              name: firebaseUser.displayName || undefined,
+              photoURL: firebaseUser.photoURL || undefined,
             };
             await set(userRef, defaultProfile);
             console.log('Created default profile:', defaultProfile);
@@ -137,6 +142,112 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const loginWithGoogle = async () => {
+    try {
+      const provider = new GoogleAuthProvider();
+      // Request additional scopes for profile information
+      provider.addScope('profile');
+      provider.addScope('email');
+      
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      
+      // Check if user profile exists, if not create one
+      const userRef = ref(database, `users/${user.uid}`);
+      const snapshot = await get(userRef);
+      
+      if (!snapshot.exists()) {
+        const userProfile: UserProfile = {
+          uid: user.uid,
+          email: user.email!,
+          role: 'user',
+          name: user.displayName || undefined,
+          photoURL: user.photoURL || undefined,
+        };
+        await set(userRef, userProfile);
+        console.log('Created Google profile:', userProfile);
+      } else {
+        // Update existing profile with latest Google data
+        const existingProfile = snapshot.val();
+        const updatedProfile: UserProfile = {
+          ...existingProfile,
+          name: user.displayName || existingProfile.name,
+          photoURL: user.photoURL || existingProfile.photoURL,
+        };
+        await set(userRef, updatedProfile);
+        console.log('Updated Google profile:', updatedProfile);
+      }
+    } catch (error: any) {
+      console.error('Google sign-in error:', error);
+      switch (error.code) {
+        case 'auth/popup-closed-by-user':
+          throw new Error('Sign-in was cancelled. Please try again.');
+        case 'auth/popup-blocked':
+          throw new Error('Popup was blocked. Please allow popups and try again.');
+        case 'auth/cancelled-popup-request':
+          throw new Error('Sign-in was cancelled. Please try again.');
+        case 'auth/account-exists-with-different-credential':
+          throw new Error('An account already exists with this email using a different sign-in method.');
+        default:
+          throw new Error('Google sign-in failed. Please try again.');
+      }
+    }
+  };
+
+  const loginWithFacebook = async () => {
+    try {
+      const provider = new FacebookAuthProvider();
+      // Request additional permissions for profile information
+      provider.addScope('email');
+      provider.addScope('public_profile');
+      
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      
+      // Check if user profile exists, if not create one
+      const userRef = ref(database, `users/${user.uid}`);
+      const snapshot = await get(userRef);
+      
+      if (!snapshot.exists()) {
+        const userProfile: UserProfile = {
+          uid: user.uid,
+          email: user.email!,
+          role: 'user',
+          name: user.displayName || undefined,
+          photoURL: user.photoURL || undefined,
+        };
+        await set(userRef, userProfile);
+        console.log('Created Facebook profile:', userProfile);
+      } else {
+        // Update existing profile with latest Facebook data
+        const existingProfile = snapshot.val();
+        const updatedProfile: UserProfile = {
+          ...existingProfile,
+          name: user.displayName || existingProfile.name,
+          photoURL: user.photoURL || existingProfile.photoURL,
+        };
+        await set(userRef, updatedProfile);
+        console.log('Updated Facebook profile:', updatedProfile);
+      }
+    } catch (error: any) {
+      console.error('Facebook sign-in error:', error);
+      switch (error.code) {
+        case 'auth/popup-closed-by-user':
+          throw new Error('Sign-in was cancelled. Please try again.');
+        case 'auth/popup-blocked':
+          throw new Error('Popup was blocked. Please allow popups and try again.');
+        case 'auth/cancelled-popup-request':
+          throw new Error('Sign-in was cancelled. Please try again.');
+        case 'auth/account-exists-with-different-credential':
+          throw new Error('An account already exists with this email using a different sign-in method.');
+        case 'auth/facebook-auth-failed':
+          throw new Error('Facebook authentication failed. Please try again.');
+        default:
+          throw new Error('Facebook sign-in failed. Please try again.');
+      }
+    }
+  };
+
   const logout = async () => {
     await signOut(auth);
   };
@@ -147,6 +258,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     loading,
     login,
     register,
+    loginWithGoogle,
+    loginWithFacebook,
     logout,
   };
 
