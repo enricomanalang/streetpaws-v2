@@ -67,7 +67,7 @@ export default function InKindDonationForm({ onSuccess }: InKindDonationFormProp
     }
 
     try {
-      const donationData = {
+      const donationData: any = {
         method: 'in-kind',
         donorName: form.donorName,
         donorEmail: form.donorEmail,
@@ -76,13 +76,17 @@ export default function InKindDonationForm({ onSuccess }: InKindDonationFormProp
         itemName: form.itemName,
         quantity: Number(form.quantity),
         unit: form.unit,
-        estimatedValue: form.estimatedValue ? Number(form.estimatedValue) : undefined,
         message: form.message || '',
         screenshots: imageUrls,
         status: 'pledged',
         createdAt: new Date().toISOString(),
         userId: user.uid,
       };
+
+      // Only add estimatedValue if it has a value
+      if (form.estimatedValue && form.estimatedValue.trim() !== '') {
+        donationData.estimatedValue = Number(form.estimatedValue);
+      }
 
       const donationsRef = collection(firestore, 'donations');
       const docRef = await addDoc(donationsRef, donationData as any);
