@@ -17,6 +17,12 @@ export default function Navigation() {
   const { user, profile, logout } = useAuth();
   const pathname = usePathname();
 
+  // Debug logging for profile data
+  useEffect(() => {
+    console.log('Navigation - Profile data:', profile);
+    console.log('Navigation - User data:', user);
+  }, [profile, user]);
+
   const handleLogout = async () => {
     await logout();
     setIsOpen(false);

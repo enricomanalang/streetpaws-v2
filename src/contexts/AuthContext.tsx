@@ -57,8 +57,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         try {
           const snapshot = await get(userRef);
           if (snapshot.exists()) {
-            console.log('User profile found:', snapshot.val());
-            setProfile(snapshot.val());
+            const existingProfile = snapshot.val();
+            console.log('User profile found:', existingProfile);
+            console.log('Firebase user data:', {
+              uid: firebaseUser.uid,
+              email: firebaseUser.email,
+              displayName: firebaseUser.displayName,
+              photoURL: firebaseUser.photoURL
+            });
+            
+            // Check if we need to update the profile with fresh social auth data
+            if (firebaseUser.photoURL && firebaseUser.photoURL !== existingProfile.photoURL) {
+              console.log('Updating profile with fresh social auth data');
+              const updatedProfile: UserProfile = {
+                ...existingProfile,
+                name: firebaseUser.displayName || existingProfile.name,
+                photoURL: firebaseUser.photoURL,
+              };
+              await set(userRef, updatedProfile);
+              console.log('Updated profile with photoURL:', updatedProfile);
+              setProfile(updatedProfile);
+            } else {
+              setProfile(existingProfile);
+            }
           } else {
             // Create default profile with social auth data
             const defaultProfile: UserProfile = {
