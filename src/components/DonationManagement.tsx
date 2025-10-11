@@ -102,7 +102,7 @@ export default function DonationManagement() {
 
     const totalAmount = donationsList
       .filter(d => d.status === 'completed')
-      .reduce((sum, d) => sum + d.amount, 0);
+      .reduce((sum, d) => sum + (d.amount || 0), 0);
     
     const totalCount = donationsList.filter(d => d.status === 'completed').length;
     
@@ -112,7 +112,7 @@ export default function DonationManagement() {
       return donationDate.getMonth() === currentMonth && donationDate.getFullYear() === currentYear;
     });
     
-    const monthlyAmount = monthlyDonations.reduce((sum, d) => sum + d.amount, 0);
+    const monthlyAmount = monthlyDonations.reduce((sum, d) => sum + (d.amount || 0), 0);
     const monthlyCount = monthlyDonations.length;
     const averageDonation = totalCount > 0 ? totalAmount / totalCount : 0;
 
@@ -192,7 +192,7 @@ export default function DonationManagement() {
     const subject = encodeURIComponent('StreetPaws Donation Receipt');
     const body = encodeURIComponent(
       `Hi ${donation.donorName || 'Donor'},\n\n` +
-      `Thank you for your donation of ₱${donation.amount.toLocaleString()} for ${getPurposeLabel(donation.purpose)}.\n` +
+      `Thank you for your donation of ₱${(donation.amount || 0).toLocaleString()} for ${getPurposeLabel(donation.purpose)}.\n` +
       `Date: ${new Date(donation.createdAt).toLocaleString()}\n` +
       (donation.method === 'gcash' && donation.referenceNumber ? `GCash Ref: ${donation.referenceNumber}\n` : '') +
       `\nWe appreciate your support!\n\n— StreetPaws`
@@ -231,7 +231,7 @@ export default function DonationManagement() {
         new Date(d.createdAt).toLocaleDateString(),
         d.isAnonymous ? 'Anonymous' : d.donorName,
         d.donorEmail,
-        `₱${d.amount.toLocaleString()}`,
+        `₱${(d.amount || 0).toLocaleString()}`,
         d.purpose,
         d.status,
         d.paymentMethod
@@ -430,9 +430,9 @@ export default function DonationManagement() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900">
-                      ₱{donation.amount.toLocaleString()}
+                      ₱{donation.amount ? donation.amount.toLocaleString() : '0'}
                     </div>
-                    <div className="text-sm text-gray-500">{donation.currency.toUpperCase()}</div>
+                    <div className="text-sm text-gray-500">{donation.currency ? donation.currency.toUpperCase() : 'PHP'}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900">{getPurposeLabel(donation.purpose)}</div>
@@ -509,7 +509,7 @@ export default function DonationManagement() {
                 </div>
                 <div>
                   <div className="text-sm text-gray-500">Amount</div>
-                  <div className="font-medium">₱{selectedDonation.amount.toLocaleString()} {selectedDonation.currency?.toUpperCase()}</div>
+                  <div className="font-medium">₱{(selectedDonation.amount || 0).toLocaleString()} {selectedDonation.currency?.toUpperCase() || 'PHP'}</div>
                 </div>
                 <div>
                   <div className="text-sm text-gray-500">Purpose</div>
