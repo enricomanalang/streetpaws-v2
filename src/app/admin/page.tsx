@@ -113,6 +113,8 @@ export default function AdminDashboard() {
     [key: string]: any;
   }>>([]);
   const [loadingVolunteerApplications, setLoadingVolunteerApplications] = useState(false);
+  const [selectedVolunteer, setSelectedVolunteer] = useState<any>(null);
+  const [showVolunteerModal, setShowVolunteerModal] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -817,6 +819,16 @@ export default function AdminDashboard() {
       console.error('Error deleting volunteer application:', error);
       alert(`Error deleting volunteer application: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
+  };
+
+  const openVolunteerDetailModal = (application: any) => {
+    setSelectedVolunteer(application);
+    setShowVolunteerModal(true);
+  };
+
+  const closeVolunteerModal = () => {
+    setShowVolunteerModal(false);
+    setSelectedVolunteer(null);
   };
 
   if (loading) {
@@ -1962,109 +1974,74 @@ export default function AdminDashboard() {
                   <p className="text-gray-500">No volunteer applications have been submitted yet.</p>
                 </div>
               ) : (
-                <div className="space-y-4">
-                  {volunteerApplications.map((application) => (
-                    <Card key={application.id} className={`border-l-4 ${
-                      application.status === 'pending' ? 'border-l-yellow-500' : 
-                      application.status === 'approved' ? 'border-l-green-500' :
-                      application.status === 'rejected' ? 'border-l-red-500' : 'border-l-gray-500'
-                    }`}>
-                      <CardContent className="p-6">
-                        <div className="flex justify-between items-start mb-4">
-                          <div>
-                            <h3 className="text-lg font-semibold text-gray-900">
-                              {application.firstName} {application.lastName}
-                            </h3>
-                            <p className="text-sm text-gray-600">{application.email}</p>
-                            <p className="text-sm text-gray-500">Phone: {application.phone}</p>
-                          </div>
-                          <Badge variant={
-                            application.status === 'pending' ? 'secondary' :
-                            application.status === 'approved' ? 'default' :
-                            application.status === 'rejected' ? 'destructive' : 'outline'
-                          }>
-                            {application.status}
-                          </Badge>
-                        </div>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                          <div>
-                            <p className="text-sm font-medium text-gray-700">Age</p>
-                            <p className="text-sm text-gray-600">{application.age}</p>
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium text-gray-700">Background</p>
-                            <p className="text-sm text-gray-600">{application.background}</p>
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium text-gray-700">Address</p>
-                            <p className="text-sm text-gray-600">{application.address}</p>
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium text-gray-700">Birth Date</p>
-                            <p className="text-sm text-gray-600">{application.birthdate || 'Not provided'}</p>
-                          </div>
-                        </div>
-
-                        {application.motivation && (
-                          <div className="mb-4">
-                            <p className="text-sm font-medium text-gray-700 mb-2">Motivation</p>
-                            <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-md">
-                              {application.motivation}
-                            </p>
-                          </div>
-                        )}
-
-                        {application.skills && (
-                          <div className="mb-4">
-                            <p className="text-sm font-medium text-gray-700 mb-2">Skills</p>
-                            <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-md">
-                              {application.skills}
-                            </p>
-                          </div>
-                        )}
-
-                        <div className="flex justify-between items-center">
-                          <div className="text-xs text-gray-500">
-                            Applied: {new Date(application.createdAt).toLocaleString()}
-                            {application.updatedAt && (
-                              <span className="ml-2">
-                                Updated: {new Date(application.updatedAt).toLocaleString()}
-                              </span>
-                            )}
-                          </div>
-                          
-                          <div className="flex gap-2">
-                            {application.status === 'pending' && (
-                              <>
-                                <Button
-                                  onClick={() => updateVolunteerApplicationStatus(application.id, 'approved')}
-                                  size="sm"
-                                  className="bg-green-600 hover:bg-green-700"
-                                >
-                                  Approve
-                                </Button>
-                                <Button
-                                  onClick={() => updateVolunteerApplicationStatus(application.id, 'rejected')}
-                                  size="sm"
-                                  variant="destructive"
-                                >
-                                  Reject
-                                </Button>
-                              </>
-                            )}
-                            <Button
-                              onClick={() => deleteVolunteerApplication(application.id)}
-                              size="sm"
-                              variant="outline"
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-gray-200">
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">VOLUNTEER</th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">AGE</th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">BACKGROUND</th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">STATUS</th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">DATE</th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">ACTIONS</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {volunteerApplications.map((application) => (
+                        <tr key={application.id} className="border-b border-gray-100 hover:bg-gray-50">
+                          <td className="py-4 px-4">
+                            <div>
+                              <div className="font-medium text-gray-900">
+                                {application.firstName} {application.lastName}
+                              </div>
+                              <div className="text-sm text-gray-500">{application.email}</div>
+                            </div>
+                          </td>
+                          <td className="py-4 px-4">
+                            <div className="text-sm text-gray-900">{application.age}</div>
+                          </td>
+                          <td className="py-4 px-4">
+                            <div className="text-sm text-gray-900">{application.background}</div>
+                          </td>
+                          <td className="py-4 px-4">
+                            <Badge 
+                              className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                application.status === 'pending' 
+                                  ? 'bg-yellow-100 text-yellow-800' 
+                                  : application.status === 'approved'
+                                  ? 'bg-green-100 text-green-800'
+                                  : 'bg-red-100 text-red-800'
+                              }`}
                             >
-                              Delete
-                            </Button>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                              {application.status}
+                            </Badge>
+                          </td>
+                          <td className="py-4 px-4">
+                            <div className="text-sm text-gray-900">
+                              {new Date(application.createdAt).toLocaleDateString()}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {new Date(application.createdAt).toLocaleTimeString()}
+                            </div>
+                          </td>
+                          <td className="py-4 px-4">
+                            <div className="flex items-center space-x-2">
+                              <button
+                                onClick={() => openVolunteerDetailModal(application)}
+                                className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+                                title="View Details"
+                              >
+                                <Eye className="w-4 h-4 text-gray-600" />
+                              </button>
+                            </div>
+                            <div className="text-xs text-gray-500 mt-1">
+                              Ref: {application.applicationId}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </CardContent>
@@ -2351,8 +2328,149 @@ export default function AdminDashboard() {
           {renderContent()}
         </main>
       </div>
-    </div>
 
+      {/* Volunteer Detail Modal */}
+      {showVolunteerModal && selectedVolunteer && (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+          <div className="p-6">
+            <div className="flex justify-between items-start mb-6">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">
+                  {selectedVolunteer.firstName} {selectedVolunteer.lastName}
+                </h2>
+                <p className="text-gray-600">{selectedVolunteer.email}</p>
+                <p className="text-sm text-gray-500">Phone: {selectedVolunteer.phone}</p>
+              </div>
+              <button
+                onClick={closeVolunteerModal}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              <div>
+                <h3 className="text-sm font-medium text-gray-700 mb-2">Age</h3>
+                <p className="text-sm text-gray-900">{selectedVolunteer.age}</p>
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-gray-700 mb-2">Background</h3>
+                <p className="text-sm text-gray-900">{selectedVolunteer.background}</p>
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-gray-700 mb-2">Address</h3>
+                <p className="text-sm text-gray-900">{selectedVolunteer.address}</p>
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-gray-700 mb-2">Birth Date</h3>
+                <p className="text-sm text-gray-900">{selectedVolunteer.birthdate || 'Not provided'}</p>
+              </div>
+            </div>
+
+            {selectedVolunteer.motivation && (
+              <div className="mb-6">
+                <h3 className="text-sm font-medium text-gray-700 mb-2">Motivation</h3>
+                <div className="bg-gray-50 p-4 rounded-md">
+                  <p className="text-sm text-gray-900">{selectedVolunteer.motivation}</p>
+                </div>
+              </div>
+            )}
+
+            {selectedVolunteer.skills && (
+              <div className="mb-6">
+                <h3 className="text-sm font-medium text-gray-700 mb-2">Skills</h3>
+                <div className="bg-gray-50 p-4 rounded-md">
+                  <p className="text-sm text-gray-900">{selectedVolunteer.skills}</p>
+                </div>
+              </div>
+            )}
+
+            <div className="mb-6">
+              <h3 className="text-sm font-medium text-gray-700 mb-2">Application Details</h3>
+              <div className="bg-gray-50 p-4 rounded-md">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="font-medium text-gray-700">Status:</span>
+                    <Badge 
+                      className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${
+                        selectedVolunteer.status === 'pending' 
+                          ? 'bg-yellow-100 text-yellow-800' 
+                          : selectedVolunteer.status === 'approved'
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-red-100 text-red-800'
+                      }`}
+                    >
+                      {selectedVolunteer.status}
+                    </Badge>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-700">Application ID:</span>
+                    <span className="ml-2 text-gray-900">{selectedVolunteer.applicationId}</span>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-700">Applied:</span>
+                    <span className="ml-2 text-gray-900">
+                      {new Date(selectedVolunteer.createdAt).toLocaleString()}
+                    </span>
+                  </div>
+                  {selectedVolunteer.updatedAt && (
+                    <div>
+                      <span className="font-medium text-gray-700">Updated:</span>
+                      <span className="ml-2 text-gray-900">
+                        {new Date(selectedVolunteer.updatedAt).toLocaleString()}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-3">
+              {selectedVolunteer.status === 'pending' && (
+                <>
+                  <Button
+                    onClick={() => {
+                      updateVolunteerApplicationStatus(selectedVolunteer.id, 'approved');
+                      closeVolunteerModal();
+                    }}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    Approve
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      updateVolunteerApplicationStatus(selectedVolunteer.id, 'rejected');
+                      closeVolunteerModal();
+                    }}
+                    variant="destructive"
+                  >
+                    Reject
+                  </Button>
+                </>
+              )}
+              <Button
+                onClick={() => {
+                  deleteVolunteerApplication(selectedVolunteer.id);
+                  closeVolunteerModal();
+                }}
+                variant="outline"
+              >
+                Delete
+              </Button>
+              <Button
+                onClick={closeVolunteerModal}
+                variant="outline"
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+      )}
+    </div>
   );
 }
 
