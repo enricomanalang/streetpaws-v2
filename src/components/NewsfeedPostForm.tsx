@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar, MapPin, Users, Heart, AlertCircle, Info, Megaphone } from 'lucide-react';
-import { useModernModal } from '@/components/ui/modern-modal';
+import useModernModal from '@/components/ui/modern-modal';
 
 interface NewsfeedPost {
   id?: string;
