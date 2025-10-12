@@ -123,9 +123,9 @@ const NewsfeedManagement: React.FC = () => {
     console.log('handleDeletePost called with:', { postId, postTitle });
     
     try {
-      const confirmed = await confirm(
-        `Are you sure you want to delete "${postTitle}"? This action cannot be undone.`,
-        'Delete Post'
+      // Use native confirm for now to test
+      const confirmed = window.confirm(
+        `Are you sure you want to delete "${postTitle}"? This action cannot be undone.`
       );
 
       console.log('User confirmed delete:', confirmed);
@@ -137,7 +137,7 @@ const NewsfeedManagement: React.FC = () => {
 
       if (!firestore) {
         console.error('Firestore not available');
-        await error('Database connection error. Please refresh the page.', 'Connection Error');
+        alert('Database connection error. Please refresh the page.');
         return;
       }
 
@@ -146,10 +146,10 @@ const NewsfeedManagement: React.FC = () => {
       await deleteDoc(postRef);
       
       console.log('Post deleted successfully');
-      await success('Post deleted successfully!', 'Success');
+      alert('Post deleted successfully!');
     } catch (err) {
       console.error('Error deleting post:', err);
-      await error('Failed to delete post. Please try again.', 'Error');
+      alert('Failed to delete post. Please try again.');
     }
   };
 
@@ -212,7 +212,13 @@ const NewsfeedManagement: React.FC = () => {
             const isUpcoming = isEvent && post.eventDate && isUpcomingEvent(post.eventDate);
 
             return (
-              <div key={post.id} className="p-4 hover:bg-gray-50 transition-colors">
+              <div 
+                key={post.id} 
+                className="p-4 hover:bg-gray-50 transition-colors"
+                onClick={(e) => {
+                  console.log('Post container clicked:', post.id);
+                }}
+              >
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-2">
                     {post.isPinned && (
@@ -239,12 +245,18 @@ const NewsfeedManagement: React.FC = () => {
                         e.preventDefault();
                         e.stopPropagation();
                         console.log('Delete button clicked for post:', post.id);
+                        alert('Delete button clicked!'); // Test alert
                         handleDeletePost(post.id, post.title);
                       }}
-                      className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 border border-red-200 rounded-md hover:bg-red-100 hover:border-red-300 transition-colors cursor-pointer"
+                      className="flex items-center gap-1 px-4 py-2 text-sm font-medium text-white bg-red-600 border border-red-600 rounded-md hover:bg-red-700 hover:border-red-700 transition-colors cursor-pointer shadow-sm"
                       type="button"
+                      style={{ 
+                        zIndex: 9999, 
+                        position: 'relative',
+                        pointerEvents: 'auto'
+                      }}
                     >
-                      <Trash2 className="w-3 h-3" />
+                      <Trash2 className="w-4 h-4" />
                       Delete
                     </button>
                   </div>
