@@ -37,53 +37,53 @@ const useNotificationModal = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
-  // Sample notifications - in real app, these would come from your backend
+  // Sample user notifications - in real app, these would come from your backend
   useEffect(() => {
     const sampleNotifications: Notification[] = [
       {
         id: '1',
         type: 'success',
-        title: 'New Donation Received',
-        message: 'A donation of ₱500 has been received from John Doe',
+        title: 'Adoption Application Approved!',
+        message: 'Your adoption application for Buddy has been approved by the admin. Please contact us to schedule pickup.',
         timestamp: '2 minutes ago',
         read: false,
-        category: 'donation'
+        category: 'admin'
       },
       {
         id: '2',
         type: 'info',
-        title: 'Report Submitted',
-        message: 'New abuse report submitted for review',
+        title: 'Found Pet Match!',
+        message: 'Someone found your lost dog "Max" and sent you a message. Check your messages now!',
         timestamp: '15 minutes ago',
         read: false,
-        category: 'report'
+        category: 'user'
       },
       {
         id: '3',
-        type: 'warning',
-        title: 'Low Stock Alert',
-        message: 'Pet food inventory is running low',
+        type: 'success',
+        title: 'Report Approved',
+        message: 'Your abuse report has been reviewed and approved. Thank you for helping keep animals safe.',
         timestamp: '1 hour ago',
         read: true,
-        category: 'system'
+        category: 'admin'
       },
       {
         id: '4',
         type: 'info',
-        title: 'Volunteer Application',
-        message: 'New volunteer application from Sarah Wilson',
+        title: 'Volunteer Application Status',
+        message: 'Your volunteer application has been approved! Welcome to the StreetPaws team.',
         timestamp: '2 hours ago',
         read: true,
-        category: 'user'
+        category: 'admin'
       },
       {
         id: '5',
-        type: 'success',
-        title: 'Adoption Completed',
-        message: 'Buddy has been successfully adopted',
+        type: 'info',
+        title: 'New Message from Finder',
+        message: 'Sarah found your lost cat "Whiskers" and wants to arrange a meeting. Check your messages!',
         timestamp: '3 hours ago',
         read: true,
-        category: 'admin'
+        category: 'user'
       }
     ];
 
@@ -113,10 +113,10 @@ const useNotificationModal = () => {
   };
 
   const getNotificationIcon = (type: string, category: string) => {
+    if (category === 'admin') return <Shield className="w-5 h-5 text-purple-600" />;
+    if (category === 'user') return <User className="w-5 h-5 text-blue-600" />;
     if (category === 'donation') return <Heart className="w-5 h-5 text-green-600" />;
     if (category === 'report') return <AlertCircle className="w-5 h-5 text-orange-600" />;
-    if (category === 'user') return <User className="w-5 h-5 text-blue-600" />;
-    if (category === 'admin') return <Shield className="w-5 h-5 text-purple-600" />;
     if (category === 'system') return <Bell className="w-5 h-5 text-gray-600" />;
     
     switch (type) {
