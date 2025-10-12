@@ -3,7 +3,6 @@
 import React, { useState } from 'react';
 import { ref, push } from 'firebase/database';
 import { database } from '@/lib/firebase';
-import { compressAndConvertToBase64 } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar, MapPin, Users, Heart, AlertCircle, Info, Megaphone, Image, X, Upload } from 'lucide-react';
+import { Calendar, MapPin, Users, Heart, AlertCircle, Info, Megaphone } from 'lucide-react';
 import useModernModal from '@/components/ui/modern-modal';
 
 interface NewsfeedPost {
@@ -25,7 +24,6 @@ interface NewsfeedPost {
   authorName: string;
   createdAt: any;
   isPinned?: boolean;
-  imageUrls?: string[];
 }
 
 const NewsfeedPostForm: React.FC = () => {
@@ -40,9 +38,6 @@ const NewsfeedPostForm: React.FC = () => {
     eventLocation: '',
     isPinned: false
   });
-  const [selectedImages, setSelectedImages] = useState<File[]>([]);
-  const [imagePreviewUrls, setImagePreviewUrls] = useState<string[]>([]);
-  const [uploadingImages, setUploadingImages] = useState(false);
 
   const postTypes = [
     { value: 'event', label: 'Event', icon: Calendar, color: 'text-blue-600' },
@@ -72,27 +67,6 @@ const NewsfeedPostForm: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      // Try to upload images, but don't fail the entire post if images fail
-      let imageUrls: string[] = [];
-      try {
-        imageUrls = await uploadImages();
-        if (imageUrls.length === 0) {
-          console.warn('No valid images uploaded, continuing without images');
-        }
-      } catch (imageError) {
-        console.warn('Supabase image upload failed, posting without images:', imageError);
-        // Ask user if they want to continue without images
-        const continueWithoutImages = await confirm(
-          'Image upload failed. Would you like to publish the post without images?',
-          'Image Upload Failed'
-        );
-        
-        if (!continueWithoutImages) {
-          setIsSubmitting(false);
-          return;
-        }
-      }
-
       const postData: Omit<NewsfeedPost, 'id'> = {
         title: form.title.trim(),
         content: form.content.trim(),
@@ -100,8 +74,7 @@ const NewsfeedPostForm: React.FC = () => {
         authorId: user.uid,
         authorName: profile.name || 'Admin',
         createdAt: new Date().toISOString(),
-        isPinned: form.isPinned,
-        imageUrls: imageUrls
+        isPinned: form.isPinned
       };
 
       // Add event-specific fields if it's an event
@@ -130,23 +103,13 @@ const NewsfeedPostForm: React.FC = () => {
         eventLocation: '',
         isPinned: false
       });
-      setSelectedImages([]);
-      setImagePreviewUrls([]);
 
     } catch (err) {
       console.error('Error creating post:', err);
       
       // Show specific error messages
       if (err instanceof Error) {
-        if (err.message.includes('too large') || err.message.includes('payload size exceeds')) {
-          await error('The post content is too large. Please reduce the number of images or their size and try again.', 'Content Too Large');
-        } else if (err.message.includes('Supabase')) {
-          await error('Image upload failed. Please check your Supabase configuration.', 'Configuration Error');
-        } else if (err.message.includes('timed out')) {
-          await error('Upload timed out. Please try again with fewer or smaller images.', 'Upload Timeout');
-        } else {
-          await error(`Failed to publish post: ${err.message}`, 'Error');
-        }
+        await error(`Failed to publish post: ${err.message}`, 'Error');
       } else {
         await error('Failed to publish post. Please try again.', 'Error');
       }
@@ -162,57 +125,6 @@ const NewsfeedPostForm: React.FC = () => {
     }));
   };
 
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    if (files.length === 0) return;
-
-    // Limit to 5 images
-    const newFiles = [...selectedImages, ...files].slice(0, 5);
-    setSelectedImages(newFiles);
-
-    // Create preview URLs
-    const newPreviewUrls = newFiles.map(file => URL.createObjectURL(file));
-    setImagePreviewUrls(newPreviewUrls);
-  };
-
-  const removeImage = (index: number) => {
-    const newFiles = selectedImages.filter((_, i) => i !== index);
-    const newPreviewUrls = imagePreviewUrls.filter((_, i) => i !== index);
-    
-    setSelectedImages(newFiles);
-    setImagePreviewUrls(newPreviewUrls);
-  };
-
-  const uploadImages = async (): Promise<string[]> => {
-    if (selectedImages.length === 0) return [];
-
-    setUploadingImages(true);
-    
-    try {
-      // Validate file sizes (max 10MB per image, but we'll compress them)
-      for (const file of selectedImages) {
-        if (file.size > 10 * 1024 * 1024) {
-          throw new Error(`File ${file.name} is too large. Maximum size is 10MB.`);
-        }
-        
-        // Validate file type
-        if (!file.type.startsWith('image/')) {
-          throw new Error(`File ${file.name} is not a valid image.`);
-        }
-      }
-
-      // Convert images to base64
-      const base64Promises = selectedImages.map(file => compressAndConvertToBase64(file));
-      const base64Urls = await Promise.all(base64Promises);
-      
-      setUploadingImages(false);
-      return base64Urls;
-    } catch (err) {
-      setUploadingImages(false);
-      console.error('Image conversion error:', err);
-      throw err;
-    }
-  };
 
   const selectedType = postTypes.find(type => type.value === form.type);
 
@@ -321,52 +233,6 @@ const NewsfeedPostForm: React.FC = () => {
             </div>
           )}
 
-          {/* Image Upload Section */}
-          <div className="space-y-4">
-            <Label className="text-sm font-medium text-gray-700">
-              Add Photos (Optional)
-            </Label>
-            
-            {/* Image Upload Button */}
-            <div className="flex items-center space-x-4">
-              <label className="cursor-pointer">
-                <input
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  onChange={handleImageSelect}
-                  className="hidden"
-                />
-                <div className="flex items-center space-x-2 px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 transition-colors">
-                  <Upload className="w-5 h-5 text-gray-500" />
-                  <span className="text-sm text-gray-600">Choose Photos</span>
-                </div>
-              </label>
-              <span className="text-xs text-gray-500">Max 5 photos, 10MB each</span>
-            </div>
-
-            {/* Image Previews */}
-            {imagePreviewUrls.length > 0 && (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {imagePreviewUrls.map((url, index) => (
-                  <div key={index} className="relative group">
-                    <img
-                      src={url}
-                      alt={`Preview ${index + 1}`}
-                      className="w-full h-32 object-cover rounded-lg border border-gray-200"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removeImage(index)}
-                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
 
           {/* Pin Post Option */}
           <div className="flex items-center space-x-2">
@@ -399,26 +265,12 @@ const NewsfeedPostForm: React.FC = () => {
             >
               Clear
             </Button>
-            {uploadingImages && (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setUploadingImages(false);
-                  setSelectedImages([]);
-                  setImagePreviewUrls([]);
-                }}
-                className="mr-3"
-              >
-                Cancel Upload
-              </Button>
-            )}
             <Button
               type="submit"
-              disabled={isSubmitting || uploadingImages}
+              disabled={isSubmitting}
               className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
             >
-              {uploadingImages ? 'Uploading Images...' : isSubmitting ? 'Publishing...' : 'Publish Post'}
+              {isSubmitting ? 'Publishing...' : 'Publish Post'}
             </Button>
           </div>
         </form>
