@@ -40,12 +40,16 @@ export const uploadImage = async (file: File, folder: string = 'general'): Promi
 // Compress image and convert to base64
 const compressAndConvertToBase64 = async (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
+    console.log('Starting image compression for:', file.name, file.size);
+    
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     const img = new Image();
     
     img.onload = () => {
       try {
+        console.log('Image loaded, original dimensions:', img.width, 'x', img.height);
+        
         // Calculate new dimensions (max 800px width, maintain aspect ratio)
         const maxWidth = 800;
         const maxHeight = 600;
@@ -60,6 +64,8 @@ const compressAndConvertToBase64 = async (file: File): Promise<string> => {
           height = maxHeight;
         }
         
+        console.log('Compressed dimensions:', width, 'x', height);
+        
         canvas.width = width;
         canvas.height = height;
         
@@ -68,6 +74,12 @@ const compressAndConvertToBase64 = async (file: File): Promise<string> => {
           ctx.drawImage(img, 0, 0, width, height);
           const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.8); // 80% quality
           
+          console.log('Compression complete:', {
+            original: file.size,
+            compressed: compressedDataUrl.length,
+            ratio: (compressedDataUrl.length / file.size * 100).toFixed(1) + '%',
+            startsWithData: compressedDataUrl.startsWith('data:')
+          });
           
           resolve(compressedDataUrl);
         } else {
