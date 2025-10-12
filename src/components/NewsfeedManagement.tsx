@@ -109,22 +109,32 @@ const NewsfeedManagement: React.FC = () => {
   };
 
   const handleDeletePost = async (postId: string, postTitle: string) => {
-    const confirmed = await confirm(
-      `Are you sure you want to delete "${postTitle}"? This action cannot be undone.`,
-      'Delete Post'
-    );
-
-    if (!confirmed) return;
-
+    console.log('handleDeletePost called with:', { postId, postTitle });
+    
     try {
+      const confirmed = await confirm(
+        `Are you sure you want to delete "${postTitle}"? This action cannot be undone.`,
+        'Delete Post'
+      );
+
+      console.log('User confirmed delete:', confirmed);
+
+      if (!confirmed) {
+        console.log('User cancelled delete');
+        return;
+      }
+
       if (!firestore) {
+        console.error('Firestore not available');
         await error('Database connection error. Please refresh the page.', 'Connection Error');
         return;
       }
 
+      console.log('Deleting post from Firestore...');
       const postRef = doc(firestore, 'newsfeed', postId);
       await deleteDoc(postRef);
       
+      console.log('Post deleted successfully');
       await success('Post deleted successfully!', 'Success');
     } catch (err) {
       console.error('Error deleting post:', err);
@@ -208,20 +218,24 @@ const NewsfeedManagement: React.FC = () => {
                       </Badge>
                     )}
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-3">
                     <div className="flex items-center gap-1 text-xs text-gray-500">
                       <Clock className="w-3 h-3" />
                       {formatDate(post.createdAt)}
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDeletePost(post.id, post.title)}
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log('Delete button clicked for post:', post.id);
+                        handleDeletePost(post.id, post.title);
+                      }}
+                      className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 border border-red-200 rounded-md hover:bg-red-100 hover:border-red-300 transition-colors cursor-pointer"
+                      type="button"
                     >
-                      <Trash2 className="w-3 h-3 mr-1" />
+                      <Trash2 className="w-3 h-3" />
                       Delete
-                    </Button>
+                    </button>
                   </div>
                 </div>
 
