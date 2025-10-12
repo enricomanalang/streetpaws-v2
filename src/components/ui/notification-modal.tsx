@@ -14,7 +14,8 @@ import {
   Mail,
   User,
   Heart,
-  Shield
+  Shield,
+  Megaphone
 } from 'lucide-react';
 
 interface Notification {
@@ -39,8 +40,20 @@ const useNotificationModal = () => {
 
   // Initialize with empty notifications - in real app, these would come from your backend
   useEffect(() => {
-    setNotifications([]);
-    setUnreadCount(0);
+    // For demo purposes, we'll add a sample newsfeed notification
+    const sampleNotifications: Notification[] = [
+      {
+        id: 'newsfeed-1',
+        type: 'info',
+        title: 'New StreetPaws Update!',
+        message: 'Check out the latest news and events from StreetPaws. Click to view updates!',
+        timestamp: 'Just now',
+        read: false,
+        category: 'newsfeed'
+      }
+    ];
+    setNotifications(sampleNotifications);
+    setUnreadCount(sampleNotifications.filter(n => !n.read).length);
   }, []);
 
   const openModal = () => setIsOpen(true);
@@ -70,6 +83,7 @@ const useNotificationModal = () => {
     if (category === 'donation') return <Heart className="w-5 h-5 text-green-600" />;
     if (category === 'report') return <AlertCircle className="w-5 h-5 text-orange-600" />;
     if (category === 'system') return <Bell className="w-5 h-5 text-gray-600" />;
+    if (category === 'newsfeed') return <Megaphone className="w-5 h-5 text-blue-600" />;
     
     switch (type) {
       case 'success': return <CheckCircle className="w-5 h-5 text-green-600" />;

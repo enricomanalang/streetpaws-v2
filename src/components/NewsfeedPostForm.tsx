@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { firestore } from '@/lib/firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { firestore, storage } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,7 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar, MapPin, Users, Heart, AlertCircle, Info, Megaphone } from 'lucide-react';
+import { Calendar, MapPin, Users, Heart, AlertCircle, Info, Megaphone, Image, X, Upload } from 'lucide-react';
 import useModernModal from '@/components/ui/modern-modal';
 
 interface NewsfeedPost {
@@ -24,7 +25,7 @@ interface NewsfeedPost {
   authorName: string;
   createdAt: any;
   isPinned?: boolean;
-  imageUrl?: string;
+  imageUrls?: string[];
 }
 
 const NewsfeedPostForm: React.FC = () => {
@@ -39,6 +40,9 @@ const NewsfeedPostForm: React.FC = () => {
     eventLocation: '',
     isPinned: false
   });
+  const [selectedImages, setSelectedImages] = useState<File[]>([]);
+  const [imagePreviewUrls, setImagePreviewUrls] = useState<string[]>([]);
+  const [uploadingImages, setUploadingImages] = useState(false);
 
   const postTypes = [
     { value: 'event', label: 'Event', icon: Calendar, color: 'text-blue-600' },
@@ -68,6 +72,9 @@ const NewsfeedPostForm: React.FC = () => {
     setIsSubmitting(true);
 
     try {
+      // Upload images first
+      const imageUrls = await uploadImages();
+
       const postData: Omit<NewsfeedPost, 'id'> = {
         title: form.title.trim(),
         content: form.content.trim(),
@@ -75,7 +82,8 @@ const NewsfeedPostForm: React.FC = () => {
         authorId: user.uid,
         authorName: profile.name || 'Admin',
         createdAt: serverTimestamp(),
-        isPinned: form.isPinned
+        isPinned: form.isPinned,
+        imageUrls: imageUrls
       };
 
       // Add event-specific fields if it's an event
@@ -103,6 +111,8 @@ const NewsfeedPostForm: React.FC = () => {
         eventLocation: '',
         isPinned: false
       });
+      setSelectedImages([]);
+      setImagePreviewUrls([]);
 
     } catch (err) {
       console.error('Error creating post:', err);
@@ -117,6 +127,48 @@ const NewsfeedPostForm: React.FC = () => {
       ...prev,
       [field]: value
     }));
+  };
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    // Limit to 5 images
+    const newFiles = [...selectedImages, ...files].slice(0, 5);
+    setSelectedImages(newFiles);
+
+    // Create preview URLs
+    const newPreviewUrls = newFiles.map(file => URL.createObjectURL(file));
+    setImagePreviewUrls(newPreviewUrls);
+  };
+
+  const removeImage = (index: number) => {
+    const newFiles = selectedImages.filter((_, i) => i !== index);
+    const newPreviewUrls = imagePreviewUrls.filter((_, i) => i !== index);
+    
+    setSelectedImages(newFiles);
+    setImagePreviewUrls(newPreviewUrls);
+  };
+
+  const uploadImages = async (): Promise<string[]> => {
+    if (selectedImages.length === 0) return [];
+
+    setUploadingImages(true);
+    const uploadPromises = selectedImages.map(async (file) => {
+      const fileName = `newsfeed/${Date.now()}_${file.name}`;
+      const storageRef = ref(storage, fileName);
+      await uploadBytes(storageRef, file);
+      return getDownloadURL(storageRef);
+    });
+
+    try {
+      const urls = await Promise.all(uploadPromises);
+      setUploadingImages(false);
+      return urls;
+    } catch (err) {
+      setUploadingImages(false);
+      throw err;
+    }
   };
 
   const selectedType = postTypes.find(type => type.value === form.type);
@@ -226,6 +278,53 @@ const NewsfeedPostForm: React.FC = () => {
             </div>
           )}
 
+          {/* Image Upload Section */}
+          <div className="space-y-4">
+            <Label className="text-sm font-medium text-gray-700">
+              Add Photos (Optional)
+            </Label>
+            
+            {/* Image Upload Button */}
+            <div className="flex items-center space-x-4">
+              <label className="cursor-pointer">
+                <input
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  onChange={handleImageSelect}
+                  className="hidden"
+                />
+                <div className="flex items-center space-x-2 px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 transition-colors">
+                  <Upload className="w-5 h-5 text-gray-500" />
+                  <span className="text-sm text-gray-600">Choose Photos</span>
+                </div>
+              </label>
+              <span className="text-xs text-gray-500">Max 5 photos</span>
+            </div>
+
+            {/* Image Previews */}
+            {imagePreviewUrls.length > 0 && (
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {imagePreviewUrls.map((url, index) => (
+                  <div key={index} className="relative group">
+                    <img
+                      src={url}
+                      alt={`Preview ${index + 1}`}
+                      className="w-full h-32 object-cover rounded-lg border border-gray-200"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeImage(index)}
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* Pin Post Option */}
           <div className="flex items-center space-x-2">
             <input
@@ -259,10 +358,10 @@ const NewsfeedPostForm: React.FC = () => {
             </Button>
             <Button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || uploadingImages}
               className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
             >
-              {isSubmitting ? 'Publishing...' : 'Publish Post'}
+              {uploadingImages ? 'Uploading Images...' : isSubmitting ? 'Publishing...' : 'Publish Post'}
             </Button>
           </div>
         </form>
