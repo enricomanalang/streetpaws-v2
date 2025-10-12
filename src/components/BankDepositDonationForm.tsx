@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { firestore } from '@/lib/firebase';
-import { collection, addDoc } from 'firebase/firestore';
+import { database } from '@/lib/firebase';
+import { ref, push } from 'firebase/database';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -109,11 +109,11 @@ export default function BankDepositDonationForm({ bankName, accountName, account
 				userId: user.uid,
 			};
 
-			const donationsRef = collection(firestore, 'donations');
-			const docRef = await addDoc(donationsRef, donationData);
+			const donationsRef = ref(database, 'donations');
+			const docRef = await push(donationsRef, donationData);
 
 			setSuccess(true);
-			onSuccess?.({ ...donationData, id: docRef.id });
+			onSuccess?.({ ...donationData, id: docRef.key });
 		} catch (err: any) {
 			console.error('Bank donation submit error:', err);
 			setError(err?.message || 'Failed to save donation');

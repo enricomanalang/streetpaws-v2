@@ -20,6 +20,7 @@ import {
 } from 'recharts';
 import { ref, onValue, off, get } from 'firebase/database';
 import { database } from '@/lib/firebase';
+import { useAuth } from '@/contexts/AuthContext';
 
 const COLORS = ['#60A5FA', '#3B82F6'];
 
@@ -76,11 +77,12 @@ const processDataByMonth = (data: any[], dateField: string = 'createdAt', target
 
 
 export const MonthlyTrendChart = ({ selectedYear }: { selectedYear: number }) => {
+  const { user, loading: authLoading } = useAuth();
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!database) {
+    if (!database || authLoading || !user) {
       setLoading(false);
       return;
     }
@@ -147,7 +149,7 @@ export const MonthlyTrendChart = ({ selectedYear }: { selectedYear: number }) =>
     };
 
     fetchAllData();
-  }, [selectedYear]);
+  }, [selectedYear, user, authLoading]);
 
   if (loading) {
     return (
@@ -183,11 +185,12 @@ export const MonthlyTrendChart = ({ selectedYear }: { selectedYear: number }) =>
 };
 
 export const AdoptionChart = ({ selectedYear }: { selectedYear: number }) => {
+  const { user, loading: authLoading } = useAuth();
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!database) {
+    if (!database || authLoading || !user) {
       setLoading(false);
       return;
     }
@@ -224,7 +227,7 @@ export const AdoptionChart = ({ selectedYear }: { selectedYear: number }) => {
     return () => {
       off(adoptionRequestsRef, 'value', unsubscribe);
     };
-  }, [selectedYear]);
+  }, [selectedYear, user, authLoading]);
 
   if (loading) {
     return (
@@ -261,11 +264,12 @@ export const AdoptionChart = ({ selectedYear }: { selectedYear: number }) => {
 };
 
 export const AbuseReportsChart = ({ selectedYear }: { selectedYear: number }) => {
+  const { user, loading: authLoading } = useAuth();
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!database) {
+    if (!database || authLoading || !user) {
       setLoading(false);
       return;
     }
@@ -342,7 +346,7 @@ export const AbuseReportsChart = ({ selectedYear }: { selectedYear: number }) =>
     };
 
     fetchAllReports();
-  }, []);
+  }, [user, authLoading]);
 
   if (loading) {
     return (
@@ -375,11 +379,12 @@ export const AbuseReportsChart = ({ selectedYear }: { selectedYear: number }) =>
 };
 
 export const LostChart = ({ selectedYear }: { selectedYear: number }) => {
+  const { user, loading: authLoading } = useAuth();
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!database) {
+    if (!database || authLoading || !user) {
       setLoading(false);
       return;
     }
@@ -416,7 +421,7 @@ export const LostChart = ({ selectedYear }: { selectedYear: number }) => {
     return () => {
       off(lostPetsRef, 'value', unsubscribe);
     };
-  }, []);
+  }, [user, authLoading]);
 
   if (loading) {
     return (
@@ -453,11 +458,12 @@ export const LostChart = ({ selectedYear }: { selectedYear: number }) => {
 };
 
 export const FoundChart = ({ selectedYear }: { selectedYear: number }) => {
+  const { user, loading: authLoading } = useAuth();
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!database) {
+    if (!database || authLoading || !user) {
       setLoading(false);
       return;
     }
@@ -494,7 +500,7 @@ export const FoundChart = ({ selectedYear }: { selectedYear: number }) => {
     return () => {
       off(foundPetsRef, 'value', unsubscribe);
     };
-  }, []);
+  }, [user, authLoading]);
 
   if (loading) {
     return (
@@ -531,11 +537,12 @@ export const FoundChart = ({ selectedYear }: { selectedYear: number }) => {
 };
 
 export const AnimalTypeChart = ({ selectedYear }: { selectedYear: number }) => {
+  const { user, loading: authLoading } = useAuth();
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!database) {
+    if (!database || authLoading || !user) {
       setLoading(false);
       return;
     }
@@ -591,7 +598,7 @@ export const AnimalTypeChart = ({ selectedYear }: { selectedYear: number }) => {
     return () => {
       off(petsRef, 'value', unsubscribe);
     };
-  }, []);
+  }, [user, authLoading]);
 
   if (loading) {
     return (

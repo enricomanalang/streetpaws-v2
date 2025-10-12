@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { firestore } from '@/lib/firebase';
-import { collection, addDoc } from 'firebase/firestore';
+import { database } from '@/lib/firebase';
+import { ref, push } from 'firebase/database';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -88,11 +88,11 @@ export default function InKindDonationForm({ onSuccess }: InKindDonationFormProp
         donationData.estimatedValue = Number(form.estimatedValue);
       }
 
-      const donationsRef = collection(firestore, 'donations');
-      const docRef = await addDoc(donationsRef, donationData as any);
+      const donationsRef = ref(database, 'donations');
+      const docRef = await push(donationsRef, donationData as any);
 
       setSuccess(true);
-      onSuccess?.({ ...donationData, id: docRef.id });
+      onSuccess?.({ ...donationData, id: docRef.key });
     } catch (err: any) {
       setError(err?.message || 'Failed to save donation');
     }

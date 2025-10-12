@@ -92,7 +92,7 @@ export const uploadImage = async (file: File, folder: string = 'general'): Promi
 };
 
 // Compress image and convert to base64
-const compressAndConvertToBase64 = async (file: File): Promise<string> => {
+export const compressAndConvertToBase64 = async (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
     console.log('Starting image compression for:', file.name, file.size);
     

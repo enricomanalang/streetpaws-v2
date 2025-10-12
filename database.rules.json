@@ -46,6 +46,16 @@
       ".read": "auth != null && auth.token.role === 'admin'",
       ".write": "true",
       ".indexOn": ["createdAt", "status", "method"]
+    },
+    "newsfeed": {
+      ".read": "true",
+      ".write": "auth != null",
+      ".indexOn": ["createdAt", "isPinned"]
+    },
+    "pets": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      ".indexOn": ["createdAt", "status"]
     }
   }
 }

@@ -1,9 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { firestore, database } from '@/lib/firebase';
-import { collection, onSnapshot, query as fsQuery, orderBy, updateDoc, doc } from 'firebase/firestore';
-import { ref, push, set } from 'firebase/database';
+import { database } from '@/lib/firebase';
+import { ref, onValue, off, update, push, set, query, orderByChild, get } from 'firebase/database';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -75,26 +74,35 @@ export default function DonationManagement() {
   const [selectedDonation, setSelectedDonation] = useState<Donation | null>(null);
 
   useEffect(() => {
-    if (!firestore) {
-      console.warn('Firestore not available. Donation management will not work.');
+    if (!database) {
+      console.warn('Database not available. Donation management will not work.');
       setLoading(false);
       return;
     }
 
-    // Listen to donations from Firestore
-    const donationsCol = collection(firestore, 'donations');
-    const q = fsQuery(donationsCol, orderBy('createdAt', 'desc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const donationsList = snapshot.docs.map((d) => ({ id: d.id, ...(d.data() as any) }));
-      setDonations(donationsList as any);
-      calculateStats(donationsList as any);
+    // Listen to donations from Realtime Database
+    const donationsRef = ref(database, 'donations');
+    const unsubscribe = onValue(donationsRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const donationsData = snapshot.val();
+        const donationsList = Object.keys(donationsData).map(key => ({
+          id: key,
+          ...donationsData[key]
+        })).sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+        
+        setDonations(donationsList);
+        calculateStats(donationsList);
+      } else {
+        setDonations([]);
+        calculateStats([]);
+      }
       setLoading(false);
     }, (error) => {
       console.error('Error fetching donations:', error);
       setLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => off(donationsRef, 'value', unsubscribe);
   }, []);
 
   const calculateStats = (donationsList: Donation[]) => {
@@ -142,9 +150,10 @@ export default function DonationManagement() {
   });
 
   const approveDonation = async (donation: Donation) => {
-    if (!firestore) return;
+    if (!database) return;
     const notes = await prompt('Optional: add verification notes', '', 'Approve Donation');
-    await updateDoc(doc(firestore, 'donations', donation.id), {
+    const donationRef = ref(database, `donations/${donation.id}`);
+    await update(donationRef, {
       status: 'completed',
       verifiedAt: new Date().toISOString(),
       verifiedBy: profile?.email || user?.email || 'admin',
@@ -155,11 +164,12 @@ export default function DonationManagement() {
   };
 
   const rejectDonation = async (donation: Donation) => {
-    if (!firestore) return;
+    if (!database) return;
     const notes = await prompt('Reason for rejection?', 'Invalid reference number', 'Reject Donation');
     if (notes === null) return; // User cancelled
     
-    await updateDoc(doc(firestore, 'donations', donation.id), {
+    const donationRef = ref(database, `donations/${donation.id}`);
+    await update(donationRef, {
       status: 'failed',
       verifiedAt: new Date().toISOString(),
       verifiedBy: profile?.email || user?.email || 'admin',
@@ -205,8 +215,9 @@ export default function DonationManagement() {
     );
     window.open(`mailto:${donation.donorEmail}?subject=${subject}&body=${body}`);
     try {
-      if (firestore) {
-        await updateDoc(doc(firestore, 'donations', donation.id), { receiptSent: true });
+      if (database) {
+        const donationRef = ref(database, `donations/${donation.id}`);
+        await update(donationRef, { receiptSent: true });
       }
     } catch {}
   };
@@ -284,7 +295,7 @@ export default function DonationManagement() {
     );
   }
 
-  if (!firestore) {
+  if (!database) {
     return (
       <div className="space-y-6">
         <Card className="p-6 bg-red-50 border-red-200">

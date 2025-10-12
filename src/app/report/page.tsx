@@ -22,8 +22,7 @@ import {
   Heart
 } from 'lucide-react';
 import { ref, push, set } from 'firebase/database';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { database, firestore } from '@/lib/firebase';
+import { database } from '@/lib/firebase';
 import ImageUploader from '@/components/ImageUploader';
 import LocationPicker from '@/components/LocationPicker';
 
@@ -130,24 +129,10 @@ export default function ReportPage() {
         return;
       }
       
-      // Test Firestore
-      if (firestore) {
-        console.log('Testing Firestore write...');
-        const testDocRef = await addDoc(collection(firestore, 'test'), {
-          timestamp: new Date().toISOString(),
-          test: true
-        });
-        console.log('Firestore write test successful with ID:', testDocRef.id);
-      } else {
-        console.error('Firestore is null');
-        alert('Firestore is not initialized. Check Firebase configuration.');
-        return;
-      }
-      
       // Supabase Storage is ready
       console.log('Supabase Storage ready for image uploads');
       
-      alert('Firebase connection test successful! Both Database and Firestore are working. You can now submit reports.');
+      alert('Firebase connection test successful! Database is working. You can now submit reports.');
     } catch (error) {
       console.error('Firebase test failed:', error);
       alert(`Firebase test failed: ${(error as any)?.message || 'Unknown error'}`);
@@ -242,35 +227,26 @@ export default function ReportPage() {
       updateProgress('Report data prepared');
       console.log('Report data prepared:', reportData);
 
-      // Save to Firestore with improved error handling
-      updateProgress('Starting Firestore save');
-      console.log('=== FIRESTORE SAVE START ===');
-      console.log('Firestore object:', firestore);
-      console.log('Firestore type:', typeof firestore);
+      // Save to Realtime Database
+      updateProgress('Starting database save');
+      console.log('=== DATABASE SAVE START ===');
+      console.log('Database object:', database);
+      console.log('Database type:', typeof database);
       
-      if (!firestore) {
-        console.error('Firestore not initialized');
-        throw new Error('Firestore not initialized');
+      if (!database) {
+        console.error('Database not initialized');
+        throw new Error('Database not initialized');
       }
       
-      updateProgress('Firestore validation passed');
-      console.log('Saving to Firestore...');
-      
-      // Prepare data with server timestamp
-      const firestoreData = {
-        ...reportData,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
-      };
+      updateProgress('Database validation passed');
+      console.log('Saving to Realtime Database...');
       
       updateProgress('Data prepared for database save');
       console.log('Starting database save operation...');
       
       updateProgress('Saving report to database...');
       
-      // Skip Firestore due to timeout issues, use Realtime Database directly
       let docRef: any = null;
-      let firestoreSuccess = false;
       
       // Use Realtime Database directly (more reliable)
       try {
@@ -292,7 +268,6 @@ export default function ReportPage() {
         
         // Create a mock docRef for consistency
         docRef = { id: reportData.reportId };
-        firestoreSuccess = false;
       } catch (databaseError) {
         console.error('Database save failed:', databaseError);
         throw new Error(`Failed to save report: ${(databaseError as any)?.message || 'Unknown error'}`);

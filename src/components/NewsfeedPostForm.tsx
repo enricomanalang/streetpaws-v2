@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { firestore } from '@/lib/firebase';
-import { uploadImages as uploadImagesToSupabase } from '@/lib/supabase';
+import { ref, push } from 'firebase/database';
+import { database } from '@/lib/firebase';
+import { compressAndConvertToBase64 } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -59,7 +59,7 @@ const NewsfeedPostForm: React.FC = () => {
       return;
     }
 
-    if (!firestore) {
+    if (!database) {
       await error('Database connection error. Please refresh the page.', 'Connection Error');
       return;
     }
@@ -99,7 +99,7 @@ const NewsfeedPostForm: React.FC = () => {
         type: form.type,
         authorId: user.uid,
         authorName: profile.name || 'Admin',
-        createdAt: serverTimestamp(),
+        createdAt: new Date().toISOString(),
         isPinned: form.isPinned,
         imageUrls: imageUrls
       };
@@ -115,8 +115,8 @@ const NewsfeedPostForm: React.FC = () => {
         postData.eventLocation = form.eventLocation?.trim() || '';
       }
 
-      const postsRef = collection(firestore, 'newsfeed');
-      await addDoc(postsRef, postData);
+      const postsRef = ref(database, 'newsfeed');
+      await push(postsRef, postData);
 
       // Don't await the success modal to prevent hanging
       success('Post published successfully!', 'Success');
@@ -201,22 +201,15 @@ const NewsfeedPostForm: React.FC = () => {
         }
       }
 
-      // Create a timeout promise
-      const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => {
-          reject(new Error('Image upload timed out after 60 seconds. Please try again.'));
-        }, 60000);
-      });
-
-      // Upload images to Supabase Storage with timeout
-      const uploadPromise = uploadImagesToSupabase(selectedImages, 'newsfeed');
-      const urls = await Promise.race([uploadPromise, timeoutPromise]);
+      // Convert images to base64
+      const base64Promises = selectedImages.map(file => compressAndConvertToBase64(file));
+      const base64Urls = await Promise.all(base64Promises);
       
       setUploadingImages(false);
-      return urls;
+      return base64Urls;
     } catch (err) {
       setUploadingImages(false);
-      console.error('Image upload error:', err);
+      console.error('Image conversion error:', err);
       throw err;
     }
   };

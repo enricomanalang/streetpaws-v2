@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { collection, query, orderBy, onSnapshot, doc, deleteDoc, Timestamp } from 'firebase/firestore';
-import { firestore } from '@/lib/firebase';
+import { ref, onValue, off, remove } from 'firebase/database';
+import { database } from '@/lib/firebase';
+import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -29,51 +30,56 @@ interface NewsfeedPost {
   eventLocation?: string;
   authorId: string;
   authorName: string;
-  createdAt: Timestamp | null;
+  createdAt: string | null;
   isPinned?: boolean;
   imageUrls?: string[];
 }
 
 const NewsfeedManagement: React.FC = () => {
+  const { user, loading: authLoading } = useAuth();
   const [posts, setPosts] = useState<NewsfeedPost[]>([]);
   const [loading, setLoading] = useState(true);
   const { confirm, success, error } = useModernModal();
 
   useEffect(() => {
-    if (!firestore) {
+    if (!database || authLoading || !user) {
       setLoading(false);
       return;
     }
 
-    const postsRef = collection(firestore, 'newsfeed');
-    const q = query(postsRef, orderBy('createdAt', 'desc'));
+    const postsRef = ref(database, 'newsfeed');
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const postsData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as NewsfeedPost[];
+    const unsubscribe = onValue(postsRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const postsData = snapshot.val();
+        const postsList = Object.keys(postsData).map(key => ({
+          id: key,
+          ...postsData[key]
+        })) as NewsfeedPost[];
 
-      // Sort: pinned posts first, then by date
-      const sortedPosts = postsData.sort((a, b) => {
-        if (a.isPinned && !b.isPinned) return -1;
-        if (!a.isPinned && b.isPinned) return 1;
-        
-        // Handle null timestamps
-        const aTime = a.createdAt ? a.createdAt.toMillis() : 0;
-        const bTime = b.createdAt ? b.createdAt.toMillis() : 0;
-        return bTime - aTime;
-      });
+        // Sort: pinned posts first, then by date
+        const sortedPosts = postsList.sort((a, b) => {
+          if (a.isPinned && !b.isPinned) return -1;
+          if (!a.isPinned && b.isPinned) return 1;
+          
+          // Handle string timestamps
+          const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          return bTime - aTime;
+        });
 
-      setPosts(sortedPosts);
+        setPosts(sortedPosts);
+      } else {
+        setPosts([]);
+      }
       setLoading(false);
     }, (error) => {
       console.error('Error fetching posts:', error);
       setLoading(false);
     });
 
-    return () => unsubscribe();
-  }, []);
+    return () => off(postsRef, 'value', unsubscribe);
+  }, [user, authLoading]);
 
   const getPostTypeConfig = (type: string) => {
     const configs = {
@@ -85,11 +91,11 @@ const NewsfeedManagement: React.FC = () => {
     return configs[type as keyof typeof configs] || configs.update;
   };
 
-  const formatDate = (timestamp: Timestamp | null) => {
+  const formatDate = (timestamp: string | null) => {
     if (!timestamp) return 'Unknown date';
     
     try {
-      const date = timestamp.toDate();
+      const date = new Date(timestamp);
       const now = new Date();
       const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
       
@@ -135,15 +141,15 @@ const NewsfeedManagement: React.FC = () => {
         return;
       }
 
-      if (!firestore) {
-        console.error('Firestore not available');
+      if (!database) {
+        console.error('Database not available');
         alert('Database connection error. Please refresh the page.');
         return;
       }
 
-      console.log('Deleting post from Firestore...');
-      const postRef = doc(firestore, 'newsfeed', postId);
-      await deleteDoc(postRef);
+      console.log('Deleting post from database...');
+      const postRef = ref(database, `newsfeed/${postId}`);
+      await remove(postRef);
       
       console.log('Post deleted successfully');
       alert('Post deleted successfully!');

@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { firestore } from '@/lib/firebase';
-import { collection, onSnapshot } from 'firebase/firestore';
+import { database } from '@/lib/firebase';
+import { ref, onValue, off } from 'firebase/database';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -33,13 +33,22 @@ export default function DonorsManagement() {
   const [search, setSearch] = useState('');
 
   useEffect(() => {
-    if (!firestore) return;
-    const unsub = onSnapshot(collection(firestore, 'donations'), (snap) => {
-      const list = snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) })) as Donation[];
-      setDonations(list);
+    if (!database) return;
+    const donationsRef = ref(database, 'donations');
+    const unsub = onValue(donationsRef, (snap) => {
+      if (snap.exists()) {
+        const donationsData = snap.val();
+        const list = Object.keys(donationsData).map(key => ({
+          id: key,
+          ...donationsData[key]
+        })) as Donation[];
+        setDonations(list);
+      } else {
+        setDonations([]);
+      }
       setLoading(false);
     }, () => setLoading(false));
-    return () => unsub();
+    return () => off(donationsRef, 'value', unsub);
   }, []);
 
   const donors: DonorRow[] = useMemo(() => {
