@@ -39,37 +39,21 @@ const Newsfeed: React.FC = () => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  console.log('=== NEWFEED COMPONENT RENDERED ===');
-  console.log('Posts count:', posts.length);
-  console.log('Loading:', loading);
-  console.log('Firestore available:', !!firestore);
 
   useEffect(() => {
-    console.log('=== NEWFEED USEEFFECT STARTED ===');
-    console.log('Firestore available:', !!firestore);
-    
     if (!firestore) {
-      console.log('Firestore not available, setting loading to false');
       setLoading(false);
       return;
     }
 
-    console.log('Setting up Firestore listener for newsfeed posts...');
     const postsRef = collection(firestore, 'newsfeed');
     const q = query(postsRef, orderBy('createdAt', 'desc'));
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      console.log('=== FIRESTORE SNAPSHOT RECEIVED ===');
-      console.log('Snapshot size:', snapshot.size);
-      console.log('Snapshot docs:', snapshot.docs.length);
-      
       const postsData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as NewsfeedPost[];
-
-      console.log('Posts data:', postsData);
-      console.log('Posts with images:', postsData.filter(p => p.imageUrls && p.imageUrls.length > 0));
 
       // Sort: pinned posts first, then by date
       const sortedPosts = postsData.sort((a, b) => {
@@ -82,19 +66,14 @@ const Newsfeed: React.FC = () => {
         return bTime - aTime;
       });
 
-      console.log('Sorted posts:', sortedPosts);
       setPosts(sortedPosts);
       setLoading(false);
     }, (error) => {
-      console.error('=== FIRESTORE ERROR ===');
       console.error('Error fetching posts:', error);
       setLoading(false);
     });
 
-    return () => {
-      console.log('Cleaning up Firestore listener');
-      unsubscribe();
-    };
+    return () => unsubscribe();
   }, []);
 
   const getPostTypeConfig = (type: string) => {
@@ -267,57 +246,29 @@ const Newsfeed: React.FC = () => {
                         post.imageUrls.length === 4 ? 'grid-cols-2' :
                         'grid-cols-3'
                       }`}>
-                        {post.imageUrls.map((imageUrl, index) => {
-                          // Check if it's a base64 data URL or a regular URL
-                          const isBase64 = imageUrl.startsWith('data:image/');
-                          console.log('=== IMAGE DEBUG ===');
-                          console.log('Image URL:', imageUrl);
-                          console.log('Is Base64:', isBase64);
-                          console.log('URL length:', imageUrl.length);
-                          console.log('URL starts with:', imageUrl.substring(0, 50));
-                          
-                          return (
-                            <div key={index} className="relative group">
-                              <img
-                                src={imageUrl}
-                                alt={`Post image ${index + 1}`}
-                                className="w-full h-32 object-cover rounded-lg border border-gray-200 hover:shadow-md transition-shadow cursor-pointer"
-                                onClick={() => {
-                                  console.log('Opening image:', imageUrl);
-                                  window.open(imageUrl, '_blank');
-                                }}
-                                onError={(e) => {
-                                  console.error('=== IMAGE ERROR ===');
-                                  console.error('Failed to load image:', imageUrl);
-                                  console.error('Error event:', e);
-                                  const target = e.target as HTMLImageElement;
-                                  // Show a placeholder with more info
-                                  target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxMiIgZmlsbD0iIzk5YTNhZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlIEVycm9yPC90ZXh0Pjwvc3ZnPg==';
-                                }}
-                                onLoad={(e) => {
-                                  console.log('=== IMAGE LOADED ===');
-                                  console.log('Image loaded successfully:', imageUrl);
-                                  const target = e.target as HTMLImageElement;
-                                  console.log('Image dimensions:', target.naturalWidth, 'x', target.naturalHeight);
-                                  // Check if image is actually valid by testing its dimensions
-                                  if (target.naturalWidth === 0 || target.naturalHeight === 0) {
-                                    console.error('Image has invalid dimensions:', target.naturalWidth, target.naturalHeight);
-                                    target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxMiIgZmlsbD0iIzk5YTNhZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlIEVycm9yPC90ZXh0Pjwvc3ZnPg==';
-                                  }
-                                }}
-                              />
-                              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all rounded-lg flex items-center justify-center">
-                                <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <div className="bg-white bg-opacity-90 rounded-full p-1">
-                                    <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
-                                    </svg>
-                                  </div>
+                        {post.imageUrls.map((imageUrl, index) => (
+                          <div key={index} className="relative group">
+                            <img
+                              src={imageUrl}
+                              alt={`Post image ${index + 1}`}
+                              className="w-full h-40 object-cover rounded-lg border border-gray-200 hover:shadow-md transition-shadow cursor-pointer"
+                              onClick={() => window.open(imageUrl, '_blank')}
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxMiIgZmlsbD0iIzk5YTNhZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlIEVycm9yPC90ZXh0Pjwvc3ZnPg==';
+                              }}
+                            />
+                            <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all rounded-lg flex items-center justify-center">
+                              <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                <div className="bg-white bg-opacity-90 rounded-full p-1">
+                                  <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                                  </svg>
                                 </div>
                               </div>
                             </div>
-                          );
-                        })}
+                          </div>
+                        ))}
                       </div>
                     </div>
                   )}
