@@ -27,6 +27,10 @@ const fileToDataUrl = (file: File): Promise<string> => {
 // Image upload function
 export const uploadImage = async (file: File, folder: string = 'general'): Promise<string> => {
   try {
+    // TEMPORARY: Force base64 fallback to test if that works
+    console.warn('TEMPORARY: Forcing base64 fallback for testing');
+    return await compressAndConvertToBase64(file);
+    
     // If Supabase is not available, compress and return optimized base64
     if (!supabase) {
       console.warn('Supabase not configured, using compressed base64');
