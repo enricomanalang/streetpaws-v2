@@ -43,6 +43,7 @@ import { AdminDashboardCharts } from '@/components/AdminCharts';
 import DonationManagement from '@/components/DonationManagement';
 import DonorsManagement from '@/components/DonorsManagement';
 import Inventory from '@/components/Inventory';
+import NewsfeedPostForm from '@/components/NewsfeedPostForm';
 import useModernModal from '@/components/ui/modern-modal';
 import useNotificationModal from '@/components/ui/notification-modal';
 import { ref, onValue, off, update, get, set, remove } from 'firebase/database';
@@ -70,7 +71,8 @@ import {
   LogOut,
   Camera,
   Mail,
-  Bell
+  Bell,
+  Megaphone
 } from 'lucide-react';
 
 export default function AdminDashboard() {
@@ -1882,6 +1884,17 @@ export default function AdminDashboard() {
           </Card>
         );
       
+      case 'newsfeed':
+        return (
+          <div className="space-y-6">
+            <div className="text-center mb-8">
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Create Newsfeed Post</h2>
+              <p className="text-gray-600">Share updates, events, and announcements with the community</p>
+            </div>
+            <NewsfeedPostForm />
+          </div>
+        );
+      
       default:
         return null;
     }
@@ -2054,6 +2067,18 @@ export default function AdminDashboard() {
               <Map className="w-5 h-5 mr-3" />
               Heat Map
             </button>
+            
+            <button 
+              onClick={() => setActiveTab('newsfeed')}
+              className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                activeTab === 'newsfeed' 
+                  ? 'text-white bg-gradient-to-r from-purple-600 to-pink-600' 
+                  : 'text-gray-700 hover:text-purple-600 hover:bg-purple-50'
+              }`}
+            >
+              <Megaphone className="w-5 h-5 mr-3" />
+              Newsfeed
+            </button>
           </div>
         </nav>
         
@@ -2121,6 +2146,7 @@ export default function AdminDashboard() {
                   {activeTab === 'donors' && 'Donor Management'}
                   {activeTab === 'inventory' && 'Inventory Management'}
                   {activeTab === 'heatmap' && 'Heat Map Analytics'}
+                  {activeTab === 'newsfeed' && 'Newsfeed Management'}
                 </h1>
                 <p className="text-gray-600">Welcome back, {profile.name || profile.email}</p>
               </div>

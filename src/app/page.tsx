@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import ClientOnly from '@/components/ClientOnly';
+import Newsfeed from '@/components/Newsfeed';
 import { 
   MapPin, 
   Heart, 
@@ -90,6 +91,15 @@ export default function Home() {
                 </>
               )}
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Newsfeed Section */}
+      <section className="py-16 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-4xl mx-auto">
+            <Newsfeed />
           </div>
         </div>
       </section>
