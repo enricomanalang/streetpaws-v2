@@ -29,8 +29,46 @@ const fileToDataUrl = (file: File): Promise<string> => {
 // Image upload function
 export const uploadImage = async (file: File, folder: string = 'general'): Promise<string> => {
   try {
-    // Convert file to base64 for reliable image display
-    return await fileToDataUrl(file);
+    // If Supabase is not available, fall back to base64
+    if (!supabase) {
+      console.warn('Supabase not configured, using base64 fallback');
+      return await fileToDataUrl(file);
+    }
+
+    // Compress image first
+    const compressedDataUrl = await compressAndConvertToBase64(file);
+    
+    // Convert data URL back to blob for upload
+    const response = await fetch(compressedDataUrl);
+    const blob = await response.blob();
+    
+    // Generate unique filename
+    const timestamp = Date.now();
+    const randomId = Math.random().toString(36).substring(2, 15);
+    const fileExtension = file.name.split('.').pop() || 'jpg';
+    const fileName = `${timestamp}_${randomId}.${fileExtension}`;
+    const filePath = `${folder}/${fileName}`;
+
+    // Upload to Supabase Storage
+    const { data, error } = await supabase.storage
+      .from(STORAGE_BUCKET)
+      .upload(filePath, blob, {
+        contentType: blob.type,
+        upsert: false
+      });
+
+    if (error) {
+      console.error('Supabase upload error:', error);
+      throw new Error(`Failed to upload image: ${error.message}`);
+    }
+
+    // Get public URL
+    const { data: { publicUrl } } = supabase.storage
+      .from(STORAGE_BUCKET)
+      .getPublicUrl(filePath);
+
+    console.log('Image uploaded successfully:', publicUrl);
+    return publicUrl;
   } catch (error) {
     console.error('Upload error:', error);
     throw error;
@@ -50,9 +88,9 @@ const compressAndConvertToBase64 = async (file: File): Promise<string> => {
       try {
         console.log('Image loaded, original dimensions:', img.width, 'x', img.height);
         
-        // Calculate new dimensions (max 800px width, maintain aspect ratio)
-        const maxWidth = 800;
-        const maxHeight = 600;
+        // Calculate new dimensions (max 1200px width, maintain aspect ratio)
+        const maxWidth = 1200;
+        const maxHeight = 900;
         let { width, height } = img;
         
         if (width > maxWidth) {
@@ -72,11 +110,21 @@ const compressAndConvertToBase64 = async (file: File): Promise<string> => {
         // Draw and compress
         if (ctx) {
           ctx.drawImage(img, 0, 0, width, height);
-          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.8); // 80% quality
+          
+          // Try different quality levels to keep file size reasonable
+          let quality = 0.7; // Start with 70% quality
+          let compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+          
+          // If still too large, reduce quality further
+          while (compressedDataUrl.length > 500000 && quality > 0.3) { // 500KB limit
+            quality -= 0.1;
+            compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+          }
           
           console.log('Compression complete:', {
             original: file.size,
             compressed: compressedDataUrl.length,
+            quality: quality,
             ratio: (compressedDataUrl.length / file.size * 100).toFixed(1) + '%',
             startsWithData: compressedDataUrl.startsWith('data:')
           });

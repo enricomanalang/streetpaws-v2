@@ -138,10 +138,12 @@ const NewsfeedPostForm: React.FC = () => {
       
       // Show specific error messages
       if (err instanceof Error) {
-        if (err.message.includes('too large')) {
-          await error(err.message, 'File Size Error');
+        if (err.message.includes('too large') || err.message.includes('payload size exceeds')) {
+          await error('The post content is too large. Please reduce the number of images or their size and try again.', 'Content Too Large');
         } else if (err.message.includes('Supabase')) {
           await error('Image upload failed. Please check your Supabase configuration.', 'Configuration Error');
+        } else if (err.message.includes('timed out')) {
+          await error('Upload timed out. Please try again with fewer or smaller images.', 'Upload Timeout');
         } else {
           await error(`Failed to publish post: ${err.message}`, 'Error');
         }
@@ -184,14 +186,13 @@ const NewsfeedPostForm: React.FC = () => {
   const uploadImages = async (): Promise<string[]> => {
     if (selectedImages.length === 0) return [];
 
-
     setUploadingImages(true);
     
     try {
-      // Validate file sizes (max 5MB per image)
+      // Validate file sizes (max 10MB per image, but we'll compress them)
       for (const file of selectedImages) {
-        if (file.size > 5 * 1024 * 1024) {
-          throw new Error(`File ${file.name} is too large. Maximum size is 5MB.`);
+        if (file.size > 10 * 1024 * 1024) {
+          throw new Error(`File ${file.name} is too large. Maximum size is 10MB.`);
         }
         
         // Validate file type
@@ -203,8 +204,8 @@ const NewsfeedPostForm: React.FC = () => {
       // Create a timeout promise
       const timeoutPromise = new Promise<never>((_, reject) => {
         setTimeout(() => {
-          reject(new Error('Image upload timed out after 30 seconds. Please try again.'));
-        }, 30000);
+          reject(new Error('Image upload timed out after 60 seconds. Please try again.'));
+        }, 60000);
       });
 
       // Upload images to Supabase Storage with timeout
@@ -215,7 +216,7 @@ const NewsfeedPostForm: React.FC = () => {
       return urls;
     } catch (err) {
       setUploadingImages(false);
-      console.error('Supabase image upload error:', err);
+      console.error('Image upload error:', err);
       throw err;
     }
   };
@@ -348,7 +349,7 @@ const NewsfeedPostForm: React.FC = () => {
                   <span className="text-sm text-gray-600">Choose Photos</span>
                 </div>
               </label>
-              <span className="text-xs text-gray-500">Max 5 photos</span>
+              <span className="text-xs text-gray-500">Max 5 photos, 10MB each</span>
             </div>
 
             {/* Image Previews */}
