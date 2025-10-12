@@ -261,11 +261,7 @@ const Newsfeed: React.FC = () => {
                                 backgroundColor: '#f9fafb'
                               }}
                               onClick={() => window.open(imageUrl, '_blank')}
-                              onLoad={() => {
-                                console.log('Image loaded successfully:', index);
-                              }}
                               onError={(e) => {
-                                console.error('Image failed to load:', index, imageUrl.substring(0, 50));
                                 const target = e.target as HTMLImageElement;
                                 target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxMiIgZmlsbD0iIzk5YTNhZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlIEVycm9yPC90ZXh0Pjwvc3ZnPg==';
                               }}
