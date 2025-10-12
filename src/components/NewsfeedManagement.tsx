@@ -274,19 +274,28 @@ const NewsfeedManagement: React.FC = () => {
                 {post.imageUrls && post.imageUrls.length > 0 && (
                   <div className="mb-3">
                     <div className="flex gap-2">
-                      {post.imageUrls.slice(0, 3).map((imageUrl, index) => (
-                        <div key={index} className="relative">
-                          <img
-                            src={imageUrl}
-                            alt={`Post image ${index + 1}`}
-                            className="w-16 h-16 object-cover rounded border border-gray-200"
-                            onError={(e) => {
-                              const target = e.target as HTMLImageElement;
-                              target.style.display = 'none';
-                            }}
-                          />
-                        </div>
-                      ))}
+                      {post.imageUrls.slice(0, 3).map((imageUrl, index) => {
+                        const isBase64 = imageUrl.startsWith('data:image/');
+                        console.log('Management Image URL:', imageUrl, 'Is Base64:', isBase64);
+                        
+                        return (
+                          <div key={index} className="relative">
+                            <img
+                              src={imageUrl}
+                              alt={`Post image ${index + 1}`}
+                              className="w-16 h-16 object-cover rounded border border-gray-200"
+                              onError={(e) => {
+                                console.error('Management image failed to load:', imageUrl);
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                              }}
+                              onLoad={() => {
+                                console.log('Management image loaded successfully:', imageUrl);
+                              }}
+                            />
+                          </div>
+                        );
+                      })}
                       {post.imageUrls.length > 3 && (
                         <div className="w-16 h-16 bg-gray-100 rounded border border-gray-200 flex items-center justify-center text-xs text-gray-500">
                           +{post.imageUrls.length - 3}
