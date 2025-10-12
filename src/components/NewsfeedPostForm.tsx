@@ -30,7 +30,7 @@ interface NewsfeedPost {
 
 const NewsfeedPostForm: React.FC = () => {
   const { user, profile } = useAuth();
-  const { success, error } = useModernModal();
+  const { success, error, confirm } = useModernModal();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [form, setForm] = useState({
     title: '',
@@ -72,8 +72,23 @@ const NewsfeedPostForm: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      // Upload images first
-      const imageUrls = await uploadImages();
+      // Try to upload images, but don't fail the entire post if images fail
+      let imageUrls: string[] = [];
+      try {
+        imageUrls = await uploadImages();
+      } catch (imageError) {
+        console.warn('Image upload failed, posting without images:', imageError);
+        // Ask user if they want to continue without images
+        const continueWithoutImages = await confirm(
+          'Image upload failed. Would you like to publish the post without images?',
+          'Image Upload Failed'
+        );
+        
+        if (!continueWithoutImages) {
+          setIsSubmitting(false);
+          return;
+        }
+      }
 
       const postData: Omit<NewsfeedPost, 'id'> = {
         title: form.title.trim(),
@@ -116,7 +131,21 @@ const NewsfeedPostForm: React.FC = () => {
 
     } catch (err) {
       console.error('Error creating post:', err);
-      await error('Failed to publish post. Please try again.', 'Error');
+      
+      // Show specific error messages
+      if (err instanceof Error) {
+        if (err.message.includes('Storage is not available')) {
+          await error('Image upload is not available. Please check your Firebase configuration.', 'Configuration Error');
+        } else if (err.message.includes('too large')) {
+          await error(err.message, 'File Size Error');
+        } else if (err.message.includes('timeout')) {
+          await error('Image upload timed out. Please try again with smaller images.', 'Upload Timeout');
+        } else {
+          await error(`Failed to publish post: ${err.message}`, 'Error');
+        }
+      } else {
+        await error('Failed to publish post. Please try again.', 'Error');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -153,20 +182,44 @@ const NewsfeedPostForm: React.FC = () => {
   const uploadImages = async (): Promise<string[]> => {
     if (selectedImages.length === 0) return [];
 
-    setUploadingImages(true);
-    const uploadPromises = selectedImages.map(async (file) => {
-      const fileName = `newsfeed/${Date.now()}_${file.name}`;
-      const storageRef = ref(storage, fileName);
-      await uploadBytes(storageRef, file);
-      return getDownloadURL(storageRef);
+    if (!storage) {
+      throw new Error('Firebase Storage is not available. Please check your configuration.');
+    }
+
+    console.log('Starting image upload...', { 
+      storageAvailable: !!storage, 
+      imageCount: selectedImages.length,
+      storageBucket: storage.app.options.storageBucket 
     });
 
+    setUploadingImages(true);
+    
     try {
+      const uploadPromises = selectedImages.map(async (file) => {
+        // Validate file size (max 5MB per image)
+        if (file.size > 5 * 1024 * 1024) {
+          throw new Error(`File ${file.name} is too large. Maximum size is 5MB.`);
+        }
+
+        const fileName = `newsfeed/${Date.now()}_${Math.random().toString(36).substring(7)}_${file.name}`;
+        const storageRef = ref(storage, fileName);
+        
+        // Add timeout to prevent hanging
+        const uploadPromise = uploadBytes(storageRef, file);
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Upload timeout')), 30000)
+        );
+        
+        await Promise.race([uploadPromise, timeoutPromise]);
+        return getDownloadURL(storageRef);
+      });
+
       const urls = await Promise.all(uploadPromises);
       setUploadingImages(false);
       return urls;
     } catch (err) {
       setUploadingImages(false);
+      console.error('Image upload error:', err);
       throw err;
     }
   };
@@ -356,6 +409,20 @@ const NewsfeedPostForm: React.FC = () => {
             >
               Clear
             </Button>
+            {uploadingImages && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setUploadingImages(false);
+                  setSelectedImages([]);
+                  setImagePreviewUrls([]);
+                }}
+                className="mr-3"
+              >
+                Cancel Upload
+              </Button>
+            )}
             <Button
               type="submit"
               disabled={isSubmitting || uploadingImages}
