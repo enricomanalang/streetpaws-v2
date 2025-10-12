@@ -111,6 +111,11 @@ const useModernModal = () => {
         onConfirm: () => resolve(),
         confirmText: 'OK'
       });
+      
+      // Auto-resolve after 3 seconds to prevent hanging
+      setTimeout(() => {
+        resolve();
+      }, 3000);
     });
   };
 
@@ -123,6 +128,11 @@ const useModernModal = () => {
         onConfirm: () => resolve(),
         confirmText: 'OK'
       });
+      
+      // Auto-resolve after 5 seconds to prevent hanging
+      setTimeout(() => {
+        resolve();
+      }, 5000);
     });
   };
 

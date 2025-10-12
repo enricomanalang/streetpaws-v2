@@ -115,10 +115,20 @@ const NewsfeedPostForm: React.FC = () => {
         postData.eventLocation = form.eventLocation?.trim() || '';
       }
 
+      console.log('Attempting to add document to Firestore...');
       const postsRef = collection(firestore, 'newsfeed');
-      await addDoc(postsRef, postData);
+      
+      // Add timeout to prevent hanging
+      const firestorePromise = addDoc(postsRef, postData);
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Firestore operation timed out after 10 seconds')), 10000);
+      });
+      
+      await Promise.race([firestorePromise, timeoutPromise]);
+      console.log('Document successfully added to Firestore!');
 
-      await success('Post published successfully!', 'Success');
+      // Don't await the success modal to prevent hanging
+      success('Post published successfully!', 'Success');
       
       // Reset form
       setForm({
