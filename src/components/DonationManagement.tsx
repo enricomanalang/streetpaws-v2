@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import useModernModal from '@/components/ui/modern-modal';
 import { 
   DollarSign, 
   Users, 
@@ -57,6 +58,7 @@ interface DonationStats {
 
 export default function DonationManagement() {
   const { user, profile } = useAuth();
+  const { ModalComponent, alert, confirm, prompt, success, error } = useModernModal();
   const [donations, setDonations] = useState<Donation[]>([]);
   const [stats, setStats] = useState<DonationStats>({
     totalAmount: 0,
@@ -141,7 +143,7 @@ export default function DonationManagement() {
 
   const approveDonation = async (donation: Donation) => {
     if (!firestore) return;
-    const notes = window.prompt('Optional: add verification notes', '');
+    const notes = await prompt('Optional: add verification notes', '', 'Approve Donation');
     await updateDoc(doc(firestore, 'donations', donation.id), {
       status: 'completed',
       verifiedAt: new Date().toISOString(),
@@ -149,17 +151,21 @@ export default function DonationManagement() {
       verificationNotes: notes || '',
       completedAt: new Date().toISOString(),
     });
+    await success('Donation approved successfully!', 'Success');
   };
 
   const rejectDonation = async (donation: Donation) => {
     if (!firestore) return;
-    const notes = window.prompt('Reason for rejection?', 'Invalid reference number');
+    const notes = await prompt('Reason for rejection?', 'Invalid reference number', 'Reject Donation');
+    if (notes === null) return; // User cancelled
+    
     await updateDoc(doc(firestore, 'donations', donation.id), {
       status: 'failed',
       verifiedAt: new Date().toISOString(),
       verifiedBy: profile?.email || user?.email || 'admin',
       verificationNotes: notes || '',
     });
+    await success('Donation rejected successfully!', 'Success');
 
     // Send notification to donor (if we have their userId)
     try {
@@ -300,7 +306,9 @@ export default function DonationManagement() {
   }
 
   return (
-    <div className="space-y-6">
+    <>
+      <ModalComponent />
+      <div className="space-y-6">
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card className="p-6">
@@ -559,5 +567,6 @@ export default function DonationManagement() {
         </DialogContent>
       </Dialog>
     </div>
+    </>
   );
 }

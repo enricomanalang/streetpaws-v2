@@ -43,6 +43,7 @@ import { AdminDashboardCharts } from '@/components/AdminCharts';
 import DonationManagement from '@/components/DonationManagement';
 import DonorsManagement from '@/components/DonorsManagement';
 import Inventory from '@/components/Inventory';
+import useModernModal from '@/components/ui/modern-modal';
 import { ref, onValue, off, update, get, set, remove } from 'firebase/database';
 // import { collection, onSnapshot, doc, updateDoc, serverTimestamp, query, orderBy } from 'firebase/firestore';
 import { database } from '@/lib/firebase';
@@ -72,6 +73,7 @@ import {
 
 export default function AdminDashboard() {
   const { user, profile, loading, logout } = useAuth();
+  const { ModalComponent, alert, confirm, success, error } = useModernModal();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -488,13 +490,13 @@ export default function AdminDashboard() {
   const updateReportStatus = async (reportId: string, status: string) => {
     if (!database) {
       console.error('Database not initialized');
-      alert('Database connection error. Please refresh the page.');
+      await error('Database connection error. Please refresh the page.', 'Connection Error');
       return;
     }
     
     if (!user || !profile) {
       console.error('User not authenticated');
-      alert('Authentication error. Please log in again.');
+      await error('Authentication error. Please log in again.', 'Authentication Error');
       return;
     }
     
@@ -507,7 +509,7 @@ export default function AdminDashboard() {
       
       if (!snapshot.exists()) {
         console.error('Report not found:', reportId);
-        alert('Report not found. It may have been already processed.');
+        await error('Report not found. It may have been already processed.', 'Report Not Found');
         return;
       }
       
@@ -541,7 +543,7 @@ export default function AdminDashboard() {
         await remove(reportRef);
         console.log('Report removed from pending collection');
         
-        alert(`Report ${reportId} has been approved and is now visible on the heatmap!`);
+        await success(`Report ${reportId} has been approved and is now visible on the heatmap!`, 'Report Approved');
         console.log(`Report ${reportId} moved to approved reports`);
         
       } else if (status === 'rejected') {
@@ -556,7 +558,7 @@ export default function AdminDashboard() {
         await remove(reportRef);
         console.log('Report removed from pending collection');
         
-        alert(`Report ${reportId} has been rejected.`);
+        await success(`Report ${reportId} has been rejected.`, 'Report Rejected');
         console.log(`Report ${reportId} moved to rejected reports`);
         
       } else {
@@ -573,15 +575,15 @@ export default function AdminDashboard() {
           }
         });
         
-        alert(`Report ${reportId} status updated to ${status}`);
+        await success(`Report ${reportId} status updated to ${status}`, 'Status Updated');
         console.log(`Report ${reportId} status updated to ${status}`);
       }
       
       console.log('Report status update completed successfully');
       
-    } catch (error) {
-      console.error('Error updating report status:', error);
-      alert(`Error updating report: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } catch (err) {
+      console.error('Error updating report status:', err);
+      await error(`Error updating report: ${err instanceof Error ? err.message : 'Unknown error'}`, 'Update Failed');
     }
   };
 
@@ -1883,7 +1885,9 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+    <>
+      <ModalComponent />
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       {/* Sidebar */}
       <div className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} fixed inset-y-0 left-0 z-[2000] w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 flex flex-col h-screen`}>
         <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
@@ -2426,6 +2430,7 @@ export default function AdminDashboard() {
       </div>
       )}
     </div>
+    </>
   );
 }
 
