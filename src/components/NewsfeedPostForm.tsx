@@ -115,17 +115,8 @@ const NewsfeedPostForm: React.FC = () => {
         postData.eventLocation = form.eventLocation?.trim() || '';
       }
 
-      console.log('Attempting to add document to Firestore...');
       const postsRef = collection(firestore, 'newsfeed');
-      
-      // Add timeout to prevent hanging
-      const firestorePromise = addDoc(postsRef, postData);
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Firestore operation timed out after 10 seconds')), 10000);
-      });
-      
-      await Promise.race([firestorePromise, timeoutPromise]);
-      console.log('Document successfully added to Firestore!');
+      await addDoc(postsRef, postData);
 
       // Don't await the success modal to prevent hanging
       success('Post published successfully!', 'Success');
@@ -193,9 +184,6 @@ const NewsfeedPostForm: React.FC = () => {
   const uploadImages = async (): Promise<string[]> => {
     if (selectedImages.length === 0) return [];
 
-    console.log('Starting Supabase image upload...', { 
-      imageCount: selectedImages.length
-    });
 
     setUploadingImages(true);
     
@@ -224,7 +212,6 @@ const NewsfeedPostForm: React.FC = () => {
       const urls = await Promise.race([uploadPromise, timeoutPromise]);
       
       setUploadingImages(false);
-      console.log('Images uploaded successfully:', urls.length);
       return urls;
     } catch (err) {
       setUploadingImages(false);

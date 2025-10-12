@@ -3,22 +3,10 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-// Debug environment variables
-console.log('=== SUPABASE DEBUG ===');
-console.log('Supabase URL:', supabaseUrl);
-console.log('Supabase Key:', supabaseAnonKey ? 'Present' : 'Missing');
-console.log('Environment check:', {
-  NODE_ENV: process.env.NODE_ENV,
-  hasUrl: !!supabaseUrl,
-  hasKey: !!supabaseAnonKey
-});
-
 // Create Supabase client only if environment variables are available
 export const supabase = supabaseUrl && supabaseAnonKey 
   ? createClient(supabaseUrl, supabaseAnonKey)
   : null;
-
-console.log('Supabase client created:', !!supabase);
 
 // Storage bucket name for images
 export const STORAGE_BUCKET = 'images';
@@ -39,10 +27,6 @@ const fileToDataUrl = (file: File): Promise<string> => {
 // Image upload function
 export const uploadImage = async (file: File, folder: string = 'general'): Promise<string> => {
   try {
-    console.log('=== UPLOAD IMAGE DEBUG ===');
-    console.log('Supabase client available:', !!supabase);
-    console.log('File:', file.name, file.type, file.size);
-    
     // If Supabase is not available, compress and return optimized base64
     if (!supabase) {
       console.warn('Supabase not configured, using compressed base64');
@@ -102,23 +86,6 @@ export const uploadImage = async (file: File, folder: string = 'general'): Promi
       .from(STORAGE_BUCKET)
       .getPublicUrl(filePath);
 
-    console.log('=== SUPABASE URL GENERATED ===');
-    console.log('File path:', filePath);
-    console.log('Public URL:', publicUrl);
-    console.log('URL length:', publicUrl.length);
-    console.log('URL starts with:', publicUrl.substring(0, 50));
-
-    // Test if the URL is accessible
-    try {
-      const response = await fetch(publicUrl, { method: 'HEAD' });
-      console.log('URL accessibility test:', {
-        status: response.status,
-        ok: response.ok,
-        headers: Object.fromEntries(response.headers.entries())
-      });
-    } catch (fetchError) {
-      console.error('URL accessibility test failed:', fetchError);
-    }
 
     return publicUrl;
   } catch (error) {
