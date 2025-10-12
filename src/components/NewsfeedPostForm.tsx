@@ -213,26 +213,9 @@ const NewsfeedPostForm: React.FC = () => {
       const uploadPromise = uploadImagesToSupabase(selectedImages, 'newsfeed');
       const urls = await Promise.race([uploadPromise, timeoutPromise]);
       
-      // Validate uploaded URLs
-      const validUrls = [];
-      for (const url of urls) {
-        try {
-          // Test if URL is accessible
-          const response = await fetch(url, { method: 'HEAD' });
-          if (response.ok) {
-            validUrls.push(url);
-            console.log('Valid image URL:', url);
-          } else {
-            console.error('Invalid image URL:', url, 'Status:', response.status);
-          }
-        } catch (error) {
-          console.error('Error validating image URL:', url, error);
-        }
-      }
-      
       setUploadingImages(false);
-      console.log('Valid images uploaded:', validUrls.length, 'out of', urls.length);
-      return validUrls;
+      console.log('Images uploaded successfully:', urls.length);
+      return urls;
     } catch (err) {
       setUploadingImages(false);
       console.error('Supabase image upload error:', err);

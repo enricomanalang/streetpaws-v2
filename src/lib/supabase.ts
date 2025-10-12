@@ -43,10 +43,10 @@ export const uploadImage = async (file: File, folder: string = 'general'): Promi
     console.log('Supabase client available:', !!supabase);
     console.log('File:', file.name, file.type, file.size);
     
-    // If Supabase is not available, return a data URL (base64)
+    // If Supabase is not available, compress and return optimized base64
     if (!supabase) {
-      console.warn('Supabase not configured, returning base64 data URL');
-      return await fileToDataUrl(file);
+      console.warn('Supabase not configured, using compressed base64');
+      return await compressAndConvertToBase64(file);
     }
 
     // Generate unique filename
@@ -64,8 +64,8 @@ export const uploadImage = async (file: File, folder: string = 'general'): Promi
 
     if (error) {
       console.error('Error uploading image:', error);
-      // Fallback to base64 data URL so user is not blocked
-      return await fileToDataUrl(file);
+      // Fallback to compressed base64 data URL so user is not blocked
+      return await compressAndConvertToBase64(file);
     }
 
     // Get public URL
@@ -75,10 +75,53 @@ export const uploadImage = async (file: File, folder: string = 'general'): Promi
 
     return publicUrl;
   } catch (error) {
-    console.error('Upload error, falling back to base64:', error);
+    console.error('Upload error, falling back to compressed base64:', error);
     // Ultimate fallback
-    return await fileToDataUrl(file);
+    return await compressAndConvertToBase64(file);
   }
+};
+
+// Compress image and convert to base64
+const compressAndConvertToBase64 = async (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+    
+    img.onload = () => {
+      // Calculate new dimensions (max 800px width, maintain aspect ratio)
+      const maxWidth = 800;
+      const maxHeight = 600;
+      let { width, height } = img;
+      
+      if (width > maxWidth) {
+        height = (height * maxWidth) / width;
+        width = maxWidth;
+      }
+      if (height > maxHeight) {
+        width = (width * maxHeight) / height;
+        height = maxHeight;
+      }
+      
+      canvas.width = width;
+      canvas.height = height;
+      
+      // Draw and compress
+      ctx?.drawImage(img, 0, 0, width, height);
+      const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.8); // 80% quality
+      
+      console.log('Compressed image:', {
+        original: file.size,
+        compressed: compressedDataUrl.length,
+        ratio: (compressedDataUrl.length / file.size * 100).toFixed(1) + '%'
+      });
+      
+      resolve(compressedDataUrl);
+    };
+    
+    img.onerror = () => reject(new Error('Failed to load image for compression'));
+    img.src = URL.createObjectURL(file);
+  });
 };
 
 // Upload multiple images
