@@ -37,58 +37,10 @@ const useNotificationModal = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
-  // Sample user notifications - in real app, these would come from your backend
+  // Initialize with empty notifications - in real app, these would come from your backend
   useEffect(() => {
-    const sampleNotifications: Notification[] = [
-      {
-        id: '1',
-        type: 'success',
-        title: 'Adoption Application Approved!',
-        message: 'Your adoption application for Buddy has been approved by the admin. Please contact us to schedule pickup.',
-        timestamp: '2 minutes ago',
-        read: false,
-        category: 'admin'
-      },
-      {
-        id: '2',
-        type: 'info',
-        title: 'Found Pet Match!',
-        message: 'Someone found your lost dog "Max" and sent you a message. Check your messages now!',
-        timestamp: '15 minutes ago',
-        read: false,
-        category: 'user'
-      },
-      {
-        id: '3',
-        type: 'success',
-        title: 'Report Approved',
-        message: 'Your abuse report has been reviewed and approved. Thank you for helping keep animals safe.',
-        timestamp: '1 hour ago',
-        read: true,
-        category: 'admin'
-      },
-      {
-        id: '4',
-        type: 'info',
-        title: 'Volunteer Application Status',
-        message: 'Your volunteer application has been approved! Welcome to the StreetPaws team.',
-        timestamp: '2 hours ago',
-        read: true,
-        category: 'admin'
-      },
-      {
-        id: '5',
-        type: 'info',
-        title: 'New Message from Finder',
-        message: 'Sarah found your lost cat "Whiskers" and wants to arrange a meeting. Check your messages!',
-        timestamp: '3 hours ago',
-        read: true,
-        category: 'user'
-      }
-    ];
-
-    setNotifications(sampleNotifications);
-    setUnreadCount(sampleNotifications.filter(n => !n.read).length);
+    setNotifications([]);
+    setUnreadCount(0);
   }, []);
 
   const openModal = () => setIsOpen(true);
