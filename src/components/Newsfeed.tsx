@@ -239,6 +239,14 @@ const Newsfeed: React.FC = () => {
                   {/* Display Images */}
                   {post.imageUrls && post.imageUrls.length > 0 && (
                     <div className="mb-3">
+                      {/* Debug info */}
+                      <div className="text-xs text-gray-500 mb-2 p-2 bg-gray-100 rounded">
+                        Debug: {post.imageUrls.length} image(s)
+                        <br />
+                        URL 1: {post.imageUrls[0]?.substring(0, 100)}...
+                        <br />
+                        Is Base64: {post.imageUrls[0]?.startsWith('data:') ? 'Yes' : 'No'}
+                      </div>
                       <div className={`grid gap-2 ${
                         post.imageUrls.length === 1 ? 'grid-cols-1' :
                         post.imageUrls.length === 2 ? 'grid-cols-2' :
@@ -253,7 +261,11 @@ const Newsfeed: React.FC = () => {
                               alt={`Post image ${index + 1}`}
                               className="w-full h-40 object-cover rounded-lg border border-gray-200 hover:shadow-md transition-shadow cursor-pointer"
                               onClick={() => window.open(imageUrl, '_blank')}
+                              onLoad={() => {
+                                console.log('Image loaded successfully:', imageUrl.substring(0, 50) + '...');
+                              }}
                               onError={(e) => {
+                                console.error('Image failed to load:', imageUrl.substring(0, 50) + '...');
                                 const target = e.target as HTMLImageElement;
                                 target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxMiIgZmlsbD0iIzk5YTNhZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlIEVycm9yPC90ZXh0Pjwvc3ZnPg==';
                               }}

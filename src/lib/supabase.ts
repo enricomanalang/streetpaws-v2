@@ -8,6 +8,13 @@ export const supabase = supabaseUrl && supabaseAnonKey
   ? createClient(supabaseUrl, supabaseAnonKey)
   : null;
 
+// Debug Supabase configuration
+console.log('Supabase Debug:', {
+  url: supabaseUrl ? 'Set' : 'Missing',
+  key: supabaseAnonKey ? 'Set' : 'Missing',
+  client: supabase ? 'Created' : 'Not created'
+});
+
 
 // Storage bucket name for images
 export const STORAGE_BUCKET = 'images';
@@ -27,6 +34,8 @@ const fileToDataUrl = (file: File): Promise<string> => {
 
 // Image upload function
 export const uploadImage = async (file: File, folder: string = 'general'): Promise<string> => {
+  console.log('Uploading image:', { fileName: file.name, fileSize: file.size, folder });
+  
   try {
     // If Supabase is not available, compress and return optimized base64
     if (!supabase) {
@@ -41,7 +50,7 @@ export const uploadImage = async (file: File, folder: string = 'general'): Promi
 
     // Try to upload to Supabase Storage
     try {
-      const { error } = await supabase.storage
+      const { data: uploadData, error } = await supabase.storage
         .from(STORAGE_BUCKET)
         .upload(filePath, file, {
           cacheControl: '3600',
@@ -52,6 +61,8 @@ export const uploadImage = async (file: File, folder: string = 'general'): Promi
         console.warn('Supabase upload failed, falling back to base64:', error.message);
         return await compressAndConvertToBase64(file);
       }
+      
+      console.log('Supabase upload successful:', uploadData);
     } catch (uploadError) {
       console.warn('Supabase upload error, falling back to base64:', uploadError);
       return await compressAndConvertToBase64(file);
@@ -62,13 +73,24 @@ export const uploadImage = async (file: File, folder: string = 'general'): Promi
       .from(STORAGE_BUCKET)
       .getPublicUrl(filePath);
 
-    // Test if the URL is accessible
+    // Test if the URL is accessible (with timeout)
     try {
-      const response = await fetch(publicUrl, { method: 'HEAD' });
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+      
+      const response = await fetch(publicUrl, { 
+        method: 'HEAD',
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+      
       if (!response.ok) {
         console.warn('Supabase URL not accessible, falling back to base64');
         return await compressAndConvertToBase64(file);
       }
+      
+      console.log('Supabase URL is accessible:', publicUrl);
     } catch (urlError) {
       console.warn('Supabase URL test failed, falling back to base64:', urlError);
       return await compressAndConvertToBase64(file);
