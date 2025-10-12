@@ -239,16 +239,6 @@ const Newsfeed: React.FC = () => {
                   {/* Display Images */}
                   {post.imageUrls && post.imageUrls.length > 0 && (
                     <div className="mb-3">
-                      {/* Debug info */}
-                      <div className="text-xs text-gray-500 mb-2 p-2 bg-yellow-100 rounded">
-                        Debug: {post.imageUrls.length} image(s)
-                        <br />
-                        URL 1: {post.imageUrls[0]?.substring(0, 80)}...
-                        <br />
-                        Is Base64: {post.imageUrls[0]?.startsWith('data:') ? 'Yes' : 'No'}
-                        <br />
-                        URL Length: {post.imageUrls[0]?.length}
-                      </div>
                       <div className={`grid gap-2 ${
                         post.imageUrls.length === 1 ? 'grid-cols-1' :
                         post.imageUrls.length === 2 ? 'grid-cols-2' :
@@ -261,7 +251,12 @@ const Newsfeed: React.FC = () => {
                             <img
                               src={imageUrl}
                               alt={`Post image ${index + 1}`}
-                              className="w-full h-40 object-cover rounded-lg border border-gray-200 hover:shadow-md transition-shadow cursor-pointer"
+                              className="w-full h-40 rounded-lg border border-gray-200 hover:shadow-md transition-shadow cursor-pointer"
+                              style={{ 
+                                objectFit: 'cover',
+                                backgroundColor: '#f3f4f6',
+                                display: 'block'
+                              }}
                               onClick={() => window.open(imageUrl, '_blank')}
                               onLoad={() => {
                                 console.log('Image loaded successfully:', index);
