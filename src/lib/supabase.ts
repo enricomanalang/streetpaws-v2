@@ -27,10 +27,6 @@ const fileToDataUrl = (file: File): Promise<string> => {
 // Image upload function
 export const uploadImage = async (file: File, folder: string = 'general'): Promise<string> => {
   try {
-    // TEMPORARY: Force base64 fallback to test if that works
-    console.warn('TEMPORARY: Forcing base64 fallback for testing');
-    return await compressAndConvertToBase64(file);
-    
     // If Supabase is not available, compress and return optimized base64
     if (!supabase) {
       console.warn('Supabase not configured, using compressed base64');
@@ -42,47 +38,22 @@ export const uploadImage = async (file: File, folder: string = 'general'): Promi
     const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
     const filePath = `${folder}/${fileName}`;
 
-    // Upload file to Supabase Storage
-    const { error } = await supabase.storage
-      .from(STORAGE_BUCKET)
-      .upload(filePath, file, {
-        cacheControl: '3600',
-        upsert: false
-      });
-
-    if (error) {
-      console.error('Error uploading image:', error);
-      
-      // If bucket doesn't exist, try to create it
-      if (error.message.includes('not found') || error.message.includes('does not exist')) {
-        console.log('Storage bucket not found, creating it...');
-        const { error: createError } = await supabase.storage.createBucket(STORAGE_BUCKET, {
-          public: true,
-          allowedMimeTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
-          fileSizeLimit: 5242880 // 5MB
+    // Try to upload to Supabase Storage
+    try {
+      const { error } = await supabase.storage
+        .from(STORAGE_BUCKET)
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
         });
-        
-        if (createError) {
-          console.error('Error creating bucket:', createError);
-          return await compressAndConvertToBase64(file);
-        }
-        
-        // Retry upload after creating bucket
-        const { error: retryError } = await supabase.storage
-          .from(STORAGE_BUCKET)
-          .upload(filePath, file, {
-            cacheControl: '3600',
-            upsert: false
-          });
-          
-        if (retryError) {
-          console.error('Error uploading after bucket creation:', retryError);
-          return await compressAndConvertToBase64(file);
-        }
-      } else {
-        // Other errors, fallback to compressed base64
+
+      if (error) {
+        console.warn('Supabase upload failed, falling back to base64:', error.message);
         return await compressAndConvertToBase64(file);
       }
+    } catch (uploadError) {
+      console.warn('Supabase upload error, falling back to base64:', uploadError);
+      return await compressAndConvertToBase64(file);
     }
 
     // Get public URL
