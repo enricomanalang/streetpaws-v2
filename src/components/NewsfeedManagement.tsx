@@ -112,9 +112,9 @@ const NewsfeedManagement: React.FC = () => {
     console.log('handleDeletePost called with:', { postId, postTitle });
     
     try {
-      // Test with native confirm first
-      const confirmed = window.confirm(
-        `Are you sure you want to delete "${postTitle}"? This action cannot be undone.`
+      const confirmed = await confirm(
+        `Are you sure you want to delete "${postTitle}"? This action cannot be undone.`,
+        'Delete Post'
       );
 
       console.log('User confirmed delete:', confirmed);
@@ -126,7 +126,7 @@ const NewsfeedManagement: React.FC = () => {
 
       if (!firestore) {
         console.error('Firestore not available');
-        alert('Database connection error. Please refresh the page.');
+        await error('Database connection error. Please refresh the page.', 'Connection Error');
         return;
       }
 
@@ -135,10 +135,10 @@ const NewsfeedManagement: React.FC = () => {
       await deleteDoc(postRef);
       
       console.log('Post deleted successfully');
-      alert('Post deleted successfully!');
+      await success('Post deleted successfully!', 'Success');
     } catch (err) {
       console.error('Error deleting post:', err);
-      alert('Failed to delete post. Please try again.');
+      await error('Failed to delete post. Please try again.', 'Error');
     }
   };
 
@@ -228,12 +228,10 @@ const NewsfeedManagement: React.FC = () => {
                         e.preventDefault();
                         e.stopPropagation();
                         console.log('Delete button clicked for post:', post.id);
-                        alert(`Delete button clicked for: ${post.title}`);
                         handleDeletePost(post.id, post.title);
                       }}
                       className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 border border-red-200 rounded-md hover:bg-red-100 hover:border-red-300 transition-colors cursor-pointer"
                       type="button"
-                      style={{ zIndex: 999, position: 'relative' }}
                     >
                       <Trash2 className="w-3 h-3" />
                       Delete
