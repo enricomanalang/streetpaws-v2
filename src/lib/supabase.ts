@@ -8,6 +8,7 @@ export const supabase = supabaseUrl && supabaseAnonKey
   ? createClient(supabaseUrl, supabaseAnonKey)
   : null;
 
+
 // Storage bucket name for images
 export const STORAGE_BUCKET = 'images';
 
@@ -61,6 +62,17 @@ export const uploadImage = async (file: File, folder: string = 'general'): Promi
       .from(STORAGE_BUCKET)
       .getPublicUrl(filePath);
 
+    // Test if the URL is accessible
+    try {
+      const response = await fetch(publicUrl, { method: 'HEAD' });
+      if (!response.ok) {
+        console.warn('Supabase URL not accessible, falling back to base64');
+        return await compressAndConvertToBase64(file);
+      }
+    } catch (urlError) {
+      console.warn('Supabase URL test failed, falling back to base64:', urlError);
+      return await compressAndConvertToBase64(file);
+    }
 
     return publicUrl;
   } catch (error) {
@@ -78,37 +90,45 @@ const compressAndConvertToBase64 = async (file: File): Promise<string> => {
     const img = new Image();
     
     img.onload = () => {
-      // Calculate new dimensions (max 800px width, maintain aspect ratio)
-      const maxWidth = 800;
-      const maxHeight = 600;
-      let { width, height } = img;
-      
-      if (width > maxWidth) {
-        height = (height * maxWidth) / width;
-        width = maxWidth;
+      try {
+        // Calculate new dimensions (max 800px width, maintain aspect ratio)
+        const maxWidth = 800;
+        const maxHeight = 600;
+        let { width, height } = img;
+        
+        if (width > maxWidth) {
+          height = (height * maxWidth) / width;
+          width = maxWidth;
+        }
+        if (height > maxHeight) {
+          width = (width * maxHeight) / height;
+          height = maxHeight;
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        
+        // Draw and compress
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.8); // 80% quality
+          
+          
+          resolve(compressedDataUrl);
+        } else {
+          reject(new Error('Canvas context not available'));
+        }
+      } catch (error) {
+        console.error('Error compressing image:', error);
+        reject(error);
       }
-      if (height > maxHeight) {
-        width = (width * maxHeight) / height;
-        height = maxHeight;
-      }
-      
-      canvas.width = width;
-      canvas.height = height;
-      
-      // Draw and compress
-      ctx?.drawImage(img, 0, 0, width, height);
-      const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.8); // 80% quality
-      
-      console.log('Compressed image:', {
-        original: file.size,
-        compressed: compressedDataUrl.length,
-        ratio: (compressedDataUrl.length / file.size * 100).toFixed(1) + '%'
-      });
-      
-      resolve(compressedDataUrl);
     };
     
-    img.onerror = () => reject(new Error('Failed to load image for compression'));
+    img.onerror = (error) => {
+      console.error('Failed to load image for compression:', error);
+      reject(new Error('Failed to load image for compression'));
+    };
+    
     img.src = URL.createObjectURL(file);
   });
 };
