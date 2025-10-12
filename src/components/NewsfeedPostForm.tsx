@@ -76,6 +76,9 @@ const NewsfeedPostForm: React.FC = () => {
       let imageUrls: string[] = [];
       try {
         imageUrls = await uploadImages();
+        if (imageUrls.length === 0) {
+          console.warn('No valid images uploaded, continuing without images');
+        }
       } catch (imageError) {
         console.warn('Supabase image upload failed, posting without images:', imageError);
         // Ask user if they want to continue without images
@@ -192,6 +195,11 @@ const NewsfeedPostForm: React.FC = () => {
         if (file.size > 5 * 1024 * 1024) {
           throw new Error(`File ${file.name} is too large. Maximum size is 5MB.`);
         }
+        
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+          throw new Error(`File ${file.name} is not a valid image.`);
+        }
       }
 
       // Create a timeout promise
@@ -205,9 +213,26 @@ const NewsfeedPostForm: React.FC = () => {
       const uploadPromise = uploadImagesToSupabase(selectedImages, 'newsfeed');
       const urls = await Promise.race([uploadPromise, timeoutPromise]);
       
+      // Validate uploaded URLs
+      const validUrls = [];
+      for (const url of urls) {
+        try {
+          // Test if URL is accessible
+          const response = await fetch(url, { method: 'HEAD' });
+          if (response.ok) {
+            validUrls.push(url);
+            console.log('Valid image URL:', url);
+          } else {
+            console.error('Invalid image URL:', url, 'Status:', response.status);
+          }
+        } catch (error) {
+          console.error('Error validating image URL:', url, error);
+        }
+      }
+      
       setUploadingImages(false);
-      console.log('Images uploaded successfully:', urls);
-      return urls;
+      console.log('Valid images uploaded:', validUrls.length, 'out of', urls.length);
+      return validUrls;
     } catch (err) {
       setUploadingImages(false);
       console.error('Supabase image upload error:', err);
