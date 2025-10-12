@@ -11,7 +11,7 @@ export const supabase = supabaseUrl && supabaseAnonKey
 
 
 // Storage bucket name for images
-export const STORAGE_BUCKET = 'images';
+export const STORAGE_BUCKET = 'images-new';
 
 const fileToDataUrl = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
@@ -35,12 +35,23 @@ export const uploadImage = async (file: File, folder: string = 'general'): Promi
       return await fileToDataUrl(file);
     }
 
-    // Compress image first
-    const compressedDataUrl = await compressAndConvertToBase64(file);
+    let blob: Blob;
     
-    // Convert data URL back to blob for upload
-    const response = await fetch(compressedDataUrl);
-    const blob = await response.blob();
+    try {
+      // Try to compress image first
+      console.log('Attempting image compression...');
+      const compressedDataUrl = await compressAndConvertToBase64(file);
+      
+      // Convert data URL back to blob for upload
+      const response = await fetch(compressedDataUrl);
+      blob = await response.blob();
+      
+      console.log('Image compression successful');
+    } catch (compressionError) {
+      console.warn('Image compression failed, using original file:', compressionError);
+      // Fallback to original file if compression fails
+      blob = file;
+    }
     
     // Generate unique filename
     const timestamp = Date.now();
@@ -114,10 +125,14 @@ const compressAndConvertToBase64 = async (file: File): Promise<string> => {
         
         // Draw and compress
         if (ctx) {
+          // Clear canvas first
+          ctx.clearRect(0, 0, width, height);
+          
+          // Draw image
           ctx.drawImage(img, 0, 0, width, height);
           
           // Try different quality levels to keep file size reasonable
-          let quality = 0.7; // Start with 70% quality
+          let quality = 0.8; // Start with 80% quality
           let compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
           
           // If still too large, reduce quality further
@@ -149,6 +164,8 @@ const compressAndConvertToBase64 = async (file: File): Promise<string> => {
       reject(new Error('Failed to load image for compression'));
     };
     
+    // Set crossOrigin to handle CORS issues
+    img.crossOrigin = 'anonymous';
     img.src = URL.createObjectURL(file);
   });
 };
