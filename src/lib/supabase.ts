@@ -102,6 +102,24 @@ export const uploadImage = async (file: File, folder: string = 'general'): Promi
       .from(STORAGE_BUCKET)
       .getPublicUrl(filePath);
 
+    console.log('=== SUPABASE URL GENERATED ===');
+    console.log('File path:', filePath);
+    console.log('Public URL:', publicUrl);
+    console.log('URL length:', publicUrl.length);
+    console.log('URL starts with:', publicUrl.substring(0, 50));
+
+    // Test if the URL is accessible
+    try {
+      const response = await fetch(publicUrl, { method: 'HEAD' });
+      console.log('URL accessibility test:', {
+        status: response.status,
+        ok: response.ok,
+        headers: Object.fromEntries(response.headers.entries())
+      });
+    } catch (fetchError) {
+      console.error('URL accessibility test failed:', fetchError);
+    }
+
     return publicUrl;
   } catch (error) {
     console.error('Upload error, falling back to compressed base64:', error);

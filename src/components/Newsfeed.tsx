@@ -248,7 +248,11 @@ const Newsfeed: React.FC = () => {
                         {post.imageUrls.map((imageUrl, index) => {
                           // Check if it's a base64 data URL or a regular URL
                           const isBase64 = imageUrl.startsWith('data:image/');
-                          console.log('Image URL:', imageUrl, 'Is Base64:', isBase64);
+                          console.log('=== IMAGE DEBUG ===');
+                          console.log('Image URL:', imageUrl);
+                          console.log('Is Base64:', isBase64);
+                          console.log('URL length:', imageUrl.length);
+                          console.log('URL starts with:', imageUrl.substring(0, 50));
                           
                           return (
                             <div key={index} className="relative group">
@@ -256,20 +260,27 @@ const Newsfeed: React.FC = () => {
                                 src={imageUrl}
                                 alt={`Post image ${index + 1}`}
                                 className="w-full h-32 object-cover rounded-lg border border-gray-200 hover:shadow-md transition-shadow cursor-pointer"
-                                onClick={() => window.open(imageUrl, '_blank')}
+                                onClick={() => {
+                                  console.log('Opening image:', imageUrl);
+                                  window.open(imageUrl, '_blank');
+                                }}
                                 onError={(e) => {
-                                  console.error('Image failed to load:', imageUrl);
+                                  console.error('=== IMAGE ERROR ===');
+                                  console.error('Failed to load image:', imageUrl);
+                                  console.error('Error event:', e);
                                   const target = e.target as HTMLImageElement;
-                                  // Instead of hiding, show a placeholder
-                                  target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5YTNhZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlIEVycm9yPC90ZXh0Pjwvc3ZnPg==';
+                                  // Show a placeholder with more info
+                                  target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxMiIgZmlsbD0iIzk5YTNhZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlIEVycm9yPC90ZXh0Pjwvc3ZnPg==';
                                 }}
                                 onLoad={(e) => {
+                                  console.log('=== IMAGE LOADED ===');
                                   console.log('Image loaded successfully:', imageUrl);
                                   const target = e.target as HTMLImageElement;
+                                  console.log('Image dimensions:', target.naturalWidth, 'x', target.naturalHeight);
                                   // Check if image is actually valid by testing its dimensions
                                   if (target.naturalWidth === 0 || target.naturalHeight === 0) {
                                     console.error('Image has invalid dimensions:', target.naturalWidth, target.naturalHeight);
-                                    target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5YTNhZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlIEVycm9yPC90ZXh0Pjwvc3ZnPg==';
+                                    target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxMiIgZmlsbD0iIzk5YTNhZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlIEVycm9yPC90ZXh0Pjwvc3ZnPg==';
                                   }
                                 }}
                               />
