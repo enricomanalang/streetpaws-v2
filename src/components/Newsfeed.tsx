@@ -39,20 +39,37 @@ const Newsfeed: React.FC = () => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  console.log('=== NEWFEED COMPONENT RENDERED ===');
+  console.log('Posts count:', posts.length);
+  console.log('Loading:', loading);
+  console.log('Firestore available:', !!firestore);
+
   useEffect(() => {
+    console.log('=== NEWFEED USEEFFECT STARTED ===');
+    console.log('Firestore available:', !!firestore);
+    
     if (!firestore) {
+      console.log('Firestore not available, setting loading to false');
       setLoading(false);
       return;
     }
 
+    console.log('Setting up Firestore listener for newsfeed posts...');
     const postsRef = collection(firestore, 'newsfeed');
     const q = query(postsRef, orderBy('createdAt', 'desc'));
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
+      console.log('=== FIRESTORE SNAPSHOT RECEIVED ===');
+      console.log('Snapshot size:', snapshot.size);
+      console.log('Snapshot docs:', snapshot.docs.length);
+      
       const postsData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as NewsfeedPost[];
+
+      console.log('Posts data:', postsData);
+      console.log('Posts with images:', postsData.filter(p => p.imageUrls && p.imageUrls.length > 0));
 
       // Sort: pinned posts first, then by date
       const sortedPosts = postsData.sort((a, b) => {
@@ -65,14 +82,19 @@ const Newsfeed: React.FC = () => {
         return bTime - aTime;
       });
 
+      console.log('Sorted posts:', sortedPosts);
       setPosts(sortedPosts);
       setLoading(false);
     }, (error) => {
+      console.error('=== FIRESTORE ERROR ===');
       console.error('Error fetching posts:', error);
       setLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => {
+      console.log('Cleaning up Firestore listener');
+      unsubscribe();
+    };
   }, []);
 
   const getPostTypeConfig = (type: string) => {
