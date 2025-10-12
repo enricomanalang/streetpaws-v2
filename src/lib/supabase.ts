@@ -29,8 +29,11 @@ const fileToDataUrl = (file: File): Promise<string> => {
 // Image upload function
 export const uploadImage = async (file: File, folder: string = 'general'): Promise<string> => {
   try {
-    // Always use compressed base64 for reliable image display
-    return await compressAndConvertToBase64(file);
+    // Try simple base64 first without compression
+    console.log('Converting file to base64:', file.name, file.size);
+    const simpleBase64 = await fileToDataUrl(file);
+    console.log('Simple base64 result:', simpleBase64.substring(0, 100) + '...');
+    return simpleBase64;
   } catch (error) {
     console.error('Upload error:', error);
     throw error;

@@ -251,11 +251,14 @@ const Newsfeed: React.FC = () => {
                             <img
                               src={imageUrl}
                               alt={`Post image ${index + 1}`}
-                              className="w-full h-40 rounded-lg border border-gray-200 hover:shadow-md transition-shadow cursor-pointer"
                               style={{ 
+                                width: '100%',
+                                height: '160px',
                                 objectFit: 'cover',
-                                backgroundColor: '#f3f4f6',
-                                display: 'block'
+                                borderRadius: '8px',
+                                border: '1px solid #e5e7eb',
+                                display: 'block',
+                                backgroundColor: '#f9fafb'
                               }}
                               onClick={() => window.open(imageUrl, '_blank')}
                               onLoad={() => {
