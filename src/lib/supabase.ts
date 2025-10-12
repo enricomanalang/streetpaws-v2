@@ -64,8 +64,37 @@ export const uploadImage = async (file: File, folder: string = 'general'): Promi
 
     if (error) {
       console.error('Error uploading image:', error);
-      // Fallback to compressed base64 data URL so user is not blocked
-      return await compressAndConvertToBase64(file);
+      
+      // If bucket doesn't exist, try to create it
+      if (error.message.includes('not found') || error.message.includes('does not exist')) {
+        console.log('Storage bucket not found, creating it...');
+        const { error: createError } = await supabase.storage.createBucket(STORAGE_BUCKET, {
+          public: true,
+          allowedMimeTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
+          fileSizeLimit: 5242880 // 5MB
+        });
+        
+        if (createError) {
+          console.error('Error creating bucket:', createError);
+          return await compressAndConvertToBase64(file);
+        }
+        
+        // Retry upload after creating bucket
+        const { error: retryError } = await supabase.storage
+          .from(STORAGE_BUCKET)
+          .upload(filePath, file, {
+            cacheControl: '3600',
+            upsert: false
+          });
+          
+        if (retryError) {
+          console.error('Error uploading after bucket creation:', retryError);
+          return await compressAndConvertToBase64(file);
+        }
+      } else {
+        // Other errors, fallback to compressed base64
+        return await compressAndConvertToBase64(file);
+      }
     }
 
     // Get public URL
