@@ -29,7 +29,7 @@ interface NewsfeedPost {
   eventLocation?: string;
   authorId: string;
   authorName: string;
-  createdAt: Timestamp;
+  createdAt: Timestamp | null;
   isPinned?: boolean;
   imageUrls?: string[];
 }
@@ -58,7 +58,11 @@ const Newsfeed: React.FC = () => {
       const sortedPosts = postsData.sort((a, b) => {
         if (a.isPinned && !b.isPinned) return -1;
         if (!a.isPinned && b.isPinned) return 1;
-        return b.createdAt.toMillis() - a.createdAt.toMillis();
+        
+        // Handle null timestamps
+        const aTime = a.createdAt ? a.createdAt.toMillis() : 0;
+        const bTime = b.createdAt ? b.createdAt.toMillis() : 0;
+        return bTime - aTime;
       });
 
       setPosts(sortedPosts);
@@ -81,15 +85,22 @@ const Newsfeed: React.FC = () => {
     return configs[type as keyof typeof configs] || configs.update;
   };
 
-  const formatDate = (timestamp: Timestamp) => {
-    const date = timestamp.toDate();
-    const now = new Date();
-    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
+  const formatDate = (timestamp: Timestamp | null) => {
+    if (!timestamp) return 'Unknown date';
     
-    if (diffInHours < 1) return 'Just now';
-    if (diffInHours < 24) return `${diffInHours}h ago`;
-    if (diffInHours < 48) return 'Yesterday';
-    return date.toLocaleDateString();
+    try {
+      const date = timestamp.toDate();
+      const now = new Date();
+      const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
+      
+      if (diffInHours < 1) return 'Just now';
+      if (diffInHours < 24) return `${diffInHours}h ago`;
+      if (diffInHours < 48) return 'Yesterday';
+      return date.toLocaleDateString();
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return 'Invalid date';
+    }
   };
 
   const formatEventDate = (eventDate: string) => {
