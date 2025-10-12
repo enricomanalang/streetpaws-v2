@@ -67,7 +67,12 @@ export const uploadImage = async (file: File, folder: string = 'general'): Promi
       .from(STORAGE_BUCKET)
       .getPublicUrl(filePath);
 
-    console.log('Image uploaded successfully:', publicUrl);
+    console.log('Image uploaded successfully:', {
+      filePath,
+      publicUrl,
+      bucket: STORAGE_BUCKET,
+      supabaseUrl: supabaseUrl
+    });
     return publicUrl;
   } catch (error) {
     console.error('Upload error:', error);
