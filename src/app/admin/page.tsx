@@ -44,6 +44,7 @@ import DonationManagement from '@/components/DonationManagement';
 import DonorsManagement from '@/components/DonorsManagement';
 import Inventory from '@/components/Inventory';
 import NewsfeedPostForm from '@/components/NewsfeedPostForm';
+import NewsfeedManagement from '@/components/NewsfeedManagement';
 import useModernModal from '@/components/ui/modern-modal';
 import useNotificationModal from '@/components/ui/notification-modal';
 import { ref, onValue, off, update, get, set, remove } from 'firebase/database';
@@ -1888,10 +1889,21 @@ export default function AdminDashboard() {
         return (
           <div className="space-y-6">
             <div className="text-center mb-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Create Newsfeed Post</h2>
-              <p className="text-gray-600">Share updates, events, and announcements with the community</p>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Newsfeed Management</h2>
+              <p className="text-gray-600">Create new posts and manage existing ones</p>
             </div>
-            <NewsfeedPostForm />
+            
+            {/* Create New Post */}
+            <div className="mb-8">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Create New Post</h3>
+              <NewsfeedPostForm />
+            </div>
+            
+            {/* Manage Existing Posts */}
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Manage Existing Posts</h3>
+              <NewsfeedManagement />
+            </div>
           </div>
         );
       
