@@ -194,8 +194,16 @@ const NewsfeedPostForm: React.FC = () => {
         }
       }
 
-      // Upload images to Supabase Storage
-      const urls = await uploadImagesToSupabase(selectedImages, 'newsfeed');
+      // Create a timeout promise
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => {
+          reject(new Error('Image upload timed out after 30 seconds. Please try again.'));
+        }, 30000);
+      });
+
+      // Upload images to Supabase Storage with timeout
+      const uploadPromise = uploadImagesToSupabase(selectedImages, 'newsfeed');
+      const urls = await Promise.race([uploadPromise, timeoutPromise]);
       
       setUploadingImages(false);
       console.log('Images uploaded successfully:', urls);
@@ -211,10 +219,10 @@ const NewsfeedPostForm: React.FC = () => {
 
   return (
     <Card className="w-full max-w-2xl mx-auto">
-      <CardHeader className="bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-t-lg">
+      <CardHeader className="bg-white border-b">
         <CardTitle className="flex items-center gap-2">
-          <Megaphone className="w-6 h-6" />
-          Create Newsfeed Post
+          <Megaphone className="w-5 h-5 text-blue-600" />
+          <span className="text-gray-900">Create Newsfeed Post</span>
         </CardTitle>
       </CardHeader>
       <CardContent className="p-6">

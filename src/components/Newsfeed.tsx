@@ -155,18 +155,18 @@ const Newsfeed: React.FC = () => {
 
   return (
     <Card className="w-full">
-      <CardHeader className="bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-t-lg">
+      <CardHeader className="bg-white border-b">
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Users className="w-6 h-6" />
-            StreetPaws Updates
+            <Users className="w-5 h-5 text-blue-600" />
+            <span className="text-gray-900">StreetPaws Updates</span>
           </div>
           {hasMorePosts && (
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
               onClick={() => setIsExpanded(!isExpanded)}
-              className="text-white hover:bg-white/20"
+              className="text-gray-600 hover:text-gray-900"
             >
               {isExpanded ? (
                 <>
@@ -184,119 +184,125 @@ const Newsfeed: React.FC = () => {
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0">
-        <div className="divide-y divide-gray-100">
-          {displayedPosts.map((post) => {
-            const typeConfig = getPostTypeConfig(post.type);
-            const Icon = typeConfig.icon;
-            const isEvent = post.type === 'event';
-            const isUpcoming = isEvent && post.eventDate && isUpcomingEvent(post.eventDate);
+        <div className="max-h-96 overflow-y-auto">
+          <div className="divide-y divide-gray-100">
+            {displayedPosts.map((post) => {
+              const typeConfig = getPostTypeConfig(post.type);
+              const Icon = typeConfig.icon;
+              const isEvent = post.type === 'event';
+              const isUpcoming = isEvent && post.eventDate && isUpcomingEvent(post.eventDate);
 
-            return (
-              <div key={post.id} className="p-6 hover:bg-gray-50 transition-colors">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    {post.isPinned && (
-                      <Pin className="w-4 h-4 text-orange-500" />
-                    )}
-                    <Badge className={`${typeConfig.color} border-0`}>
-                      <Icon className="w-3 h-3 mr-1" />
-                      {typeConfig.label}
-                    </Badge>
-                    {isEvent && isUpcoming && (
-                      <Badge className="bg-green-100 text-green-800 border-0">
-                        <Clock className="w-3 h-3 mr-1" />
-                        Upcoming
+              return (
+                <div key={post.id} className="p-4 hover:bg-gray-50 transition-colors">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      {post.isPinned && (
+                        <Pin className="w-3 h-3 text-orange-500" />
+                      )}
+                      <Badge className={`${typeConfig.color} border-0 text-xs`}>
+                        <Icon className="w-3 h-3 mr-1" />
+                        {typeConfig.label}
                       </Badge>
-                    )}
+                      {isEvent && isUpcoming && (
+                        <Badge className="bg-green-100 text-green-800 border-0 text-xs">
+                          <Clock className="w-3 h-3 mr-1" />
+                          Upcoming
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1 text-xs text-gray-500">
+                      <Clock className="w-3 h-3" />
+                      {formatDate(post.createdAt)}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-500">
-                    <Clock className="w-4 h-4" />
-                    {formatDate(post.createdAt)}
-                  </div>
-                </div>
 
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  {post.title}
-                </h3>
+                  <h3 className="text-base font-semibold text-gray-900 mb-2">
+                    {post.title}
+                  </h3>
 
-                <p className="text-gray-700 mb-4 leading-relaxed">
-                  {post.content}
-                </p>
+                  <p className="text-sm text-gray-700 mb-3 leading-relaxed">
+                    {post.content}
+                  </p>
 
-                {/* Display Images */}
-                {post.imageUrls && post.imageUrls.length > 0 && (
-                  <div className="mb-4">
-                    <div className={`grid gap-2 ${
-                      post.imageUrls.length === 1 ? 'grid-cols-1' :
-                      post.imageUrls.length === 2 ? 'grid-cols-2' :
-                      post.imageUrls.length === 3 ? 'grid-cols-3' :
-                      post.imageUrls.length === 4 ? 'grid-cols-2' :
-                      'grid-cols-3'
-                    }`}>
-                      {post.imageUrls.map((imageUrl, index) => (
-                        <div key={index} className="relative group">
-                          <img
-                            src={imageUrl}
-                            alt={`Post image ${index + 1}`}
-                            className="w-full h-48 object-cover rounded-lg border border-gray-200 hover:shadow-md transition-shadow cursor-pointer"
-                            onClick={() => window.open(imageUrl, '_blank')}
-                          />
-                          <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all rounded-lg flex items-center justify-center">
-                            <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                              <div className="bg-white bg-opacity-90 rounded-full p-2">
-                                <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
-                                </svg>
+                  {/* Display Images */}
+                  {post.imageUrls && post.imageUrls.length > 0 && (
+                    <div className="mb-3">
+                      <div className={`grid gap-2 ${
+                        post.imageUrls.length === 1 ? 'grid-cols-1' :
+                        post.imageUrls.length === 2 ? 'grid-cols-2' :
+                        post.imageUrls.length === 3 ? 'grid-cols-3' :
+                        post.imageUrls.length === 4 ? 'grid-cols-2' :
+                        'grid-cols-3'
+                      }`}>
+                        {post.imageUrls.map((imageUrl, index) => (
+                          <div key={index} className="relative group">
+                            <img
+                              src={imageUrl}
+                              alt={`Post image ${index + 1}`}
+                              className="w-full h-32 object-cover rounded-lg border border-gray-200 hover:shadow-md transition-shadow cursor-pointer"
+                              onClick={() => window.open(imageUrl, '_blank')}
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                              }}
+                            />
+                            <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all rounded-lg flex items-center justify-center">
+                              <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                <div className="bg-white bg-opacity-90 rounded-full p-1">
+                                  <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                                  </svg>
+                                </div>
                               </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {isEvent && post.eventDate && (
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                    <div className="flex items-center gap-2 text-blue-800 mb-2">
-                      <Calendar className="w-5 h-5" />
-                      <span className="font-medium">Event Details</span>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 text-blue-700">
-                        <Clock className="w-4 h-4" />
-                        <span>{formatEventDate(post.eventDate)}</span>
+                        ))}
                       </div>
-                      {post.eventLocation && (
-                        <div className="flex items-center gap-2 text-blue-700">
-                          <MapPin className="w-4 h-4" />
-                          <span>{post.eventLocation}</span>
-                        </div>
-                      )}
                     </div>
-                  </div>
-                )}
-
-                <div className="flex items-center justify-between text-sm text-gray-500">
-                  <span>Posted by {post.authorName}</span>
-                  {post.isPinned && (
-                    <span className="flex items-center gap-1 text-orange-600">
-                      <Pin className="w-3 h-3" />
-                      Pinned
-                    </span>
                   )}
+
+                  {isEvent && post.eventDate && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
+                      <div className="flex items-center gap-2 text-blue-800 mb-2">
+                        <Calendar className="w-4 h-4" />
+                        <span className="font-medium text-sm">Event Details</span>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2 text-blue-700 text-sm">
+                          <Clock className="w-3 h-3" />
+                          <span>{formatEventDate(post.eventDate)}</span>
+                        </div>
+                        {post.eventLocation && (
+                          <div className="flex items-center gap-2 text-blue-700 text-sm">
+                            <MapPin className="w-3 h-3" />
+                            <span>{post.eventLocation}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between text-xs text-gray-500">
+                    <span>Posted by {post.authorName}</span>
+                    {post.isPinned && (
+                      <span className="flex items-center gap-1 text-orange-600">
+                        <Pin className="w-3 h-3" />
+                        Pinned
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
 
         {!isExpanded && hasMorePosts && (
-          <div className="p-4 bg-gray-50 border-t">
+          <div className="p-3 bg-gray-50 border-t">
             <Button
               variant="outline"
               onClick={() => setIsExpanded(true)}
-              className="w-full"
+              className="w-full text-sm"
             >
               <ChevronDown className="w-4 h-4 mr-2" />
               Show {posts.length - 3} More Updates
