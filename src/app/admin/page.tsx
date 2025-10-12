@@ -44,6 +44,7 @@ import DonationManagement from '@/components/DonationManagement';
 import DonorsManagement from '@/components/DonorsManagement';
 import Inventory from '@/components/Inventory';
 import useModernModal from '@/components/ui/modern-modal';
+import useNotificationModal from '@/components/ui/notification-modal';
 import { ref, onValue, off, update, get, set, remove } from 'firebase/database';
 // import { collection, onSnapshot, doc, updateDoc, serverTimestamp, query, orderBy } from 'firebase/firestore';
 import { database } from '@/lib/firebase';
@@ -68,12 +69,14 @@ import {
   Map,
   LogOut,
   Camera,
-  Mail
+  Mail,
+  Bell
 } from 'lucide-react';
 
 export default function AdminDashboard() {
   const { user, profile, loading, logout } = useAuth();
   const { ModalComponent, alert, confirm, success, error } = useModernModal();
+  const { NotificationModal, openModal, closeModal, unreadCount } = useNotificationModal();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -1887,6 +1890,7 @@ export default function AdminDashboard() {
   return (
     <>
       <ModalComponent />
+      <NotificationModal />
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       {/* Sidebar */}
       <div className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} fixed inset-y-0 left-0 z-[2000] w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 flex flex-col h-screen`}>
@@ -2103,20 +2107,40 @@ export default function AdminDashboard() {
         <main className="p-4 md:p-6">
           {/* Header */}
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              {activeTab === 'dashboard' && 'Admin Dashboard'}
-              {activeTab === 'abuse-reports' && 'Abuse Reports Management'}
-              {activeTab === 'lost-reports' && 'Lost Reports Management'}
-              {activeTab === 'found-reports' && 'Found Reports Management'}
-              {activeTab === 'adopt' && 'Adoption Management'}
-              {activeTab === 'contact' && 'Contact Messages Management'}
-              {activeTab === 'donations' && 'Donation Management'}
-              {activeTab === 'volunteers' && 'Volunteer Management'}
-              {activeTab === 'donors' && 'Donor Management'}
-              {activeTab === 'inventory' && 'Inventory Management'}
-              {activeTab === 'heatmap' && 'Heat Map Analytics'}
-            </h1>
-            <p className="text-gray-600">Welcome back, {profile.name || profile.email}</p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                  {activeTab === 'dashboard' && 'Admin Dashboard'}
+                  {activeTab === 'abuse-reports' && 'Abuse Reports Management'}
+                  {activeTab === 'lost-reports' && 'Lost Reports Management'}
+                  {activeTab === 'found-reports' && 'Found Reports Management'}
+                  {activeTab === 'adopt' && 'Adoption Management'}
+                  {activeTab === 'contact' && 'Contact Messages Management'}
+                  {activeTab === 'donations' && 'Donation Management'}
+                  {activeTab === 'volunteers' && 'Volunteer Management'}
+                  {activeTab === 'donors' && 'Donor Management'}
+                  {activeTab === 'inventory' && 'Inventory Management'}
+                  {activeTab === 'heatmap' && 'Heat Map Analytics'}
+                </h1>
+                <p className="text-gray-600">Welcome back, {profile.name || profile.email}</p>
+              </div>
+              
+              {/* Notification Button */}
+              <div className="relative">
+                <Button
+                  onClick={openModal}
+                  variant="outline"
+                  className="relative p-3 hover:bg-blue-50 border-blue-200"
+                >
+                  <Bell className="w-5 h-5 text-blue-600" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                      {unreadCount}
+                    </span>
+                  )}
+                </Button>
+              </div>
+            </div>
           </div>
 
           {/* Dynamic Content */}
