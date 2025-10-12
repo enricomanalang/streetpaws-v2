@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Menu, X, Heart, UserCircle2, LogOut, Bell, Mail } from 'lucide-react';
+import useNotificationModal from '@/components/ui/notification-modal';
 import { database } from '@/lib/firebase';
 import { ref, onValue, off, update } from 'firebase/database';
 
@@ -14,6 +15,7 @@ export default function Navigation() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
+  const { NotificationModal, openModal, closeModal, unreadCount } = useNotificationModal();
   const { user, profile, logout } = useAuth();
   const pathname = usePathname();
 
@@ -81,7 +83,9 @@ export default function Navigation() {
   };
 
   return (
-    <nav className="bg-white shadow-lg border-b border-gray-200">
+    <>
+      <NotificationModal />
+      <nav className="bg-white shadow-lg border-b border-gray-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
@@ -173,36 +177,13 @@ export default function Navigation() {
                       </div>
                       <button 
                         className="w-full flex items-center justify-between bg-orange-100 hover:bg-orange-200 text-gray-900 rounded-md px-4 py-2 mb-3"
-                        onClick={() => setIsNotifOpen((v) => !v)}
+                        onClick={openModal}
                       >
-                        <span className="flex items-center gap-2"><Mail className="w-4 h-4" /> Notification</span>
+                        <span className="flex items-center gap-2"><Bell className="w-4 h-4" /> Notification</span>
                         {unreadCount > 0 && (
                           <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full">{unreadCount}</span>
                         )}
                       </button>
-                      {isNotifOpen && (
-                        <div className="max-h-64 overflow-auto -mx-1 px-1 mb-3 space-y-2">
-                          {notifications.length === 0 ? (
-                            <div className="text-sm text-gray-600">No notifications</div>
-                          ) : (
-                            notifications.map((n) => (
-                              <div key={n.id} className={`p-3 border rounded-md ${n.read ? 'bg-white' : 'bg-yellow-50'}`}>
-                                <div className="text-sm font-medium text-gray-900 mb-1">
-                                  {n.type === 'sighting' ? 'New sighting reported' : 'Notification'}
-                                </div>
-                                {n.petName && <div className="text-sm text-gray-700">Pet: {n.petName}</div>}
-                                {n.message && <div className="text-sm text-gray-600 mt-1 line-clamp-2">{n.message}</div>}
-                                <div className="flex justify-between items-center mt-2">
-                                  <span className="text-xs text-gray-500">{new Date(n.createdAt).toLocaleString()}</span>
-                                  {!n.read && (
-                                    <button className="text-xs text-blue-600 hover:underline" onClick={() => markNotifAsRead(n.id)}>Mark as read</button>
-                                  )}
-                                </div>
-                              </div>
-                            ))
-                          )}
-                        </div>
-                      )}
                       <button
                         onClick={handleLogout}
                         className="w-full bg-gray-100 hover:bg-gray-200 text-gray-900 rounded-md px-4 py-2"
@@ -382,5 +363,6 @@ export default function Navigation() {
         )}
       </div>
     </nav>
+    </>
   );
 }
