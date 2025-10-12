@@ -71,7 +71,7 @@ export default function Navigation() {
     };
   }, [user]);
 
-  const unreadCount = notifications.filter((n) => n.read === false).length;
+  const localUnreadCount = notifications.filter((n) => n.read === false).length;
 
   const markNotifAsRead = async (notifId: string) => {
     if (!user) return;
@@ -180,8 +180,8 @@ export default function Navigation() {
                         onClick={openModal}
                       >
                         <span className="flex items-center gap-2"><Bell className="w-4 h-4" /> Notification</span>
-                        {unreadCount > 0 && (
-                          <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full">{unreadCount}</span>
+                        {localUnreadCount > 0 && (
+                          <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full">{localUnreadCount}</span>
                         )}
                       </button>
                       <button
