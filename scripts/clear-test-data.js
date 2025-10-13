@@ -3,6 +3,7 @@
 
 const { initializeApp } = require('firebase/app');
 const { getDatabase, ref, remove } = require('firebase/database');
+const { getAuth, signInWithEmailAndPassword, signInAnonymously } = require('firebase/auth');
 
 // Firebase configuration (same as your app)
 const firebaseConfig = {
@@ -18,6 +19,25 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
+const auth = getAuth(app);
+
+async function ensureAuth() {
+  const email = process.env.SEED_EMAIL;
+  const password = process.env.SEED_PASSWORD;
+  if (email && password) {
+    console.log('🔐 Signing in with seed user...');
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      console.log('✅ Authenticated as seed user');
+      return;
+    } catch (e) {
+      console.warn('⚠️ Seed login failed, falling back to anonymous:', e.code || e.message || e);
+    }
+  }
+  console.log('🔐 Trying anonymous auth...');
+  await signInAnonymously(auth);
+  console.log('✅ Authenticated anonymously');
+}
 
 // Collections to clear
 const collectionsToClear = [
@@ -34,6 +54,7 @@ async function clearAllData() {
   console.log('🗑️  Starting to clear all test data...');
   
   try {
+    await ensureAuth();
     for (const collection of collectionsToClear) {
       console.log(`\n📁 Clearing collection: ${collection}`);
       
