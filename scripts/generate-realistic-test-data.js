@@ -5,6 +5,7 @@
 
 const { initializeApp } = require('firebase/app');
 const { getDatabase, ref, push, set } = require('firebase/database');
+const { getAuth, signInWithEmailAndPassword, signInAnonymously } = require('firebase/auth');
 
 // Firebase configuration
 const firebaseConfig = {
@@ -20,6 +21,26 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
+const auth = getAuth(app);
+
+async function ensureAuth() {
+  const email = process.env.SEED_EMAIL;
+  const password = process.env.SEED_PASSWORD;
+  try {
+    if (email && password) {
+      console.log('🔐 Signing in with seed user...');
+      await signInWithEmailAndPassword(auth, email, password);
+      console.log('✅ Authenticated as seed user');
+    } else {
+      console.log('🔐 No SEED_EMAIL/PASSWORD provided; trying anonymous auth...');
+      await signInAnonymously(auth);
+      console.log('✅ Authenticated anonymously');
+    }
+  } catch (e) {
+    console.error('❌ Authentication failed:', e.message || e);
+    throw e;
+  }
+}
 
 // Parse simple CLI args: --month=YYYY-MM OR --start=YYYY-MM --months=N
 function parseCliOptions() {
@@ -163,6 +184,7 @@ const generateRealisticTestData = (options = {}) => {
 const addRealisticTestData = async () => {
   try {
     console.log('🚀 Generating realistic test data for analytics demonstration...');
+    await ensureAuth();
     const options = parseCliOptions();
     if (options.fixedMonth) console.log(`📅 Using fixed month: ${options.fixedMonth}`);
     if (options.startMonth && options.months) console.log(`📅 Using range starting ${options.startMonth} for ${options.months} month(s)`);
