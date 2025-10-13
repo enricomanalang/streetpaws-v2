@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -66,10 +67,20 @@ export default function AdoptPage() {
       setActive(idx);
     };
 
+    const nextImage = () => {
+      const nextIdx = (active + 1) % images.length;
+      goTo(nextIdx);
+    };
+
+    const prevImage = () => {
+      const prevIdx = active === 0 ? images.length - 1 : active - 1;
+      goTo(prevIdx);
+    };
+
     if (!images || images.length === 0) return null;
 
     return (
-      <div className="relative">
+      <div className="relative group">
         <div
           ref={scrollerRef}
           onScroll={onScroll}
@@ -88,17 +99,37 @@ export default function AdoptPage() {
             ))}
           </div>
         </div>
+        
         {images.length > 1 && (
-          <div className="absolute bottom-3 left-0 right-0 flex items-center justify-center gap-1">
-            {images.map((_, i) => (
-              <button
-                key={i}
-                onClick={() => goTo(i)}
-                className={`h-2 w-2 rounded-full ${i === active ? 'bg-white' : 'bg-white/60'} shadow`}
-                aria-label={`Go to image ${i + 1}`}
-              />
-            ))}
-          </div>
+          <>
+            {/* Navigation arrows */}
+            <button
+              onClick={prevImage}
+              className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+              aria-label="Previous image"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <button
+              onClick={nextImage}
+              className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+              aria-label="Next image"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+            
+            {/* Pagination dots */}
+            <div className="absolute bottom-3 left-0 right-0 flex items-center justify-center gap-1">
+              {images.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => goTo(i)}
+                  className={`h-2 w-2 rounded-full ${i === active ? 'bg-white' : 'bg-white/60'} shadow`}
+                  aria-label={`Go to image ${i + 1}`}
+                />
+              ))}
+            </div>
+          </>
         )}
       </div>
     );
