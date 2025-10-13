@@ -813,7 +813,7 @@ export default function FoundPetsPage() {
                   <Button
                     type="submit"
                     disabled={loading}
-                    className="flex-1 bg-green-600 hover:bg-green-700"
+                    className="flex-1 bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {loading ? 'Submitting...' : 'Submit Claim'}
                   </Button>

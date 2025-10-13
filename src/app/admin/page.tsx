@@ -118,6 +118,12 @@ export default function AdminDashboard() {
   }>>([]);
   const [loadingFoundPets, setLoadingFoundPets] = useState(false);
   const [foundFilter, setFoundFilter] = useState<'all'|'pending'|'approved'|'rejected'|'adopted'>('pending');
+  const [petClaims, setPetClaims] = useState<Array<{
+    id: string;
+    [key: string]: any;
+  }>>([]);
+  const [loadingPetClaims, setLoadingPetClaims] = useState(false);
+  const [claimsFilter, setClaimsFilter] = useState<'all'|'pending'|'approved'|'rejected'>('pending');
   const [adoptionRequests, setAdoptionRequests] = useState<Array<{
     id: string;
     [key: string]: any;
@@ -466,6 +472,35 @@ export default function AdminDashboard() {
     }
   }, [activeTab]);
 
+  // Fetch pet claims when found-reports tab is active
+  useEffect(() => {
+    if (activeTab === 'found-reports' && database) {
+      setLoadingPetClaims(true);
+      const claimsRef = ref(database, 'petClaims');
+      
+      const unsubscribe = onValue(claimsRef, (snapshot) => {
+        if (snapshot.exists()) {
+          const claims = snapshot.val();
+          const claimsList = Object.keys(claims).map(key => ({
+            id: key,
+            ...claims[key]
+          }));
+          setPetClaims(claimsList);
+        } else {
+          setPetClaims([]);
+        }
+        setLoadingPetClaims(false);
+      }, (error) => {
+        console.error('Error fetching pet claims:', error);
+        setLoadingPetClaims(false);
+      });
+
+      return () => {
+        try { unsubscribe(); } catch {}
+      };
+    }
+  }, [activeTab]);
+
   // Load dashboard data when dashboard tab is active
   useEffect(() => {
     if (activeTab === 'dashboard' && database) {
@@ -750,6 +785,42 @@ export default function AdminDashboard() {
     } catch (error) {
       console.error('Error marking found pet for adoption:', error);
       alert(`Failed to mark found pet for adoption: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
+
+  const updateClaimStatus = async (claimId: string, status: string) => {
+    if (!database) return;
+    
+    try {
+      const claimRef = ref(database, `petClaims/${claimId}`);
+      await update(claimRef, {
+        status,
+        updatedAt: new Date().toISOString(),
+        reviewedBy: {
+          uid: user?.uid,
+          name: profile?.name || profile?.email,
+          email: profile?.email
+        }
+      });
+      
+      // If approved, update the found pet status to reunited
+      if (status === 'approved') {
+        const claimSnapshot = await get(claimRef);
+        if (claimSnapshot.exists()) {
+          const claimData = claimSnapshot.val();
+          const foundPetRef = ref(database, `foundPets/${claimData.petId}`);
+          await update(foundPetRef, {
+            status: 'reunited',
+            reunitedAt: new Date().toISOString(),
+            reunitedWith: claimData.claimedBy
+          });
+        }
+      }
+      
+      success(`Claim ${status} successfully`);
+    } catch (error) {
+      console.error('Error updating claim status:', error);
+      alert(`Failed to update claim status: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
@@ -2027,8 +2098,14 @@ export default function AdminDashboard() {
           return pet.status === foundFilter;
         });
 
+        const filteredClaims = petClaims.filter(claim => {
+          if (claimsFilter === 'all') return true;
+          return claim.status === claimsFilter;
+        });
+
         return (
           <div className="space-y-6">
+            {/* Found Pet Reports */}
             <Card className="bg-white shadow-sm">
               <CardHeader>
                 <CardTitle className="text-lg font-semibold text-gray-900">Found Pet Reports</CardTitle>
@@ -2172,6 +2249,123 @@ export default function AdminDashboard() {
                             </div>
                           </div>
                         )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Pet Claims */}
+            <Card className="bg-white shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-lg font-semibold text-gray-900">Pet Claims</CardTitle>
+                <CardDescription>Review and approve pet ownership claims</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {/* Claims Filter buttons */}
+                <div className="flex flex-wrap gap-2 mb-6">
+                  {[
+                    { key: 'all', label: 'All Claims', count: petClaims.length },
+                    { key: 'pending', label: 'Pending', count: petClaims.filter(c => c.status === 'pending' || !c.status).length },
+                    { key: 'approved', label: 'Approved', count: petClaims.filter(c => c.status === 'approved').length },
+                    { key: 'rejected', label: 'Rejected', count: petClaims.filter(c => c.status === 'rejected').length }
+                  ].map(({ key, label, count }) => (
+                    <button
+                      key={key}
+                      onClick={() => setClaimsFilter(key as any)}
+                      className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                        claimsFilter === key
+                          ? 'bg-blue-100 text-blue-700 border border-blue-200'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      {label} ({count})
+                    </button>
+                  ))}
+                </div>
+
+                {loadingPetClaims ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                    <p className="mt-2 text-gray-500">Loading claims...</p>
+                  </div>
+                ) : filteredClaims.length === 0 ? (
+                  <div className="text-center py-12">
+                    <CheckCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No Pet Claims</h3>
+                    <p className="text-gray-500">No pet claims match the current filter.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {filteredClaims.map((claim) => (
+                      <div key={claim.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <h3 className="font-semibold text-gray-900">
+                                Claim for {claim.petDetails?.animalType} - {claim.petDetails?.breed}
+                              </h3>
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                claim.status === 'approved' ? 'bg-green-100 text-green-700' :
+                                claim.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                                'bg-yellow-100 text-yellow-700'
+                              }`}>
+                                {claim.status || 'pending'}
+                              </span>
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-4 text-sm text-gray-600 mb-3">
+                              <div>
+                                <span className="font-medium">Claimant:</span> {claim.ownerName}
+                              </div>
+                              <div>
+                                <span className="font-medium">Contact:</span> {claim.ownerContact}
+                              </div>
+                              <div>
+                                <span className="font-medium">Email:</span> {claim.ownerEmail}
+                              </div>
+                              <div>
+                                <span className="font-medium">Pet Location:</span> {claim.petDetails?.foundLocation}
+                              </div>
+                            </div>
+                            
+                            <div className="text-sm text-gray-600 mb-2">
+                              <span className="font-medium">Proof of Ownership:</span> {claim.proofOfOwnership}
+                            </div>
+                            
+                            {claim.additionalInfo && (
+                              <div className="text-sm text-gray-600 mb-2">
+                                <span className="font-medium">Additional Info:</span> {claim.additionalInfo}
+                              </div>
+                            )}
+                            
+                            <div className="text-xs text-gray-500">
+                              Claimed by: {claim.claimedBy?.name} on {claim.createdAt}
+                            </div>
+                          </div>
+                          
+                          <div className="flex flex-col gap-2 ml-4">
+                            {claim.status !== 'approved' && claim.status !== 'rejected' && (
+                              <>
+                                <Button
+                                  size="sm"
+                                  onClick={() => updateClaimStatus(claim.id, 'approved')}
+                                  className="bg-green-600 hover:bg-green-700"
+                                >
+                                  Approve Claim
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  onClick={() => updateClaimStatus(claim.id, 'rejected')}
+                                >
+                                  Reject Claim
+                                </Button>
+                              </>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     ))}
                   </div>
