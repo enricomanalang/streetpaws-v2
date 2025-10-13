@@ -19,7 +19,7 @@ const TileLayer = dynamic(() => import('react-leaflet').then((mod) => mod.TileLa
 const Marker = dynamic(() => import('react-leaflet').then((mod) => mod.Marker), { ssr: false });
 const Popup = dynamic(() => import('react-leaflet').then((mod) => mod.Popup), { ssr: false });
 
-// Simple HeatMap component without complex heatmap layer
+// Enhanced HeatMap component with true heatmap density visualization
 
 export default function HeatMap() {
   const [markers, setMarkers] = useState<Array<{
@@ -33,6 +33,13 @@ export default function HeatMap() {
   const [mapCenter, setMapCenter] = useState<[number, number]>([14.0583, 121.1656]); // Lipa City coordinates
   const [mapZoom, setMapZoom] = useState(13);
   const [leafletLoaded, setLeafletLoaded] = useState(false);
+  const [heatmapData, setHeatmapData] = useState<Array<{lat: number, lng: number, intensity: number}>>([]);
+  const [densityStats, setDensityStats] = useState<{
+    totalZones: number;
+    highDensityZones: number;
+    avgDensity: number;
+    maxDensity: number;
+  }>({ totalZones: 0, highDensityZones: 0, avgDensity: 0, maxDensity: 0 });
 
   // Load Leaflet CSS and JS
   useEffect(() => {
@@ -138,8 +145,18 @@ export default function HeatMap() {
           });
         setMarkers(markersList);
         console.log('Processed markers:', markersList);
+        
+        // Generate heatmap data
+        const heatmapPoints = generateHeatmapData(markersList);
+        setHeatmapData(heatmapPoints);
+        
+        // Calculate density statistics
+        const densityData = calculateDensityStats(markersList);
+        setDensityStats(densityData);
       } else {
         setMarkers([]);
+        setHeatmapData([]);
+        setDensityStats({ totalZones: 0, highDensityZones: 0, avgDensity: 0, maxDensity: 0 });
       }
       setLoading(false);
     }, (error) => {
@@ -206,6 +223,56 @@ export default function HeatMap() {
     setLoading(true);
     // Data will be refreshed by the useEffect
     setTimeout(() => setLoading(false), 1000);
+  };
+
+  // Generate heatmap data with intensity calculation
+  const generateHeatmapData = (markers: any[]) => {
+    return markers.map(marker => {
+      const intensity = calculateIntensity(marker);
+      return {
+        lat: marker.latitude || 14.0583,
+        lng: marker.longitude || 121.1656,
+        intensity: intensity
+      };
+    });
+  };
+
+  // Calculate intensity based on severity, recency, and type
+  const calculateIntensity = (marker: any) => {
+    const daysSinceReport = (Date.now() - new Date(marker.createdAt || Date.now()).getTime()) / (1000 * 60 * 60 * 24);
+    const severity = marker.condition === 'abuse' || marker.condition === 'fighting' ? 1.0 : 0.5;
+    const recency = Math.max(0, 1 - (daysSinceReport / 30)); // Decay over 30 days
+    const typeMultiplier = marker.animalType === 'dog' ? 1.2 : marker.animalType === 'cat' ? 1.0 : 0.8;
+    
+    return Math.min(1.0, severity * recency * typeMultiplier);
+  };
+
+  // Calculate density statistics by dividing area into zones
+  const calculateDensityStats = (markers: any[]) => {
+    const gridSize = 0.01; // ~1km grid
+    const zones: { [key: string]: number } = {};
+    
+    markers.forEach(marker => {
+      if (marker.latitude && marker.longitude) {
+        const zoneX = Math.floor(marker.latitude / gridSize);
+        const zoneY = Math.floor(marker.longitude / gridSize);
+        const zoneKey = `${zoneX},${zoneY}`;
+        zones[zoneKey] = (zones[zoneKey] || 0) + 1;
+      }
+    });
+    
+    const zoneCounts = Object.values(zones);
+    const totalZones = zoneCounts.length;
+    const highDensityZones = zoneCounts.filter(count => count >= 3).length;
+    const avgDensity = zoneCounts.length > 0 ? zoneCounts.reduce((sum, count) => sum + count, 0) / zoneCounts.length : 0;
+    const maxDensity = zoneCounts.length > 0 ? Math.max(...zoneCounts) : 0;
+    
+    return {
+      totalZones,
+      highDensityZones,
+      avgDensity: Math.round(avgDensity * 100) / 100,
+      maxDensity
+    };
   };
 
   if (typeof window === 'undefined') {
@@ -283,7 +350,7 @@ export default function HeatMap() {
           {/* Heatmap Indicator */}
           {showHeatmap && markers.length > 0 && (
             <div className="absolute top-4 left-4 bg-red-500 text-white px-2 py-1 rounded text-sm z-10">
-              Heatmap: {markers.length} points
+              Heatmap: {markers.length} points | Density: {densityStats.avgDensity}/zone
             </div>
           )}
           
@@ -349,19 +416,36 @@ export default function HeatMap() {
             </p>
             <p className="text-sm text-red-800">Abuse Cases</p>
           </div>
-          <div className="text-center p-3 bg-yellow-50 rounded-lg">
-            <p className="text-2xl font-bold text-yellow-600">
-              {markers.filter(m => m.status === 'lost').length}
-            </p>
-            <p className="text-sm text-yellow-800">Lost Pets</p>
+          <div className="text-center p-3 bg-purple-50 rounded-lg">
+            <p className="text-2xl font-bold text-purple-600">{densityStats.totalZones}</p>
+            <p className="text-sm text-purple-800">Active Zones</p>
           </div>
-          <div className="text-center p-3 bg-green-50 rounded-lg">
-            <p className="text-2xl font-bold text-green-600">
-              {markers.filter(m => m.status === 'found').length}
-            </p>
-            <p className="text-sm text-green-800">Found Pets</p>
+          <div className="text-center p-3 bg-orange-50 rounded-lg">
+            <p className="text-2xl font-bold text-orange-600">{densityStats.highDensityZones}</p>
+            <p className="text-sm text-orange-800">High Density</p>
           </div>
         </div>
+
+        {/* Density Analysis */}
+        {densityStats.totalZones > 0 && (
+          <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+            <h4 className="font-semibold text-gray-900 mb-2">Population Density Analysis</h4>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+              <div>
+                <span className="text-gray-600">Average Density:</span>
+                <span className="ml-2 font-medium">{densityStats.avgDensity} reports/zone</span>
+              </div>
+              <div>
+                <span className="text-gray-600">Maximum Density:</span>
+                <span className="ml-2 font-medium">{densityStats.maxDensity} reports</span>
+              </div>
+              <div>
+                <span className="text-gray-600">High Density Zones:</span>
+                <span className="ml-2 font-medium">{Math.round((densityStats.highDensityZones / densityStats.totalZones) * 100)}%</span>
+              </div>
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

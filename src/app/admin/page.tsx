@@ -40,6 +40,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import HeatMap from '@/components/HeatMap';
 import { AdminDashboardCharts } from '@/components/AdminCharts';
+import PredictiveDashboard from '@/components/PredictiveAnalytics';
+import PrescriptiveDashboard from '@/components/PrescriptiveAnalytics';
+import TestDataGenerator from '@/components/TestDataGenerator';
 import DonationManagement from '@/components/DonationManagement';
 import DonorsManagement from '@/components/DonorsManagement';
 import Inventory from '@/components/Inventory';
@@ -73,7 +76,10 @@ import {
   Camera,
   Mail,
   Bell,
-  Megaphone
+  Megaphone,
+  TrendingUp,
+  Target,
+  Settings
 } from 'lucide-react';
 
 export default function AdminDashboard() {
@@ -1854,6 +1860,12 @@ export default function AdminDashboard() {
       
       case 'heatmap':
         return <HeatMap />;
+      case 'predictive':
+        return <PredictiveDashboard />;
+      case 'prescriptive':
+        return <PrescriptiveDashboard />;
+      // case 'test-data':
+      //   return <TestDataGenerator />;
       
       case 'inventory':
         return <Inventory />;
@@ -2079,6 +2091,40 @@ export default function AdminDashboard() {
               <Map className="w-5 h-5 mr-3" />
               Heat Map
             </button>
+            <button 
+              onClick={() => setActiveTab('predictive')}
+              className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                activeTab === 'predictive' 
+                  ? 'text-white bg-gradient-to-r from-indigo-600 to-blue-600' 
+                  : 'text-gray-700 hover:text-indigo-600 hover:bg-indigo-50'
+              }`}
+            >
+              <TrendingUp className="w-5 h-5 mr-3" />
+              Predictive Analytics
+            </button>
+            <button 
+              onClick={() => setActiveTab('prescriptive')}
+              className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                activeTab === 'prescriptive' 
+                  ? 'text-white bg-gradient-to-r from-emerald-600 to-green-600' 
+                  : 'text-gray-700 hover:text-emerald-600 hover:bg-emerald-50'
+              }`}
+            >
+              <Target className="w-5 h-5 mr-3" />
+              Prescriptive Analytics
+            </button>
+            {/* Temporarily disabled - Test Data Generator */}
+            {/* <button 
+              onClick={() => setActiveTab('test-data')}
+              className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                activeTab === 'test-data' 
+                  ? 'text-white bg-gradient-to-r from-purple-600 to-pink-600' 
+                  : 'text-gray-700 hover:text-purple-600 hover:bg-purple-50'
+              }`}
+            >
+              <Settings className="w-5 h-5 mr-3" />
+              Test Data Generator
+            </button> */}
             
             <button 
               onClick={() => setActiveTab('newsfeed')}
@@ -2158,6 +2204,9 @@ export default function AdminDashboard() {
                   {activeTab === 'donors' && 'Donor Management'}
                   {activeTab === 'inventory' && 'Inventory Management'}
                   {activeTab === 'heatmap' && 'Heat Map Analytics'}
+                  {activeTab === 'predictive' && 'Predictive Analytics'}
+                  {activeTab === 'prescriptive' && 'Prescriptive Analytics'}
+                  {activeTab === 'test-data' && 'Test Data Generator'}
                   {activeTab === 'newsfeed' && 'Newsfeed Management'}
                 </h1>
                 <p className="text-gray-600">Welcome back, {profile.name || profile.email}</p>
