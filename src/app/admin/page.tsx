@@ -1009,6 +1009,12 @@ export default function AdminDashboard() {
               </Card>
             </div>
 
+            {/* Full Analytics (Embedded) */}
+            <div className="space-y-6">
+              <PredictiveDashboard />
+              <PrescriptiveDashboard />
+            </div>
+
             {/* Recent Activity & Upcoming Tasks */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Card>
