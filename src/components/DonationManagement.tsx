@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { database } from '@/lib/firebase';
+import { database, firestore } from '@/lib/firebase';
+import { collection, getDocs } from 'firebase/firestore';
 import { ref, onValue, off, update, push, set, query, orderByChild, get } from 'firebase/database';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card } from '@/components/ui/card';
@@ -72,6 +73,7 @@ export default function DonationManagement() {
   const [purposeFilter, setPurposeFilter] = useState('all');
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [selectedDonation, setSelectedDonation] = useState<Donation | null>(null);
+  const [migrating, setMigrating] = useState(false);
 
   useEffect(() => {
     if (!database) {
@@ -264,6 +266,58 @@ export default function DonationManagement() {
     window.URL.revokeObjectURL(url);
   };
 
+  const migrateFromFirestore = async () => {
+    if (!firestore || !database) {
+      await error('Firestore/Realtime Database not initialized', 'Migration Error');
+      return;
+    }
+    const yes = await confirm('Copy donations from Firestore → Realtime Database? Existing duplicates will be skipped.', 'Sync from Firestore');
+    if (!yes) return;
+    setMigrating(true);
+    try {
+      const snap = await getDocs(collection(firestore, 'donations'));
+      const existingKeys = new Set(
+        donations.map(d => (d as any).sourceId || d.paymentIntentId || d.referenceNumber)
+      );
+      let copied = 0;
+      for (const doc of snap.docs) {
+        const data: any = doc.data();
+        const uniqueKey = data.sourceId || data.paymentIntentId || data.referenceNumber || doc.id;
+        if (existingKeys.has(uniqueKey)) continue;
+        const donationData: any = {
+          amount: data.amount || 0,
+          currency: (data.currency || 'php').toUpperCase(),
+          donorName: data.donorName || data.name || 'Donor',
+          donorEmail: data.donorEmail || data.email || '',
+          donorPhone: data.donorPhone || data.phone || '',
+          isAnonymous: data.isAnonymous ?? false,
+          purpose: data.purpose || 'general',
+          dedication: data.dedication || '',
+          paymentMethod: data.paymentMethod || data.method || 'manual',
+          paymentIntentId: data.paymentIntentId || undefined,
+          method: data.method,
+          referenceNumber: data.referenceNumber,
+          screenshots: data.screenshots || [],
+          status: (data.status || 'completed') as any,
+          createdAt: data.createdAt || new Date().toISOString(),
+          completedAt: data.completedAt || (data.status === 'completed' ? new Date().toISOString() : undefined),
+          receiptSent: data.receiptSent || false,
+          sourceId: doc.id,
+        };
+        const donationsRef = ref(database, 'donations');
+        const newRef = push(donationsRef);
+        await set(newRef, donationData);
+        copied++;
+      }
+      await success(`Synced ${copied} donation(s) from Firestore.`, 'Sync Complete');
+    } catch (e: any) {
+      console.error('Migration error:', e);
+      await error(e?.message || 'Failed to migrate donations');
+    } finally {
+      setMigrating(false);
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       completed: { color: 'bg-green-100 text-green-800', label: 'Completed' },
@@ -403,10 +457,15 @@ export default function DonationManagement() {
             </select>
           </div>
           
+          <div className="flex gap-2">
+          <Button onClick={migrateFromFirestore} disabled={migrating} className="bg-blue-600 hover:bg-blue-700 disabled:opacity-60">
+            {migrating ? 'Syncing…' : 'Sync from Firestore'}
+          </Button>
           <Button onClick={exportDonations} className="bg-orange-500 hover:bg-orange-600">
             <Download className="w-4 h-4 mr-2" />
             Export CSV
           </Button>
+          </div>
         </div>
       </Card>
 
