@@ -954,6 +954,61 @@ export default function AdminDashboard() {
             {/* Charts Section */}
             <AdminDashboardCharts />
 
+            {/* Predictive & Prescriptive Summaries */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card className="border-indigo-100">
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <TrendingUp className="w-5 h-5 mr-2 text-indigo-600" />
+                    Predictive Analytics (Summary)
+                  </CardTitle>
+                  <CardDescription>
+                    Quick glance of analytics; open the full tab for charts and hotspots
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600">Forecast preview</p>
+                      <p className="text-2xl font-semibold text-gray-900">6‑month outlook</p>
+                    </div>
+                    <Button
+                      onClick={() => setActiveTab('predictive')}
+                      className="bg-indigo-600 hover:bg-indigo-700"
+                    >
+                      View details
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-emerald-100">
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <Target className="w-5 h-5 mr-2 text-emerald-600" />
+                    Prescriptive Analytics (Summary)
+                  </CardTitle>
+                  <CardDescription>
+                    Top recommended actions and resource allocation
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600">Recommendations</p>
+                      <p className="text-2xl font-semibold text-gray-900">See priorities</p>
+                    </div>
+                    <Button
+                      onClick={() => setActiveTab('prescriptive')}
+                      className="bg-emerald-600 hover:bg-emerald-700"
+                    >
+                      View details
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
             {/* Recent Activity & Upcoming Tasks */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Card>
