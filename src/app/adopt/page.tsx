@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { HydrationBoundary } from '@/lib/hydration-fix';
@@ -48,6 +48,62 @@ export default function AdoptPage() {
   const [error, setError] = useState('');
   const [availableAnimals, setAvailableAnimals] = useState<AvailableAnimal[]>([]);
   const [selectedAnimal, setSelectedAnimal] = useState<AvailableAnimal | null>(null);
+  const ImageCarousel = ({ images, height = 192 }: { images: string[]; height?: number }) => {
+    const [active, setActive] = useState(0);
+    const scrollerRef = useRef<HTMLDivElement | null>(null);
+
+    const onScroll = () => {
+      const el = scrollerRef.current;
+      if (!el) return;
+      const idx = Math.round(el.scrollLeft / el.clientWidth);
+      setActive(Math.max(0, Math.min(idx, images.length - 1)));
+    };
+
+    const goTo = (idx: number) => {
+      const el = scrollerRef.current;
+      if (!el) return;
+      el.scrollTo({ left: idx * el.clientWidth, behavior: 'smooth' });
+      setActive(idx);
+    };
+
+    if (!images || images.length === 0) return null;
+
+    return (
+      <div className="relative">
+        <div
+          ref={scrollerRef}
+          onScroll={onScroll}
+          className="w-full rounded-t-lg overflow-x-auto overflow-y-hidden no-scrollbar snap-x snap-mandatory"
+          style={{ height: `${height}px`, scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        >
+          <div className="flex w-full h-full">
+            {images.map((imgUrl, idx) => (
+              <img
+                key={idx}
+                src={imgUrl}
+                alt={`photo-${idx + 1}`}
+                className="w-full h-full object-cover flex-shrink-0 snap-center"
+                draggable={false}
+              />
+            ))}
+          </div>
+        </div>
+        {images.length > 1 && (
+          <div className="absolute bottom-3 left-0 right-0 flex items-center justify-center gap-1">
+            {images.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => goTo(i)}
+                className={`h-2 w-2 rounded-full ${i === active ? 'bg-white' : 'bg-white/60'} shadow`}
+                aria-label={`Go to image ${i + 1}`}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -360,22 +416,7 @@ export default function AdoptPage() {
                   <Card key={animal.id} className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setSelectedAnimal(animal)}>
                     <CardContent className="p-0">
                       {animal.images && animal.images.length > 0 ? (
-                        <div
-                          className="w-full h-48 rounded-t-lg overflow-x-auto overflow-y-hidden"
-                          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-                        >
-                          <style>{`.no-scrollbar::-webkit-scrollbar{display:none}`}</style>
-                          <div className="flex w-full h-full snap-x snap-mandatory no-scrollbar">
-                            {animal.images.map((imgUrl, idx) => (
-                              <img
-                                key={idx}
-                                src={imgUrl}
-                                alt={`${animal.animalType} ${idx + 1}`}
-                                className="w-full h-48 object-cover flex-shrink-0 snap-center"
-                              />
-                            ))}
-                          </div>
-                        </div>
+                        <ImageCarousel images={animal.images} height={192} />
                       ) : (
                         <div className="w-full h-48 bg-gray-200 rounded-t-lg flex items-center justify-center">
                           <Camera className="w-12 h-12 text-gray-400" />
@@ -423,22 +464,7 @@ export default function AdoptPage() {
               <CardContent>
                 <div className="flex items-center space-x-4">
                   {selectedAnimal.images && selectedAnimal.images.length > 0 ? (
-                    <div
-                      className="w-40 h-20 rounded-lg overflow-x-auto overflow-y-hidden"
-                      style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-                    >
-                      <style>{`.no-scrollbar::-webkit-scrollbar{display:none}`}</style>
-                      <div className="flex w-full h-full snap-x snap-mandatory no-scrollbar">
-                        {selectedAnimal.images.map((imgUrl, idx) => (
-                          <img
-                            key={idx}
-                            src={imgUrl}
-                            alt={`${selectedAnimal.animalType} ${idx + 1}`}
-                            className="w-20 h-20 object-cover rounded-lg flex-shrink-0 snap-center mr-2"
-                          />
-                        ))}
-                      </div>
-                    </div>
+                    <ImageCarousel images={selectedAnimal.images} height={80} />
                   ) : (
                     <div className="w-20 h-20 bg-gray-200 rounded-lg flex items-center justify-center">
                       <Camera className="w-8 h-8 text-gray-400" />
