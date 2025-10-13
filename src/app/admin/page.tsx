@@ -153,33 +153,30 @@ export default function AdminDashboard() {
       }, 10000); // 10 second timeout
       
       const reportsRef = ref(database, 'reports');
-      
-      const unsubscribe = onValue(reportsRef, (snapshot) => {
-        clearTimeout(timeout); // Clear timeout when data is received
-        console.log('Reports snapshot received');
-        
-        if (snapshot.exists()) {
-          const reportsData = snapshot.val();
-          const reportsList = Object.keys(reportsData).map(key => ({
-            id: key,
-            ...reportsData[key]
-          }));
-          console.log('Reports list:', reportsList);
-          setReports(reportsList);
-        } else {
-          console.log('No reports found');
-          setReports([]);
-        }
-        setLoadingReports(false);
-      }, (error) => {
-        clearTimeout(timeout); // Clear timeout on error
-        console.error('Error fetching reports:', error);
-        setLoadingReports(false);
-      });
+
+      get(reportsRef)
+        .then((snapshot) => {
+          clearTimeout(timeout);
+          console.log('Reports snapshot received (once)');
+          if (snapshot.exists()) {
+            const reportsData = snapshot.val();
+            const reportsList = Object.keys(reportsData).map(key => ({
+              id: key,
+              ...reportsData[key]
+            }));
+            setReports(reportsList);
+          } else {
+            setReports([]);
+          }
+        })
+        .catch((error) => {
+          clearTimeout(timeout);
+          console.error('Error fetching reports:', error);
+        })
+        .finally(() => setLoadingReports(false));
 
       return () => {
         clearTimeout(timeout);
-        try { unsubscribe(); } catch {}
       };
     } else if (activeTab !== 'abuse-reports') {
       // Reset reports when switching away from abuse-reports
@@ -338,33 +335,26 @@ export default function AdminDashboard() {
       }, 10000);
       
       const approvedReportsRef = ref(database, 'approvedReports');
-      
-      const unsubscribe = onValue(approvedReportsRef, (snapshot) => {
-        clearTimeout(timeout);
-        console.log('Approved reports snapshot received');
-        
-        if (snapshot.exists()) {
-          const reportsData = snapshot.val();
-          const reportsList = Object.keys(reportsData).map(key => ({
-            id: key,
-            ...reportsData[key]
-          }));
-          console.log('Approved reports list:', reportsList);
-          setApprovedReports(reportsList);
-        } else {
-          console.log('No approved reports found');
-          setApprovedReports([]);
-        }
-        setLoadingApprovedReports(false);
-      }, (error) => {
-        clearTimeout(timeout);
-        console.error('Error fetching approved reports:', error);
-        setLoadingApprovedReports(false);
-      });
+
+      get(approvedReportsRef)
+        .then((snapshot) => {
+          clearTimeout(timeout);
+          if (snapshot.exists()) {
+            const reportsData = snapshot.val();
+            const reportsList = Object.keys(reportsData).map(key => ({ id: key, ...reportsData[key] }));
+            setApprovedReports(reportsList);
+          } else {
+            setApprovedReports([]);
+          }
+        })
+        .catch((error) => {
+          clearTimeout(timeout);
+          console.error('Error fetching approved reports:', error);
+        })
+        .finally(() => setLoadingApprovedReports(false));
 
       return () => {
         clearTimeout(timeout);
-        try { unsubscribe(); } catch {}
       };
     } else if (activeTab !== 'approved-reports') {
       setApprovedReports([]);
@@ -384,33 +374,26 @@ export default function AdminDashboard() {
       }, 10000);
       
       const rejectedReportsRef = ref(database, 'rejectedReports');
-      
-      const unsubscribe = onValue(rejectedReportsRef, (snapshot) => {
-        clearTimeout(timeout);
-        console.log('Rejected reports snapshot received');
-        
-        if (snapshot.exists()) {
-          const reportsData = snapshot.val();
-          const reportsList = Object.keys(reportsData).map(key => ({
-            id: key,
-            ...reportsData[key]
-          }));
-          console.log('Rejected reports list:', reportsList);
-          setRejectedReports(reportsList);
-        } else {
-          console.log('No rejected reports found');
-          setRejectedReports([]);
-        }
-        setLoadingRejectedReports(false);
-      }, (error) => {
-        clearTimeout(timeout);
-        console.error('Error fetching rejected reports:', error);
-        setLoadingRejectedReports(false);
-      });
+
+      get(rejectedReportsRef)
+        .then((snapshot) => {
+          clearTimeout(timeout);
+          if (snapshot.exists()) {
+            const reportsData = snapshot.val();
+            const reportsList = Object.keys(reportsData).map(key => ({ id: key, ...reportsData[key] }));
+            setRejectedReports(reportsList);
+          } else {
+            setRejectedReports([]);
+          }
+        })
+        .catch((error) => {
+          clearTimeout(timeout);
+          console.error('Error fetching rejected reports:', error);
+        })
+        .finally(() => setLoadingRejectedReports(false));
 
       return () => {
         clearTimeout(timeout);
-        try { unsubscribe(); } catch {}
       };
     } else if (activeTab !== 'rejected-reports') {
       setRejectedReports([]);
