@@ -21,7 +21,7 @@ const Popup = dynamic(() => import('react-leaflet').then((mod) => mod.Popup), { 
 
 // Enhanced HeatMap component with true heatmap density visualization
 
-export default function HeatMap() {
+function HeatMapContent() {
   const [markers, setMarkers] = useState<Array<{
     id: string;
     [key: string]: any;
@@ -107,7 +107,7 @@ export default function HeatMap() {
     loadLeaflet();
   }, []);
 
-  // Fetch markers from Firebase
+  // Fetch markers from Firebase (approved reports only to avoid moderation noise)
   useEffect(() => {
     if (!database) return;
 
@@ -120,7 +120,7 @@ export default function HeatMap() {
         console.log('=== HEATMAP DATA DEBUG ===');
         console.log('Raw Firebase data (approved reports):', data);
         
-        const approvedReports = Object.keys(data);
+        const approvedReports = Object.keys(data || {});
         console.log(`Approved reports: ${approvedReports.length}`);
         
         const markersList = approvedReports
@@ -143,7 +143,7 @@ export default function HeatMap() {
             });
             return marker;
           });
-        setMarkers(markersList);
+        setMarkers(markersList.filter(m => Number.isFinite(m.lat) && Number.isFinite(m.lng)));
         console.log('Processed markers:', markersList);
         
         // Generate heatmap data
@@ -448,5 +448,49 @@ export default function HeatMap() {
         )}
       </CardContent>
     </Card>
+  );
+}
+
+// Simple error boundary to prevent whole app crash if map fails
+class HeatMapErrorBoundary extends (globalThis as any).React?.Component<any, any> {
+  constructor(props: any) {
+    // Fallback if React global isn't present during typing; Next injects React on client
+    // @ts-ignore
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  componentDidCatch(error: any) {
+    console.error('HeatMap crashed:', error);
+  }
+  render() {
+    if (this.state?.hasError) {
+      return (
+        <Card className="bg-white shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-lg font-semibold text-gray-900">Heat Map Analytics</CardTitle>
+            <CardDescription>Map failed to load. Please refresh the page.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-96 bg-gray-100 rounded-lg flex items-center justify-center">
+              <p className="text-gray-500">We encountered an error rendering the map.</p>
+            </div>
+          </CardContent>
+        </Card>
+      );
+    }
+    // @ts-ignore
+    return this.props.children;
+  }
+}
+
+export default function HeatMap() {
+  return (
+    // @ts-ignore
+    <HeatMapErrorBoundary>
+      <HeatMapContent />
+    </HeatMapErrorBoundary>
   );
 }
