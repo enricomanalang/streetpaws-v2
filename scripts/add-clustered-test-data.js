@@ -21,8 +21,35 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 
+// Parse simple CLI args: --month=YYYY-MM OR --start=YYYY-MM --months=N
+function parseCliOptions() {
+  const args = process.argv.slice(2);
+  const options = {};
+  for (const arg of args) {
+    const [key, value] = arg.split('=');
+    if (key === '--month' && value) {
+      options.fixedMonth = value; // YYYY-MM
+    }
+    if (key === '--start' && value) {
+      options.startMonth = value; // YYYY-MM
+    }
+    if (key === '--months' && value) {
+      const n = parseInt(value, 10);
+      if (!Number.isNaN(n) && n > 0) options.months = n;
+    }
+  }
+  return options;
+}
+
+function getRandomDateInMonth(year, monthIndex) {
+  const start = new Date(Date.UTC(year, monthIndex, 1, 0, 0, 0));
+  const end = new Date(Date.UTC(year, monthIndex + 1, 0, 23, 59, 59));
+  const ts = start.getTime() + Math.random() * (end.getTime() - start.getTime());
+  return new Date(ts);
+}
+
 // Create clustered data for hotspot detection
-const createClusteredData = () => {
+const createClusteredData = (options = {}) => {
   const reports = [];
   const baseDate = new Date('2024-01-01');
   
@@ -52,9 +79,21 @@ const createClusteredData = () => {
       const offsetLat = (Math.random() - 0.5) * 0.003; // ~300m radius
       const offsetLng = (Math.random() - 0.5) * 0.003;
       
-      const reportDate = new Date(baseDate);
-      reportDate.setDate(baseDate.getDate() + Math.floor(Math.random() * 30));
-      reportDate.setHours(Math.floor(Math.random() * 24));
+      let reportDate;
+      if (options.fixedMonth) {
+        const [y, m] = options.fixedMonth.split('-').map(Number);
+        reportDate = getRandomDateInMonth(y, m - 1);
+      } else if (options.startMonth && options.months) {
+        const [y, m] = options.startMonth.split('-').map(Number);
+        const monthOffset = Math.floor(Math.random() * options.months);
+        const year = y + Math.floor((m - 1 + monthOffset) / 12);
+        const monthIndex = (m - 1 + monthOffset) % 12;
+        reportDate = getRandomDateInMonth(year, monthIndex);
+      } else {
+        reportDate = new Date(baseDate);
+        reportDate.setDate(baseDate.getDate() + Math.floor(Math.random() * 30));
+        reportDate.setHours(Math.floor(Math.random() * 24));
+      }
       
       const report = {
         animalType: Math.random() > 0.6 ? 'dog' : 'cat',
@@ -88,8 +127,10 @@ const createClusteredData = () => {
 const addClusteredData = async () => {
   try {
     console.log('🚀 Adding clustered test data for hotspot detection...');
-    
-    const clusteredReports = createClusteredData();
+    const options = parseCliOptions();
+    if (options.fixedMonth) console.log(`📅 Using fixed month: ${options.fixedMonth}`);
+    if (options.startMonth && options.months) console.log(`📅 Using range starting ${options.startMonth} for ${options.months} month(s)`);
+    const clusteredReports = createClusteredData(options);
     console.log(`📊 Generated ${clusteredReports.length} clustered reports`);
     
     // Add to approved reports
