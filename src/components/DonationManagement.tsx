@@ -280,6 +280,15 @@ export default function DonationManagement() {
         donations.map(d => (d as any).sourceId || d.paymentIntentId || d.referenceNumber)
       );
       let copied = 0;
+      const removeUndefined = (obj: any) => {
+        Object.keys(obj).forEach((k) => {
+          if (obj[k] === undefined) {
+            delete obj[k];
+          }
+        });
+        return obj;
+      };
+
       for (const doc of snap.docs) {
         const data: any = doc.data();
         const uniqueKey = data.sourceId || data.paymentIntentId || data.referenceNumber || doc.id;
@@ -294,7 +303,7 @@ export default function DonationManagement() {
           purpose: data.purpose || 'general',
           dedication: data.dedication || '',
           paymentMethod: data.paymentMethod || data.method || 'manual',
-          paymentIntentId: data.paymentIntentId || undefined,
+          paymentIntentId: data.paymentIntentId,
           method: data.method,
           referenceNumber: data.referenceNumber,
           screenshots: data.screenshots || [],
@@ -306,7 +315,7 @@ export default function DonationManagement() {
         };
         const donationsRef = ref(database, 'donations');
         const newRef = push(donationsRef);
-        await set(newRef, donationData);
+        await set(newRef, removeUndefined(donationData));
         copied++;
       }
       await success(`Synced ${copied} donation(s) from Firestore.`, 'Sync Complete');
