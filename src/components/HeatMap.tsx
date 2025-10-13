@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { MapPin, Search, Trash2, Database, RefreshCw } from 'lucide-react';
-import { ref, onValue, off } from 'firebase/database';
+import { ref, get } from 'firebase/database';
 import { database } from '@/lib/firebase';
 
 // Dynamically import MapContainer to avoid SSR issues
@@ -49,60 +49,33 @@ function HeatMapContent() {
 
     setLoading(true);
     const markersRef = ref(database, 'approvedReports');
-    
-    const unsubscribe = onValue(markersRef, (snapshot) => {
-      if (snapshot.exists()) {
-        const data = snapshot.val();
-        console.log('=== HEATMAP DATA DEBUG ===');
-        console.log('Raw Firebase data (approved reports):', data);
-        
-        const approvedReports = Object.keys(data || {});
-        console.log(`Approved reports: ${approvedReports.length}`);
-        
-        const markersList = approvedReports
-          .map(key => {
-            const marker = {
-              id: key,
-              ...data[key],
-              position: [data[key].latitude || 14.0583, data[key].longitude || 121.1656],
-              lat: data[key].latitude || 14.0583,
-              lng: data[key].longitude || 121.1656,
-              intensity: 1
-            };
-            console.log(`Marker ${key}:`, {
-              location: marker.location,
-              address: marker.address,
-              description: marker.description,
-              animalType: marker.animalType,
-              condition: marker.condition,
-              status: marker.status
-            });
-            return marker;
-          });
-        setMarkers(markersList.filter(m => Number.isFinite(m.lat) && Number.isFinite(m.lng)));
-        console.log('Processed markers:', markersList);
-        
-        // Generate heatmap data
-        const heatmapPoints = generateHeatmapData(markersList);
-        setHeatmapData(heatmapPoints);
-        
-        // Calculate density statistics
-        const densityData = calculateDensityStats(markersList);
-        setDensityStats(densityData);
-      } else {
-        setMarkers([]);
-        setHeatmapData([]);
-        setDensityStats({ totalZones: 0, highDensityZones: 0, avgDensity: 0, maxDensity: 0 });
-      }
-      setLoading(false);
-    }, (error) => {
-      console.error('Error fetching markers:', error);
-      setLoading(false);
-    });
-
-    return () => {
-      try { unsubscribe(); } catch {}
-    };
+    get(markersRef)
+      .then((snapshot) => {
+        if (snapshot.exists()) {
+          const data = snapshot.val();
+          const approvedReports = Object.keys(data || {});
+          const markersList = approvedReports.map(key => ({
+            id: key,
+            ...data[key],
+            position: [data[key].latitude || 14.0583, data[key].longitude || 121.1656],
+            lat: data[key].latitude || 14.0583,
+            lng: data[key].longitude || 121.1656,
+            intensity: 1
+          }));
+          const cleanMarkers = markersList.filter(m => Number.isFinite(m.lat) && Number.isFinite(m.lng));
+          setMarkers(cleanMarkers);
+          setHeatmapData(generateHeatmapData(cleanMarkers));
+          setDensityStats(calculateDensityStats(cleanMarkers));
+        } else {
+          setMarkers([]);
+          setHeatmapData([]);
+          setDensityStats({ totalZones: 0, highDensityZones: 0, avgDensity: 0, maxDensity: 0 });
+        }
+      })
+      .catch((error) => {
+        console.error('Error fetching markers:', error);
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   const filteredMarkers = markers.filter(marker => 
