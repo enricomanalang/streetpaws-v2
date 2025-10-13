@@ -360,11 +360,22 @@ export default function AdoptPage() {
                   <Card key={animal.id} className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setSelectedAnimal(animal)}>
                     <CardContent className="p-0">
                       {animal.images && animal.images.length > 0 ? (
-                        <img
-                          src={animal.images[0]}
-                          alt={animal.animalType}
-                          className="w-full h-48 object-cover rounded-t-lg"
-                        />
+                        <div
+                          className="w-full h-48 rounded-t-lg overflow-x-auto overflow-y-hidden"
+                          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                        >
+                          <style>{`.no-scrollbar::-webkit-scrollbar{display:none}`}</style>
+                          <div className="flex w-full h-full snap-x snap-mandatory no-scrollbar">
+                            {animal.images.map((imgUrl, idx) => (
+                              <img
+                                key={idx}
+                                src={imgUrl}
+                                alt={`${animal.animalType} ${idx + 1}`}
+                                className="w-full h-48 object-cover flex-shrink-0 snap-center"
+                              />
+                            ))}
+                          </div>
+                        </div>
                       ) : (
                         <div className="w-full h-48 bg-gray-200 rounded-t-lg flex items-center justify-center">
                           <Camera className="w-12 h-12 text-gray-400" />
@@ -412,11 +423,22 @@ export default function AdoptPage() {
               <CardContent>
                 <div className="flex items-center space-x-4">
                   {selectedAnimal.images && selectedAnimal.images.length > 0 ? (
-                    <img
-                      src={selectedAnimal.images[0]}
-                      alt={selectedAnimal.animalType}
-                      className="w-20 h-20 object-cover rounded-lg"
-                    />
+                    <div
+                      className="w-40 h-20 rounded-lg overflow-x-auto overflow-y-hidden"
+                      style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                    >
+                      <style>{`.no-scrollbar::-webkit-scrollbar{display:none}`}</style>
+                      <div className="flex w-full h-full snap-x snap-mandatory no-scrollbar">
+                        {selectedAnimal.images.map((imgUrl, idx) => (
+                          <img
+                            key={idx}
+                            src={imgUrl}
+                            alt={`${selectedAnimal.animalType} ${idx + 1}`}
+                            className="w-20 h-20 object-cover rounded-lg flex-shrink-0 snap-center mr-2"
+                          />
+                        ))}
+                      </div>
+                    </div>
                   ) : (
                     <div className="w-20 h-20 bg-gray-200 rounded-lg flex items-center justify-center">
                       <Camera className="w-8 h-8 text-gray-400" />
