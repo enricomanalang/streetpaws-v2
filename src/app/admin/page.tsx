@@ -661,9 +661,8 @@ export default function AdminDashboard() {
   // Detect if a selected item is a Lost Pet entry rather than an Abuse Report
   const isLostEntry = (item: any) => {
     if (!item) return false;
-    if (typeof item.reportId === 'string' && item.reportId.startsWith('LOST-')) return true;
-    // Heuristics for lost pet objects
-    return !!(item.lastSeenLocation || item.petName || item.breed);
+    // Use strict ID prefix only to avoid false positives on approved reports
+    return typeof item.reportId === 'string' && item.reportId.startsWith('LOST-');
   };
 
   const updateAdoptionRequestStatus = async (requestId: string, status: string) => {
@@ -1201,6 +1200,14 @@ export default function AdminDashboard() {
                                 title="View Details"
                               >
                                 <Eye className="w-4 h-4 text-gray-600" />
+                              </button>
+                              {/* Mark for Adoption quick action */}
+                              <button
+                                onClick={() => markForAdoption(report.id)}
+                                className="px-3 py-1 rounded-md bg-indigo-600 hover:bg-indigo-700 text-white text-xs"
+                                title="Mark for Adoption"
+                              >
+                                Mark for Adoption
                               </button>
                             </div>
                             <div className="text-xs text-gray-500 mt-1">
