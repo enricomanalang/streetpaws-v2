@@ -179,7 +179,7 @@ export default function AdminDashboard() {
 
       return () => {
         clearTimeout(timeout);
-        off(reportsRef, 'value', unsubscribe);
+        try { unsubscribe(); } catch {}
       };
     } else if (activeTab !== 'abuse-reports') {
       // Reset reports when switching away from abuse-reports
@@ -226,7 +226,7 @@ export default function AdminDashboard() {
 
       return () => {
         clearTimeout(timeout);
-        off(adoptionRequestsRef, 'value', unsubscribe);
+        try { unsubscribe(); } catch {}
       };
     } else if (activeTab !== 'adopt') {
       setAdoptionRequests([]);
@@ -272,7 +272,7 @@ export default function AdminDashboard() {
 
       return () => {
         clearTimeout(timeout);
-        off(contactMessagesRef, 'value', unsubscribe);
+        try { unsubscribe(); } catch {}
       };
     } else if (activeTab !== 'contact') {
       setContactMessages([]);
@@ -318,7 +318,7 @@ export default function AdminDashboard() {
 
       return () => {
         clearTimeout(timeout);
-        off(volunteerApplicationsRef, 'value', unsubscribe);
+        try { unsubscribe(); } catch {}
       };
     } else if (activeTab !== 'volunteers') {
       setVolunteerApplications([]);
@@ -364,7 +364,7 @@ export default function AdminDashboard() {
 
       return () => {
         clearTimeout(timeout);
-        off(approvedReportsRef, 'value', unsubscribe);
+        try { unsubscribe(); } catch {}
       };
     } else if (activeTab !== 'approved-reports') {
       setApprovedReports([]);
@@ -410,7 +410,7 @@ export default function AdminDashboard() {
 
       return () => {
         clearTimeout(timeout);
-        off(rejectedReportsRef, 'value', unsubscribe);
+        try { unsubscribe(); } catch {}
       };
     } else if (activeTab !== 'rejected-reports') {
       setRejectedReports([]);
@@ -443,7 +443,7 @@ export default function AdminDashboard() {
       });
 
       return () => {
-        off(lostPetsRef, 'value', unsubscribe);
+        try { unsubscribe(); } catch {}
       };
     }
   }, [activeTab]);
@@ -488,8 +488,8 @@ export default function AdminDashboard() {
       });
 
       return () => {
-        off(reportsRef, 'value', unsubscribeReports);
-        off(lostPetsRef, 'value', unsubscribeLostPets);
+        try { unsubscribeReports(); } catch {}
+        try { unsubscribeLostPets(); } catch {}
       };
     }
   }, [activeTab, database]);

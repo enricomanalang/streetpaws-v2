@@ -31,16 +31,18 @@ const getMonthAbbr = (monthIndex: number) => {
 };
 
 // Helper function to process data by month
-const processDataByMonth = (data: any[], dateField: string = 'createdAt', targetYear?: number) => {
+// Supports multiple possible date field names per item (e.g., createdAt, updatedAt, date, timestamp)
+const processDataByMonth = (data: any[], dateField: string | string[] = 'createdAt', targetYear?: number) => {
   const monthlyData = Array.from({ length: 12 }, (_, i) => ({
     month: getMonthAbbr(i),
     value: 0
   }));
 
-  console.log(`Processing ${data.length} items with dateField: ${dateField}, targetYear: ${targetYear}`);
+  console.log(`Processing ${data.length} items with dateField: ${Array.isArray(dateField) ? dateField.join(',') : dateField}, targetYear: ${targetYear}`);
   
   data.forEach((item, index) => {
-    const dateValue = item[dateField];
+    const candidateFields = Array.isArray(dateField) ? dateField : [dateField];
+    const dateValue = candidateFields.map(f => item[f]).find(v => !!v);
     if (dateValue) {
       try {
         const date = new Date(dateValue);
@@ -67,7 +69,7 @@ const processDataByMonth = (data: any[], dateField: string = 'createdAt', target
         console.log(`Item ${index}: Error parsing date ${dateValue}:`, error);
       }
     } else {
-      console.log(`Item ${index}: No ${dateField} field found`);
+      console.log(`Item ${index}: No date field found among: ${candidateFields.join(', ')}`);
     }
   });
 
@@ -134,7 +136,12 @@ export const MonthlyTrendChart = ({ selectedYear }: { selectedYear: number }) =>
         });
 
         console.log(`Total items for trend analysis: ${allData.length}`);
-        const processedData = processDataByMonth(allData, 'createdAt', selectedYear);
+        // Try multiple possible date fields across collections
+        const processedData = processDataByMonth(
+          allData,
+          ['createdAt', 'updatedAt', 'submittedAt', 'date', 'timestamp', 'completedAt'],
+          selectedYear
+        );
         setData(processedData);
         
       } catch (error) {
@@ -225,7 +232,8 @@ export const AdoptionChart = ({ selectedYear }: { selectedYear: number }) => {
     });
 
     return () => {
-      off(adoptionRequestsRef, 'value', unsubscribe);
+      // Use the unsubscribe returned by onValue to avoid duplicate listeners
+      try { unsubscribe(); } catch {}
     };
   }, [selectedYear, user, authLoading]);
 
@@ -419,7 +427,7 @@ export const LostChart = ({ selectedYear }: { selectedYear: number }) => {
     });
 
     return () => {
-      off(lostPetsRef, 'value', unsubscribe);
+      try { unsubscribe(); } catch {}
     };
   }, [user, authLoading]);
 
@@ -498,7 +506,7 @@ export const FoundChart = ({ selectedYear }: { selectedYear: number }) => {
     });
 
     return () => {
-      off(foundPetsRef, 'value', unsubscribe);
+      try { unsubscribe(); } catch {}
     };
   }, [user, authLoading]);
 

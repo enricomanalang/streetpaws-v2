@@ -165,7 +165,7 @@ export default function HeatMap() {
     });
 
     return () => {
-      off(markersRef, 'value', unsubscribe);
+      try { unsubscribe(); } catch {}
     };
   }, []);
 
