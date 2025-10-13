@@ -20,7 +20,8 @@ import {
   Calendar,
   Camera,
   Plus,
-  Eye
+  Eye,
+  X
 } from 'lucide-react';
 import { ref, get, push, set } from 'firebase/database';
 import { database } from '@/lib/firebase';
@@ -61,6 +62,15 @@ export default function FoundPetsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [uploadingImages, setUploadingImages] = useState(false);
+  const [selectedPet, setSelectedPet] = useState<FoundPet | null>(null);
+  const [showClaimModal, setShowClaimModal] = useState(false);
+  const [claimData, setClaimData] = useState({
+    ownerName: '',
+    ownerContact: '',
+    ownerEmail: '',
+    proofOfOwnership: '',
+    additionalInfo: ''
+  });
 
   const [formData, setFormData] = useState({
     animalType: '',
@@ -114,6 +124,59 @@ export default function FoundPetsPage() {
       latitude: location.latitude.toString(),
       longitude: location.longitude.toString()
     }));
+  };
+
+  const handleClaimSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !profile || !selectedPet) return;
+
+    setLoading(true);
+    setError('');
+
+    try {
+      const claimSubmission = {
+        ...claimData,
+        petId: selectedPet.id,
+        petDetails: {
+          animalType: selectedPet.animalType,
+          breed: selectedPet.breed,
+          color: selectedPet.color,
+          foundLocation: selectedPet.foundLocation
+        },
+        claimedBy: {
+          uid: user.uid,
+          name: profile.name || profile.email,
+          email: profile.email
+        },
+        status: 'pending',
+        createdAt: new Date().toISOString(),
+        claimId: `CLAIM-${Date.now()}`
+      };
+
+      const claimsRef = ref(database, 'petClaims');
+      const newClaimRef = push(claimsRef);
+      await set(newClaimRef, claimSubmission);
+
+      setSuccess(true);
+      setShowClaimModal(false);
+      setClaimData({
+        ownerName: '',
+        ownerContact: '',
+        ownerEmail: '',
+        proofOfOwnership: '',
+        additionalInfo: ''
+      });
+      
+      setTimeout(() => {
+        setSuccess(false);
+      }, 3000);
+
+    } catch (err) {
+      console.error('Error submitting claim:', err);
+      setError('Failed to submit claim. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -525,7 +588,11 @@ export default function FoundPetsPage() {
                             {pet.description}
                           </p>
                         )}
-                        <Button className="w-full mt-3" variant="outline">
+                        <Button 
+                          className="w-full mt-3" 
+                          variant="outline"
+                          onClick={() => setSelectedPet(pet)}
+                        >
                           <Eye className="w-4 h-4 mr-2" />
                           View Details
                         </Button>
@@ -539,6 +606,223 @@ export default function FoundPetsPage() {
         )}
       </main>
       </div>
+
+      {/* Pet Details Modal */}
+      {selectedPet && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-2xl font-bold text-gray-900">Pet Details</h2>
+                <button
+                  onClick={() => setSelectedPet(null)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              {selectedPet.images && selectedPet.images.length > 0 && (
+                <div className="mb-6">
+                  <div className="grid grid-cols-2 gap-2">
+                    {selectedPet.images.map((imgUrl, idx) => (
+                      <img
+                        key={idx}
+                        src={imgUrl}
+                        alt={`Pet photo ${idx + 1}`}
+                        className="w-full h-32 object-cover rounded-lg"
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Animal Type</label>
+                    <p className="text-gray-900 capitalize">{selectedPet.animalType}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Breed</label>
+                    <p className="text-gray-900">{selectedPet.breed}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Color</label>
+                    <p className="text-gray-900">{selectedPet.color}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Size</label>
+                    <p className="text-gray-900">{selectedPet.size}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Age</label>
+                    <p className="text-gray-900">{selectedPet.age}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Gender</label>
+                    <p className="text-gray-900">{selectedPet.gender}</p>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Found Location</label>
+                  <p className="text-gray-900">{selectedPet.foundLocation}</p>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Found Date</label>
+                  <p className="text-gray-900">{new Date(selectedPet.foundDate).toLocaleDateString()}</p>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Contact Info</label>
+                  <p className="text-gray-900">{selectedPet.contactInfo}</p>
+                </div>
+
+                {selectedPet.description && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Description</label>
+                    <p className="text-gray-900">{selectedPet.description}</p>
+                  </div>
+                )}
+
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Reported by</label>
+                  <p className="text-gray-900">{selectedPet.submittedBy?.name}</p>
+                </div>
+              </div>
+
+              <div className="flex gap-3 mt-6">
+                <Button
+                  onClick={() => {
+                    setSelectedPet(null);
+                    setShowClaimModal(true);
+                  }}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700"
+                >
+                  Claim This Pet
+                </Button>
+                <Button
+                  onClick={() => setSelectedPet(null)}
+                  variant="outline"
+                  className="flex-1"
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Claim Modal */}
+      {showClaimModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-md w-full">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold text-gray-900">Claim This Pet</h2>
+                <button
+                  onClick={() => setShowClaimModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <form onSubmit={handleClaimSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Your Name *
+                  </label>
+                  <Input
+                    value={claimData.ownerName}
+                    onChange={(e) => setClaimData(prev => ({ ...prev, ownerName: e.target.value }))}
+                    required
+                    placeholder="Enter your full name"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Contact Number *
+                  </label>
+                  <Input
+                    value={claimData.ownerContact}
+                    onChange={(e) => setClaimData(prev => ({ ...prev, ownerContact: e.target.value }))}
+                    required
+                    placeholder="Enter your phone number"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Email Address *
+                  </label>
+                  <Input
+                    type="email"
+                    value={claimData.ownerEmail}
+                    onChange={(e) => setClaimData(prev => ({ ...prev, ownerEmail: e.target.value }))}
+                    required
+                    placeholder="Enter your email"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Proof of Ownership *
+                  </label>
+                  <Textarea
+                    value={claimData.proofOfOwnership}
+                    onChange={(e) => setClaimData(prev => ({ ...prev, proofOfOwnership: e.target.value }))}
+                    required
+                    placeholder="Describe how you can prove this is your pet (e.g., photos, vet records, microchip info)"
+                    rows={3}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Additional Information
+                  </label>
+                  <Textarea
+                    value={claimData.additionalInfo}
+                    onChange={(e) => setClaimData(prev => ({ ...prev, additionalInfo: e.target.value }))}
+                    placeholder="Any additional information that might help verify ownership"
+                    rows={2}
+                  />
+                </div>
+
+                {error && (
+                  <Alert>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
+
+                <div className="flex gap-3">
+                  <Button
+                    type="button"
+                    onClick={() => setShowClaimModal(false)}
+                    variant="outline"
+                    className="flex-1"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={loading}
+                    className="flex-1 bg-green-600 hover:bg-green-700"
+                  >
+                    {loading ? 'Submitting...' : 'Submit Claim'}
+                  </Button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </HydrationBoundary>
   );
 }
