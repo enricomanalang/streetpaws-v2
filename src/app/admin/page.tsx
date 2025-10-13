@@ -999,10 +999,10 @@ export default function AdminDashboard() {
                       <p className="text-2xl font-semibold text-gray-900">See priorities</p>
                     </div>
                     <Button
-                      onClick={() => setActiveTab('prescriptive')}
+                      onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
                       className="bg-emerald-600 hover:bg-emerald-700"
                     >
-                      View details
+                      Go to top
                     </Button>
                   </div>
                 </CardContent>
@@ -1921,10 +1921,7 @@ export default function AdminDashboard() {
       
       case 'heatmap':
         return <HeatMap />;
-      case 'predictive':
-        return <PredictiveDashboard />;
-      case 'prescriptive':
-        return <PrescriptiveDashboard />;
+      
       // case 'test-data':
       //   return <TestDataGenerator />;
       
@@ -2152,28 +2149,8 @@ export default function AdminDashboard() {
               <Map className="w-5 h-5 mr-3" />
               Heat Map
             </button>
-            <button 
-              onClick={() => setActiveTab('predictive')}
-              className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                activeTab === 'predictive' 
-                  ? 'text-white bg-gradient-to-r from-indigo-600 to-blue-600' 
-                  : 'text-gray-700 hover:text-indigo-600 hover:bg-indigo-50'
-              }`}
-            >
-              <TrendingUp className="w-5 h-5 mr-3" />
-              Predictive Analytics
-            </button>
-            <button 
-              onClick={() => setActiveTab('prescriptive')}
-              className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                activeTab === 'prescriptive' 
-                  ? 'text-white bg-gradient-to-r from-emerald-600 to-green-600' 
-                  : 'text-gray-700 hover:text-emerald-600 hover:bg-emerald-50'
-              }`}
-            >
-              <Target className="w-5 h-5 mr-3" />
-              Prescriptive Analytics
-            </button>
+            
+            
             {/* Temporarily disabled - Test Data Generator */}
             {/* <button 
               onClick={() => setActiveTab('test-data')}
@@ -2265,8 +2242,7 @@ export default function AdminDashboard() {
                   {activeTab === 'donors' && 'Donor Management'}
                   {activeTab === 'inventory' && 'Inventory Management'}
                   {activeTab === 'heatmap' && 'Heat Map Analytics'}
-                  {activeTab === 'predictive' && 'Predictive Analytics'}
-                  {activeTab === 'prescriptive' && 'Prescriptive Analytics'}
+                  
                   {activeTab === 'test-data' && 'Test Data Generator'}
                   {activeTab === 'newsfeed' && 'Newsfeed Management'}
                 </h1>
