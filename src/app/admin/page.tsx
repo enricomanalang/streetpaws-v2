@@ -2411,6 +2411,18 @@ export default function AdminDashboard() {
                     </Button>
                   </>
                 )}
+                {/* Mark for Adoption - available when report is approved */}
+                {selectedReport.status === 'approved' && !isLostEntry(selectedReport) && (
+                  <Button
+                    onClick={async () => {
+                      await markForAdoption(selectedReport.id);
+                    }}
+                    className="bg-indigo-600 hover:bg-indigo-700"
+                  >
+                    <Heart className="w-4 h-4 mr-1" />
+                    Mark for Adoption
+                  </Button>
+                )}
                 {selectedReport.status === 'pending' && !isLostEntry(selectedReport) && (
                   <Button
                     onClick={() => {
