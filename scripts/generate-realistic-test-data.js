@@ -26,20 +26,19 @@ const auth = getAuth(app);
 async function ensureAuth() {
   const email = process.env.SEED_EMAIL;
   const password = process.env.SEED_PASSWORD;
-  try {
-    if (email && password) {
-      console.log('🔐 Signing in with seed user...');
+  if (email && password) {
+    console.log('🔐 Signing in with seed user...');
+    try {
       await signInWithEmailAndPassword(auth, email, password);
       console.log('✅ Authenticated as seed user');
-    } else {
-      console.log('🔐 No SEED_EMAIL/PASSWORD provided; trying anonymous auth...');
-      await signInAnonymously(auth);
-      console.log('✅ Authenticated anonymously');
+      return;
+    } catch (e) {
+      console.warn('⚠️ Seed login failed, falling back to anonymous:', e.code || e.message || e);
     }
-  } catch (e) {
-    console.error('❌ Authentication failed:', e.message || e);
-    throw e;
   }
+  console.log('🔐 Trying anonymous auth...');
+  await signInAnonymously(auth);
+  console.log('✅ Authenticated anonymously');
 }
 
 // Parse simple CLI args: --month=YYYY-MM OR --start=YYYY-MM --months=N
