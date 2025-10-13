@@ -32,7 +32,7 @@ function HeatMapContent() {
   const [showMarkers, setShowMarkers] = useState(true);
   const [mapCenter, setMapCenter] = useState<[number, number]>([14.0583, 121.1656]); // Lipa City coordinates
   const [mapZoom, setMapZoom] = useState(13);
-  const [leafletLoaded, setLeafletLoaded] = useState(false);
+  const [leafletLoaded] = useState(true);
   const [heatmapData, setHeatmapData] = useState<Array<{lat: number, lng: number, intensity: number}>>([]);
   const [densityStats, setDensityStats] = useState<{
     totalZones: number;
@@ -41,71 +41,7 @@ function HeatMapContent() {
     maxDensity: number;
   }>({ totalZones: 0, highDensityZones: 0, avgDensity: 0, maxDensity: 0 });
 
-  // Load Leaflet CSS and JS
-  useEffect(() => {
-    const loadLeaflet = () => {
-      // Check if Leaflet is already loaded
-      if (typeof window !== 'undefined' && window.L) {
-        setLeafletLoaded(true);
-        return;
-      }
-
-      // Add timeout to prevent infinite loading
-      const timeout = setTimeout(() => {
-        console.warn('Leaflet loading timeout - map may not display properly');
-        setLeafletLoaded(false);
-      }, 10000); // 10 second timeout
-
-      // Load Leaflet CSS
-      const link = document.createElement('link');
-      link.rel = 'stylesheet';
-      link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-      document.head.appendChild(link);
-
-      // Load Leaflet JS
-      const script = document.createElement('script');
-      script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-      script.onload = () => {
-        clearTimeout(timeout);
-        console.log('Leaflet loaded successfully');
-        setLeafletLoaded(true);
-      };
-      script.onerror = () => {
-        clearTimeout(timeout);
-        console.error('Failed to load Leaflet from CDN, trying fallback...');
-        // Try a different CDN as fallback
-        const fallbackScript = document.createElement('script');
-        fallbackScript.src = 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js';
-        fallbackScript.onload = () => {
-          console.log('Leaflet loaded from fallback CDN');
-          setLeafletLoaded(true);
-        };
-        fallbackScript.onerror = () => {
-          console.error('Failed to load Leaflet from all CDNs');
-          setLeafletLoaded(false);
-        };
-        document.head.appendChild(fallbackScript);
-      };
-      document.head.appendChild(script);
-
-      return () => {
-        clearTimeout(timeout);
-        if (document.head.contains(link)) {
-          document.head.removeChild(link);
-        }
-        if (document.head.contains(script)) {
-          document.head.removeChild(script);
-        }
-        // Clean up fallback script if it exists
-        const fallbackScript = document.querySelector('script[src*="cdn.jsdelivr.net/npm/leaflet"]');
-        if (fallbackScript && document.head.contains(fallbackScript)) {
-          document.head.removeChild(fallbackScript);
-        }
-      };
-    };
-
-    loadLeaflet();
-  }, []);
+  // Leaflet is bundled via npm; no need to load from CDN
 
   // Fetch markers from Firebase (approved reports only to avoid moderation noise)
   useEffect(() => {
