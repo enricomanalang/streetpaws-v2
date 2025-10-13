@@ -658,6 +658,14 @@ export default function AdminDashboard() {
     }
   };
 
+  // Detect if a selected item is a Lost Pet entry rather than an Abuse Report
+  const isLostEntry = (item: any) => {
+    if (!item) return false;
+    if (typeof item.reportId === 'string' && item.reportId.startsWith('LOST-')) return true;
+    // Heuristics for lost pet objects
+    return !!(item.lastSeenLocation || item.petName || item.breed);
+  };
+
   const updateAdoptionRequestStatus = async (requestId: string, status: string) => {
     if (!database) {
       console.error('Database not initialized');
@@ -2375,7 +2383,11 @@ export default function AdminDashboard() {
                   <>
                     <Button
                       onClick={() => {
-                        updateReportStatus(selectedReport.id, 'approved');
+                        if (isLostEntry(selectedReport)) {
+                          updateLostPetStatus(selectedReport.id, 'approved');
+                        } else {
+                          updateReportStatus(selectedReport.id, 'approved');
+                        }
                         closeReportModal();
                       }}
                       className="bg-green-600 hover:bg-green-700"
@@ -2385,7 +2397,11 @@ export default function AdminDashboard() {
                     </Button>
                     <Button
                       onClick={() => {
-                        updateReportStatus(selectedReport.id, 'rejected');
+                        if (isLostEntry(selectedReport)) {
+                          updateLostPetStatus(selectedReport.id, 'rejected');
+                        } else {
+                          updateReportStatus(selectedReport.id, 'rejected');
+                        }
                         closeReportModal();
                       }}
                       variant="destructive"
@@ -2395,7 +2411,7 @@ export default function AdminDashboard() {
                     </Button>
                   </>
                 )}
-                {selectedReport.status === 'pending' && (
+                {selectedReport.status === 'pending' && !isLostEntry(selectedReport) && (
                   <Button
                     onClick={() => {
                       updateReportStatus(selectedReport.id, 'investigating');
