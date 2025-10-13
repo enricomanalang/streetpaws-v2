@@ -92,7 +92,7 @@ export default function FoundPetsPage() {
           id: key,
           ...pets[key]
         }));
-        setFoundPets(petsList.filter(pet => pet.status === 'found'));
+        setFoundPets(petsList.filter(pet => pet.status === 'approved'));
       }
     } catch (err) {
       console.error('Error loading found pets:', err);

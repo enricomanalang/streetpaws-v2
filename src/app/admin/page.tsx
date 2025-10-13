@@ -50,7 +50,7 @@ import NewsfeedPostForm from '@/components/NewsfeedPostForm';
 import NewsfeedManagement from '@/components/NewsfeedManagement';
 import useModernModal from '@/components/ui/modern-modal';
 import useNotificationModal from '@/components/ui/notification-modal';
-import { ref, onValue, off, update, get, set, remove } from 'firebase/database';
+import { ref, onValue, off, update, get, set, remove, push } from 'firebase/database';
 // import { collection, onSnapshot, doc, updateDoc, serverTimestamp, query, orderBy } from 'firebase/firestore';
 import { database } from '@/lib/firebase';
 import { 
@@ -112,6 +112,12 @@ export default function AdminDashboard() {
   const [loadingLostPets, setLoadingLostPets] = useState(false);
   const [lostFilter, setLostFilter] = useState<'all'|'pending'|'approved'|'rejected'|'found'|'closed'>('pending');
   const [selectedLostIds, setSelectedLostIds] = useState<Set<string>>(new Set());
+  const [foundPets, setFoundPets] = useState<Array<{
+    id: string;
+    [key: string]: any;
+  }>>([]);
+  const [loadingFoundPets, setLoadingFoundPets] = useState(false);
+  const [foundFilter, setFoundFilter] = useState<'all'|'pending'|'approved'|'rejected'|'adopted'>('pending');
   const [adoptionRequests, setAdoptionRequests] = useState<Array<{
     id: string;
     [key: string]: any;
@@ -431,6 +437,35 @@ export default function AdminDashboard() {
     }
   }, [activeTab]);
 
+  // Fetch found pets when found-reports tab is active
+  useEffect(() => {
+    if (activeTab === 'found-reports' && database) {
+      setLoadingFoundPets(true);
+      const foundPetsRef = ref(database, 'foundPets');
+      
+      const unsubscribe = onValue(foundPetsRef, (snapshot) => {
+        if (snapshot.exists()) {
+          const pets = snapshot.val();
+          const petsList = Object.keys(pets).map(key => ({
+            id: key,
+            ...pets[key]
+          }));
+          setFoundPets(petsList);
+        } else {
+          setFoundPets([]);
+        }
+        setLoadingFoundPets(false);
+      }, (error) => {
+        console.error('Error fetching found pets:', error);
+        setLoadingFoundPets(false);
+      });
+
+      return () => {
+        try { unsubscribe(); } catch {}
+      };
+    }
+  }, [activeTab]);
+
   // Load dashboard data when dashboard tab is active
   useEffect(() => {
     if (activeTab === 'dashboard' && database) {
@@ -655,6 +690,66 @@ export default function AdminDashboard() {
       console.log(`Lost pet ${petId} status updated to ${status}`);
     } catch (error) {
       console.error('Error updating lost pet status:', error);
+    }
+  };
+
+  const updateFoundPetStatus = async (petId: string, status: string) => {
+    if (!database) return;
+    
+    try {
+      const petRef = ref(database, `foundPets/${petId}`);
+      await update(petRef, {
+        status,
+        updatedAt: new Date().toISOString(),
+        reviewedBy: {
+          uid: user?.uid,
+          name: profile?.name || profile?.email,
+          email: profile?.email
+        }
+      });
+      console.log(`Found pet ${petId} status updated to ${status}`);
+    } catch (error) {
+      console.error('Error updating found pet status:', error);
+    }
+  };
+
+  const markFoundPetForAdoption = async (petId: string) => {
+    if (!database) return;
+    
+    try {
+      const petRef = ref(database, `foundPets/${petId}`);
+      const petSnapshot = await get(petRef);
+      
+      if (petSnapshot.exists()) {
+        const petData = petSnapshot.val();
+        
+        // Create adoption entry
+        const adoptionRef = ref(database, 'approvedReports');
+        const newAdoptionRef = push(adoptionRef);
+        
+        const adoptionData = {
+          ...petData,
+          availableForAdoption: true,
+          adoptionStatus: 'available',
+          markedForAdoptionAt: new Date().toISOString(),
+          originalFoundPetId: petId
+        };
+        
+        await set(newAdoptionRef, adoptionData);
+        
+        // Update found pet status
+        await update(petRef, { 
+          status: 'adopted',
+          availableForAdoption: true,
+          adoptionEntryId: newAdoptionRef.key,
+          updatedAt: new Date().toISOString()
+        });
+        
+        success('Found pet marked for adoption and moved to adoption page');
+      }
+    } catch (error) {
+      console.error('Error marking found pet for adoption:', error);
+      alert(`Failed to mark found pet for adoption: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
@@ -1927,30 +2022,163 @@ export default function AdminDashboard() {
         return <Inventory />;
       
       case 'found-reports':
+        const filteredFoundPets = foundPets.filter(pet => {
+          if (foundFilter === 'all') return true;
+          return pet.status === foundFilter;
+        });
+
         return (
-          <Card className="bg-white shadow-sm">
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold text-gray-900">Found Pet Reports</CardTitle>
-              <CardDescription>Review and verify found pet reports submitted by users</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-12">
-                <CheckCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Found Pet Reports</h3>
-                <p className="text-gray-500">Review and verify found pet reports submitted by users.</p>
-                <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-                  <p className="text-sm text-gray-600 mb-2">Admin Features:</p>
-                  <ul className="text-sm text-gray-500 space-y-1">
-                    <li>• View all submitted found pet reports</li>
-                    <li>• Verify and approve reports</li>
-                    <li>• Update report status</li>
-                    <li>• Contact finders</li>
-                    <li>• Match with lost pet reports</li>
-                  </ul>
+          <div className="space-y-6">
+            <Card className="bg-white shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-lg font-semibold text-gray-900">Found Pet Reports</CardTitle>
+                <CardDescription>Review and verify found pet reports submitted by users</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {/* Filter buttons */}
+                <div className="flex flex-wrap gap-2 mb-6">
+                  {[
+                    { key: 'all', label: 'All', count: foundPets.length },
+                    { key: 'pending', label: 'Pending', count: foundPets.filter(p => p.status === 'pending' || !p.status).length },
+                    { key: 'approved', label: 'Approved', count: foundPets.filter(p => p.status === 'approved').length },
+                    { key: 'rejected', label: 'Rejected', count: foundPets.filter(p => p.status === 'rejected').length },
+                    { key: 'adopted', label: 'Marked for Adoption', count: foundPets.filter(p => p.status === 'adopted').length }
+                  ].map(({ key, label, count }) => (
+                    <button
+                      key={key}
+                      onClick={() => setFoundFilter(key as any)}
+                      className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                        foundFilter === key
+                          ? 'bg-blue-100 text-blue-700 border border-blue-200'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      {label} ({count})
+                    </button>
+                  ))}
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+
+                {loadingFoundPets ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                    <p className="mt-2 text-gray-500">Loading found pets...</p>
+                  </div>
+                ) : filteredFoundPets.length === 0 ? (
+                  <div className="text-center py-12">
+                    <CheckCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No Found Pet Reports</h3>
+                    <p className="text-gray-500">No found pet reports match the current filter.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {filteredFoundPets.map((pet) => (
+                      <div key={pet.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <h3 className="font-semibold text-gray-900">
+                                {pet.animalType} - {pet.breed}
+                              </h3>
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                pet.status === 'approved' ? 'bg-green-100 text-green-700' :
+                                pet.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                                pet.status === 'adopted' ? 'bg-purple-100 text-purple-700' :
+                                'bg-yellow-100 text-yellow-700'
+                              }`}>
+                                {pet.status || 'pending'}
+                              </span>
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-4 text-sm text-gray-600 mb-3">
+                              <div>
+                                <span className="font-medium">Color:</span> {pet.color}
+                              </div>
+                              <div>
+                                <span className="font-medium">Size:</span> {pet.size}
+                              </div>
+                              <div>
+                                <span className="font-medium">Age:</span> {pet.age}
+                              </div>
+                              <div>
+                                <span className="font-medium">Gender:</span> {pet.gender}
+                              </div>
+                            </div>
+                            
+                            <div className="text-sm text-gray-600 mb-2">
+                              <span className="font-medium">Found Location:</span> {pet.foundLocation}
+                            </div>
+                            <div className="text-sm text-gray-600 mb-2">
+                              <span className="font-medium">Found Date:</span> {pet.foundDate}
+                            </div>
+                            <div className="text-sm text-gray-600 mb-2">
+                              <span className="font-medium">Contact:</span> {pet.contactInfo}
+                            </div>
+                            
+                            {pet.description && (
+                              <div className="text-sm text-gray-600 mb-2">
+                                <span className="font-medium">Description:</span> {pet.description}
+                              </div>
+                            )}
+                            
+                            <div className="text-xs text-gray-500">
+                              Submitted by: {pet.submittedBy?.name} on {pet.createdAt}
+                            </div>
+                          </div>
+                          
+                          <div className="flex flex-col gap-2 ml-4">
+                            {pet.status !== 'approved' && pet.status !== 'rejected' && pet.status !== 'adopted' && (
+                              <>
+                                <Button
+                                  size="sm"
+                                  onClick={() => updateFoundPetStatus(pet.id, 'approved')}
+                                  className="bg-green-600 hover:bg-green-700"
+                                >
+                                  Approve
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  onClick={() => updateFoundPetStatus(pet.id, 'rejected')}
+                                >
+                                  Reject
+                                </Button>
+                              </>
+                            )}
+                            
+                            {pet.status === 'approved' && (
+                              <Button
+                                size="sm"
+                                onClick={() => markFoundPetForAdoption(pet.id)}
+                                className="bg-purple-600 hover:bg-purple-700"
+                              >
+                                Mark for Adoption
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                        
+                        {pet.images && pet.images.length > 0 && (
+                          <div className="mt-4">
+                            <h4 className="text-sm font-medium text-gray-700 mb-2">Photos:</h4>
+                            <div className="flex gap-2 overflow-x-auto">
+                              {pet.images.map((imgUrl: string, idx: number) => (
+                                <img
+                                  key={idx}
+                                  src={imgUrl}
+                                  alt={`Found pet photo ${idx + 1}`}
+                                  className="w-20 h-20 object-cover rounded-lg flex-shrink-0"
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         );
       
       case 'newsfeed':
