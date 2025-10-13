@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -452,7 +452,7 @@ function HeatMapContent() {
 }
 
 // Simple error boundary to prevent whole app crash if map fails
-class HeatMapErrorBoundary extends (globalThis as any).React?.Component<any, any> {
+class HeatMapErrorBoundary extends React.Component<any, any> {
   constructor(props: any) {
     // Fallback if React global isn't present during typing; Next injects React on client
     // @ts-ignore
